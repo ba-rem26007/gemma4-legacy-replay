@@ -53,10 +53,16 @@ def keywords(bug):
                 p = re.sub(r"Core$", "", part)
                 if len(p) >= 4 and p not in ("__construct", "constructor") and p not in kws:
                     kws.append(p)
+    GENERIC = {"index", "controller", "admin", "address", "product", "main", "form", "list", "utils", "helpers", "base", "module"}
     for f in bug["files"]:
-        base = Path(f).stem
-        if base not in kws and len(base) >= 4:
-            kws.append(re.sub(r"Core$", "", base))
+        if f.startswith(flow.EXCLUDE):
+            continue
+        p = Path(f)
+        stem = p.name.split(".")[0]
+        # nom générique → fragment de chemin « dossier/nom »
+        kw = f"{p.parent.name}/{stem}" if stem.lower() in GENERIC or len(stem) < 5 else re.sub(r"Core$", "", stem)
+        if kw not in kws:
+            kws.insert(0, kw)
     return kws[:6]
 
 
@@ -67,7 +73,7 @@ def edit_text(blocks):
 def build(bug):
     base, merge = bug["base_commit"], bug["merge_commit"]
     diff = (ROOT / "bench" / "diffs" / f"{bug['pr']}.diff").read_text()
-    hs = {f: h for f, h in hunks(diff).items() if f.endswith(CODE)}
+    hs = {f: h for f, h in hunks(diff).items() if f.endswith(CODE) and not f.startswith(flow.EXCLUDE)}
     if not hs or len(hs) > flow.MAX_FILES_READ:
         return None, "hors_format"
     kws = keywords(bug)
@@ -82,7 +88,21 @@ def build(bug):
             return None, "fichier_nouveau"
         touched = [i for t, _, _ in hs[f] for i in t]
         contents[f] = flow.windows(src, kws, extra_lines=touched)
-        for _, s, r in hs[f]:
+        rows = src.splitlines()
+        for touched_lines, s, r in hs[f]:
+            k = 0
+            while s.strip() and src.count(s) > 1 and k < 8:
+                # ajoute une ligne de contexte avant et après, identique des deux côtés
+                k += 1
+                i = src.find(s)
+                start = src[:i].count("\n")
+                end = start + s.count("\n") + 1
+                before = rows[start - 1] if start > 0 else None
+                after = rows[end] if end < len(rows) else None
+                if before is not None:
+                    s, r = before + "\n" + s, before + "\n" + r
+                if after is not None:
+                    s, r = s + "\n" + after, r + "\n" + after
             if not s.strip() or src.count(s) != 1:
                 return None, "search_non_unique"
             blocks.append((f, s, r))

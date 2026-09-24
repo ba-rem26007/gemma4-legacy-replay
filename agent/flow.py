@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PS = ROOT / "bench" / "ps"
 EXCLUDE = ("tests/", "vendor/", "translations/", "install-dev/", "js/tiny_mce", "admin-dev/themes/default/public", ".github/")
+CODE_EXT = ("php", "tpl", "twig", "js", "ts", "vue")
 MAX_FILES_READ, WINDOW, MAX_LINES_PER_FILE, MAX_GREP_FILES = 3, 30, 260, 25
 
 SYSTEM = """Tu es un agent qui corrige des bugs dans PrestaShop (PHP, legacy + Symfony).
@@ -39,21 +40,32 @@ def show(commit, path):
 
 
 def grep(commit, keywords):
-    """git grep sur le commit de base → {fichier: nb de lignes trouvées}, trié."""
-    hits = {}
-    pats = [x for kw in keywords[:8] if len(kw.strip()) >= 3 for x in ("-e", kw.strip())]
-    if not pats:
-        return hits
-    # une seule passe sur l'arbre du commit (tous les mots-clés à la fois)
-    out = git("grep", "-I", "-c", "-F", "-i", *pats, commit, "--", "*.php", "*.tpl", "*.twig", "*.js", "*.ts", "*.vue")
+    """Recherche sur le commit de base : contenu (git grep) + chemins de fichiers.
+    Classement : nom de fichier contenant un mot-clé, puis nb de mots-clés DISTINCTS trouvés, puis nb de lignes."""
+    kws = [k.strip() for k in keywords[:8] if len(k.strip()) >= 3]
+    if not kws:
+        return {}
+    kl = [k.lower() for k in kws]
+    found, lines = {}, {}
+    pats = [x for k in kws for x in ("-e", k)]
+    out = git("grep", "-I", "-o", "-i", "-F", *pats, commit, "--", *(f"*.{e}" for e in CODE_EXT))
     for l in out.splitlines():
-        _, f, n = l.split(":", 2)
-        if not f.startswith(EXCLUDE):
-            hits[f] = hits.get(f, 0) + int(n)
-    # les fichiers dont le NOM contient un mot-clé passent devant (classe PrestaShop = nom de fichier)
-    kl = [k.strip().lower() for k in keywords if len(k.strip()) >= 3]
-    name_hit = lambda f: any(k in f.rsplit("/", 1)[-1].lower() for k in kl)
-    return dict(sorted(hits.items(), key=lambda x: (not name_hit(x[0]), -x[1]))[:MAX_GREP_FILES])
+        parts = l.split(":", 3)
+        if len(parts) < 4 or parts[1].startswith(EXCLUDE):
+            continue
+        f, m = parts[1], parts[3].lower()
+        found.setdefault(f, set()).add(m)
+        lines[f] = lines.get(f, 0) + 1
+    for f in git("ls-tree", "-r", "--name-only", commit).splitlines():
+        if f.endswith(tuple(CODE_EXT)) and not f.startswith(EXCLUDE):
+            fl = f.lower()
+            for k in kl:
+                if k in fl:
+                    found.setdefault(f, set()).add(k)
+                    lines.setdefault(f, 0)
+    name_hit = lambda f: any(k in f.rsplit("/", 1)[-1].lower() or ("/" in k and k in f.lower()) for k in kl)
+    ranked = sorted(found, key=lambda f: (not name_hit(f), -len(found[f]), -lines[f]))[:MAX_GREP_FILES]
+    return {f: lines[f] for f in ranked}
 
 
 def windows(src, keywords, extra_lines=()):

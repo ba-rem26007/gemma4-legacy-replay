@@ -31,7 +31,7 @@ Projet pour le hackathon Kaggle **Gemma 4**.
 ./setup.sh                                   # clone PrestaShop (~1 Go) + Playwright
 cp .env.example .env                         # puis GEMMA_API_KEY (https://aistudio.google.com/apikey)
 ```
-- **Fine-tuning sur ton GPU** : voir [training/README.md](training/README.md). Les données sont déjà dans `trajectories/train.jsonl` : 424 chemins vérifiés.
+- **Fine-tuning sur ton GPU** : voir [training/README.md](training/README.md). Les données sont déjà dans `trajectories/train.jsonl` : 573 chemins vérifiés.
 - **Agent + évaluation** (nécessite Docker) : `bench/checkout.sh <pr> pre`, puis `python3 agent/run.py --bugs 35902 --condition B`.
 
 ## Structure
