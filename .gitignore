@@ -1,0 +1,19 @@
+# secrets
+.env
+kaggle.json
+access_token
+# locaux / régénérables
+.claude/
+output/
+*.zip
+*.log
+__pycache__/
+.venv/
+bench/ps/
+bench/replay/node_modules/
+bench/replay/test-results/
+bench/replay/results.json
+bench/replay/.auth/
+bench/train_20*.jsonl
+runs/*/*/trace.jsonl.tmp
+training/lora/

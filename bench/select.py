@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Sélection des bugs candidats : PR 'Bug fix' mergées sur PrestaShop 8.1.x.
+
+Usage : python3 bench/select.py [--limit 400] [--branch 8.1.x|all] [--out bugs.jsonl]
+Sortie : bench/<out> (+ bench/diffs/<pr>.diff = correctif officiel)
+"""
+import argparse, json, re, subprocess, sys
+from pathlib import Path
+
+REPO = "PrestaShop/PrestaShop"
+BRANCH = "8.1.x"
+MAX_LINES, MAX_FILES = 60, 3
+SECURITY = re.compile(r"secur|xss|csrf|injection|sqli|vulnerab|exploit|cve|rce|privilege", re.I)
+NON_UI = re.compile(r"^(tests?/|\.github/|composer\.|package|\.docker|docker|install-dev/)", re.I)
+HERE = Path(__file__).parent
+
+
+def gh(*args):
+    return subprocess.run(["gh", *args], check=True, capture_output=True, text=True).stdout
+
+
+def linked_issues(body):
+    # Lignes « Fixed issue » / « How to test » du template de PR PrestaShop
+    rows = [l for l in body.splitlines() if re.match(r"\|\s*(Fixed|How to test)", l, re.I)]
+    nums = re.findall(r"(?:#|issues/)(\d{4,6})", " ".join(rows))
+    return list(dict.fromkeys(int(n) for n in nums))
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--limit", type=int, default=400)
+    ap.add_argument("--branch", default=BRANCH, help="branche de base, ou 'all'")
+    ap.add_argument("--out", default="bugs.jsonl")
+    ap.add_argument("--max-lines", type=int, default=MAX_LINES)
+    ap.add_argument("--max-files", type=int, default=MAX_FILES)
+    ap.add_argument("--merged", default=None, help="fenêtre de merge GitHub, ex. 2022-01-01..2023-03-01")
+    ap.add_argument("--skip", type=int, default=0, help="ignorer les N PR les plus récentes (déjà traitées)")
+    a = ap.parse_args()
+
+    prs = json.loads(gh("pr", "list", "-R", REPO, "--state", "merged", *([] if a.branch == "all" else ["--base", a.branch]),
+                        "--label", "Bug fix", "--limit", str(a.limit),
+                        *(["--search", f"merged:{a.merged}"] if a.merged else []),
+                        "--json", "number,title,body,additions,deletions,changedFiles,files,labels,mergeCommit,url,baseRefName"))
+    prs = prs[a.skip:]
+    out, stats = [], {"total": len(prs)}
+    for pr in prs:
+        size = pr["additions"] + pr["deletions"]
+        files = [f["path"] for f in pr["files"]]
+        labels = [l["name"] for l in pr["labels"]]
+        reason = None
+        if size > a.max_lines or pr["changedFiles"] > a.max_files:
+            reason = "trop_gros"
+        elif SECURITY.search(pr["title"] + " " + " ".join(labels)):
+            reason = "securite"
+        elif all(NON_UI.match(f) for f in files):
+            reason = "non_ui"
+        issues = linked_issues(pr["body"] or "")
+        if not reason and not issues:
+            reason = "sans_issue"
+        if reason:
+            stats[reason] = stats.get(reason, 0) + 1
+            continue
+
+        try:
+            issue = json.loads(gh("issue", "view", str(issues[0]), "-R", REPO,
+                              "--json", "number,title,body,labels"))
+        except subprocess.CalledProcessError:
+            stats["issue_introuvable"] = stats.get("issue_introuvable", 0) + 1
+            continue
+        ibody = issue["body"] or ""
+        if SECURITY.search(issue["title"] + " " + " ".join(l["name"] for l in issue["labels"])):
+            stats["securite"] = stats.get("securite", 0) + 1
+            continue
+        if not re.search(r"steps to reproduce|how to reproduce|reproduce", ibody, re.I):
+            stats["sans_repro"] = stats.get("sans_repro", 0) + 1
+            continue
+
+        mc = pr["mergeCommit"]["oid"]
+        parents = json.loads(gh("api", f"repos/{REPO}/commits/{mc}", "--jq", "[.parents[].sha]"))
+        d = HERE / "diffs" / f"{pr['number']}.diff"
+        if not d.exists(): d.write_text(gh("pr", "diff", str(pr["number"]), "-R", REPO))
+        out.append({
+            "pr": pr["number"], "branch": pr["baseRefName"], "url": pr["url"], "title": pr["title"],
+            "issue": issue["number"], "issue_title": issue["title"], "issue_body": ibody,
+            "merge_commit": mc, "base_commit": parents[0],  # code AVANT le correctif
+            "files": files, "lines": size, "labels": labels,
+            "area": next((l for l in ("BO", "FO") if l in [x["name"] for x in issue["labels"]]), "?"),
+        })
+        print(f"+ #{pr['number']} ({size}l) {pr['title'][:70]}", file=sys.stderr)
+
+    with open(HERE / a.out, "w") as f:
+        for b in out:
+            f.write(json.dumps(b, ensure_ascii=False) + "\n")
+    stats["retenus"] = len(out)
+    print(json.dumps(stats, indent=1), file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

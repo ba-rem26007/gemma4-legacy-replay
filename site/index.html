@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gemma 4 × PrestaShop</title>
+<style>
+:root { --bg:#fbfaf7; --fg:#1d1c1a; --muted:#6b675f; --line:#e4e0d8; --accent:#b4441c; --code:#f1eee7; }
+@media (prefers-color-scheme: dark) { :root { --bg:#161513; --fg:#ebe7df; --muted:#9a958b; --line:#2e2c28; --accent:#f08a5d; --code:#22201c; } }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { border-bottom:1px solid var(--line); padding:14px 16px; display:flex; flex-wrap:wrap; gap:6px 18px; align-items:baseline; }
+header b { font-size:17px; margin-right:auto; }
+header a { color:var(--muted); text-decoration:none; font-size:14px; }
+header a.on, header a:hover { color:var(--accent); }
+main { max-width:820px; margin:0 auto; padding:24px 16px 80px; }
+h1 { font-size:30px; line-height:1.2; margin:.2em 0 .6em; }
+h2 { font-size:21px; margin-top:1.8em; border-bottom:1px solid var(--line); padding-bottom:4px; }
+a { color:var(--accent); }
+code { background:var(--code); padding:1px 5px; border-radius:4px; font-size:.9em; }
+pre { background:var(--code); padding:12px 14px; border-radius:6px; overflow-x:auto; }
+pre code { padding:0; background:none; }
+table { border-collapse:collapse; width:100%; display:block; overflow-x:auto; font-size:14px; }
+th, td { border:1px solid var(--line); padding:6px 9px; text-align:left; vertical-align:top; }
+th { background:var(--code); }
+</style>
+</head>
+<body>
+<header>
+  <b>Gemma 4 × PrestaShop</b>
+  <a href="#README.md">Projet</a>
+  <a href="#docs/PROTOCOLE.md">Protocole</a>
+  <a href="#docs/PILOTE.md">Pilote</a>
+  <a href="#docs/DONNEES_FT.md">Données FT</a>
+  <a href="#docs/VOCABULAIRE.md">Vocabulaire</a>
+  <a href="#docs/GLOSSAIRE.md">Glossaire</a>
+  <a href="#docs/CATALOGUE.md">Catalogue</a>
+  <a href="#ETAT.md">État</a>
+  <a href="#DECISIONS.md">Décisions</a>
+  <a href="#REGLES.md">Règles</a>
+  <a href="#KIT.md">Kit</a>
+</header>
+<main id="c">Chargement…</main>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script>
+async function show() {
+  const f = decodeURIComponent(location.hash.slice(1)) || 'README.md';
+  document.querySelectorAll('header a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + f));
+  const r = await fetch(f, { cache: 'no-cache' });
+  const c = document.getElementById('c');
+  c.innerHTML = r.ok ? marked.parse(await r.text()) : 'Page introuvable.';
+  // liens internes .md → navigation par hash
+  c.querySelectorAll('a[href$=".md"]').forEach(a => {
+    const h = a.getAttribute('href'); if (/^https?:/.test(h)) return;
+    a.href = '#' + (f.includes('/') && !h.includes('/') ? f.replace(/[^/]+$/, '') + h : h);
+  });
+  window.scrollTo(0, 0);
+}
+addEventListener('hashchange', show); show();
+</script>
+</body>
+</html>

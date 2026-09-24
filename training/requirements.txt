@@ -1,0 +1,6 @@
+# Fine-tuning QLoRA (PC CUDA ou Kaggle). PyTorch CUDA à installer d'abord : https://pytorch.org/get-started/locally/
+transformers>=4.56
+peft>=0.17
+datasets>=3.0
+accelerate>=1.10
+bitsandbytes>=0.47
