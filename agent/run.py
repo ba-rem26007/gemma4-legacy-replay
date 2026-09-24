@@ -55,7 +55,21 @@ def replay_spec(pr):
     return "\n\n".join(p.read_text() for p in sorted(d.glob("*.spec.js"))) if d.exists() else ""
 
 
-def run_bug(bug, condition, model, retries, out):
+def scripted(bug):
+    """Politique « reconstruit » : réponses tirées du chemin reconstruit (aucun modèle) → valide la chaîne."""
+    sys.path.insert(0, str(ROOT / "trajectories"))
+    import reconstruct
+    msgs, why = reconstruct.build(bug)
+    if not msgs:
+        raise SystemExit(f"#{bug['pr']} : chemin non reconstructible ({why})")
+    replies = iter(m["content"] for m in msgs if m["role"] == "assistant")
+    return lambda _msgs, _model: (next(replies, ""), {})
+
+
+def run_bug(bug, condition, model, retries, out, policy="llm"):
+    global chat
+    if policy == "reconstruit":
+        chat = scripted(bug)
     out.mkdir(parents=True, exist_ok=True)
     trace = open(out / "trace.jsonl", "w")
     base = bug["base_commit"]
@@ -111,14 +125,28 @@ def main():
     ap.add_argument("--condition", default="B", choices=["A", "B", "C", "D"])
     ap.add_argument("--model", default=os.environ.get("LLM_MODEL", "gemma-4-26b-a4b-it"))
     ap.add_argument("--retries", type=int, default=2)
+    ap.add_argument("--policy", default="llm", choices=["llm", "reconstruit"],
+                    help="reconstruit = rejoue le chemin reconstruit du correctif officiel (démo sans modèle)")
+    ap.add_argument("--list-models", action="store_true", help="liste les modèles gemma de l'API et quitte")
     a = ap.parse_args()
+    if a.list_models:
+        base = os.environ.get("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai").rstrip("/")
+        req = urllib.request.Request(f"{base}/models", headers={"Authorization": f"Bearer {os.environ.get('GEMMA_API_KEY', '')}"})
+        print("\n".join(m["id"] for m in json.loads(urllib.request.urlopen(req).read())["data"] if "gemma" in m["id"]))
+        return
+    if a.policy == "reconstruit":
+        a.model = "reconstruit"
     cat = catalog()
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S") + f"-{a.condition}"
     root = ROOT / "runs" / run_id
     res = []
     for pr in a.bugs:
         print(f"== #{pr} condition {a.condition} ({a.model})", flush=True)
-        r = run_bug(cat[pr], a.condition, a.model, a.retries, root / str(pr))
+        try:
+            r = run_bug(cat[pr], a.condition, a.model, a.retries, root / str(pr), a.policy)
+        except (SystemExit, RuntimeError) as e:
+            print(f"   ignoré : {e}", flush=True)
+            continue
         print(json.dumps({k: r[k] for k in ("applied", "fixed", "regression", "loc_hit", "turns")}), flush=True)
         res.append(r)
     summary = {"run": run_id, "condition": a.condition, "model": a.model, "n": len(res),

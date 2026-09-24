@@ -27,7 +27,16 @@ Mis à jour le 2026-09-24.
 - **Glossaire** : format fixé, `glossaire/glossaire.csv` (4 graines), `docs/GLOSSAIRE.md`. `bench/glossary_mine.py` (modes bugs et gitlog) → `glossaire/candidats_gitlog.csv` (1 723 paires, coupure provisoire au 2025-06-01), **à relire par Rémi**.
 - Outils : `tmux.sh` (session tmux avec Claude), `kg.sh` (boucle Kaggle), site `site/`.
 
+## Démo 1 (2026-09-24) : voir docs/DEMO.md
+- `agent/flow.py` (déroulé fixe, format commun éval/entraînement), `agent/run.py` (API compatible OpenAI, politique `reconstruit`), `bench/eval.py`.
+- Chaîne de bout en bout validée sur #35322 et #35902 (patch appliqué, replay OK, aucune régression).
+- `trajectories/reconstruct.py` : **424 chemins vérifiés** (coupure provisoire au 2025-06-01, 58 exclus pour étanchéité) → `trajectories/train.jsonl`.
+- `training/train_qlora.py` : QLoRA, loss sur les tours assistant uniquement, reprise auto.
+- Dépôt privé : https://github.com/ba-rem26007/gemma4-legacy-replay (`./setup.sh` après clone).
+- Catalogue étendu : **1 007 bugs** (2019-07 → 2026-09).
+
 ## TODO (ordre)
+0. [ ] **Clé Gemma dans .env** → runs A/B réels sur la démo.
 1. [ ] Phase 0 : texte officiel des 2 compétitions dans `REGLES.md` (Rémi colle le texte), puis signaler les points qui touchent le plan.
 2. [ ] Phase 1 : `RELATED.md` (liens vérifiés uniquement) ; date de coupure de Gemma 4 (model card).
 3. [ ] Phase 2 : `mergedAt` dans `select.py`, split TEST/TRAIN, `data/bugs_*.csv` (sortir `data/` du `.gitignore` pour les CSV), `data/ETANCHEITE.md`.
