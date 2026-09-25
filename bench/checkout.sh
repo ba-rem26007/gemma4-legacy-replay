@@ -6,12 +6,25 @@ B="$(cd "$(dirname "$0")" && pwd)"; PS="$B/ps"; ENV="$B/env"
 PR="${1:?pr}"; MODE="${2:-pre}"
 export PS_PORT="${PS_PORT:-8081}"
 
-read -r BASE MERGE FILES < <(python3 -c "
+read -r BASE MERGE FILES BRANCH < <(python3 -c "
 import json,sys
-b=next(b for b in map(json.loads,open('$B/bugs.jsonl')) if b['pr']==$PR)
-print(b['base_commit'],b['merge_commit'],','.join(b['files']))")
-export PS_TAG="$(git -C "$PS" describe --tags --abbrev=0 --match '8.1.[0-9]' "$BASE")"
-echo "PR #$PR  base=${BASE:0:10}  image=prestashop:$PS_TAG  mode=$MODE"
+b=next(b for b in map(json.loads,open('$B/catalog.jsonl')) if b['pr']==$PR)
+print(b['base_commit'],b['merge_commit'],','.join(b['files']),b.get('branch',''))")
+# Release la plus proche AVANT le commit de base (8.x/9.x, sans rc/beta) ; à défaut, première release APRÈS
+REL="$(git -C "$PS" describe --tags --abbrev=0 --match '[89].[0-9].[0-9]' "$BASE" 2>/dev/null || true)"
+case "$REL" in 9.*) ;; *) [ "$(git -C "$PS" merge-base --is-ancestor 9.0.0 "$BASE" && echo y)" = y ] && REL="" ;; esac
+[ -z "$REL" ] && REL="$(git -C "$PS" tag --contains "$BASE" --sort=v:refname | grep -E '^9\.[0-9]\.[0-9]$' | head -1)"
+# Branche 9.1.x développée avant la release 9.1.0 : image 9.1.0 minimum
+[ "$BRANCH" = "9.1.x" ] && case "$REL" in 9.1.*) ;; *) REL="9.1.0" ;; esac
+# Image Docker : 8.x → tag = version ; 9.x → variante « classic » (thème classic, PHP 8.1)
+case "$REL" in
+  9.0.*) IMG="9.0.3-3.0-classic-8.1" ;;
+  9.1.0|9.1.1) IMG="$REL-4.0-classic-8.1" ;;
+  9.1.*) IMG="$REL-5.0-classic-8.1" ;;
+  *) IMG="$REL" ;;
+esac
+export PS_TAG="$IMG"
+echo "PR #$PR  base=${BASE:0:10}  release=$REL  image=prestashop:$PS_TAG  mode=$MODE"
 
 # (re)démarre la stack si l'image a changé
 CUR="$(docker compose -f "$ENV/docker-compose.yml" images ps --format json 2>/dev/null | python3 -c 'import sys,json;d=sys.stdin.read().strip();print(json.loads(d)[0]["Tag"] if d.startswith("[") and d!="[]" else "")' || true)"
