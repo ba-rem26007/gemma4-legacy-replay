@@ -26,11 +26,13 @@ Mis à jour : 2026-09-25. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 **Résultats**
 - Démo pilotes (chemins reconstruits) : 3/3.
 - Premier run réel Gemma 4 31B sur pilotes : A 1/2, B 0/3.
-- **Éval TEST en cours** (Gemma 4 31B, 1 run/bug) : A 3/22 · **R 4/16** (fine-tuning simulé). Régressions en cours de run non fiables (anti-régression déplacée avant l'oracle ; `bench/reeval.py` à lancer en fin de run).
+- **Éval TEST** : essai 2 (environnement propre) A 12/33 · R 11/33 → pas de gain visible de R ; essais 3-4 en cours. Essai 1 faussé par l'environnement.
+- (historique) **Éval TEST en cours** (Gemma 4 31B, 1 run/bug) : A 3/22 · **R 4/16** (fine-tuning simulé). Régressions en cours de run non fiables (anti-régression déplacée avant l'oracle ; `bench/reeval.py` à lancer en fin de run).
 - Oracles automatiques par différentiel : **0/12** (résultat négatif, à publier).
 - Coût : **0 €** (Gemma gratuit sur l'API ; quota 16 000 tokens/min).
 
 ## TODO (ordre)
+0. [ ] **PRIORITÉ (jalon 20 oct.) : condition B sur TEST** = tests de rejeu générés par la chaîne (phase 4) → démontrer Q1. Sans ça, pas de thèse.
 1. [ ] Fin des runs A/R → `bench/reeval.py` → tableau final (docs/DEMO.md ou docs/RESULTATS.md).
 2. [ ] Tests TRAIN à grande échelle : Gemma écrit le test depuis ticket + correctif, validé pre/post automatiquement (proposé, en attente de GO).
 3. [ ] Condition C (glossaire relu par Rémi) ; 3 runs par condition.
