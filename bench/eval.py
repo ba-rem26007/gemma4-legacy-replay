@@ -51,8 +51,10 @@ def _evaluate(pr, patch):
     if code != 0:
         return {"pr": pr, "applied": False, "fixed": False, "regression": None,
                 "replay_error": out[-800:], "seconds": round(time.time() - t)}
+    # anti-régression AVANT l'oracle : base remise à zéro + patch, sans l'état laissé par setup.sql / le test
+    reg = not smoke()
     code, rout = sh(f"{B}/replay/run.sh {pr}")
-    return {"pr": pr, "applied": True, "fixed": code == 0, "regression": not smoke(),
+    return {"pr": pr, "applied": True, "fixed": code == 0, "regression": reg,
             "replay_error": "" if code == 0 else replay_error(rout), "seconds": round(time.time() - t)}
 
 
