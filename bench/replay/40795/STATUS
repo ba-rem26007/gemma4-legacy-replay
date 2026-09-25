@@ -1,0 +1,2 @@
+exclu:nécessite un module tiers
+Le fatal n'apparaît que si un module accroché à actionCartSave appelle Cart::getProducts()/Product::getPriceStatic() lors du changement de langue ; le seul module natif accroché (ps_facebook) ne fait rien sans pixel configuré et sans action=update. Aucun effet observable sans module tiers.

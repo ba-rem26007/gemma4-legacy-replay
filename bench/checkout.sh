@@ -29,14 +29,45 @@ esac
 export PS_TAG="$IMG"
 echo "PR #$PR  base=${BASE:0:10}  release=$REL  image=prestashop:$PS_TAG  mode=$MODE"
 
-# (re)démarre la stack si l'image a changé
+# État de l'instance (hôte) : release courante + fichiers superposés au passage précédent
+STATE="$ENV/.state-$PROJ"; KEEP="$ENV/.keep-$PROJ"
+CUR_REL="$(sed -n 1p "$STATE" 2>/dev/null || true)"; PREV_FILES="$(sed -n 2p "$STATE" 2>/dev/null || true)"
 CUR="$($DC images ps --format json 2>/dev/null | python3 -c 'import sys,json;d=sys.stdin.read().strip();print(json.loads(d)[0]["Tag"] if d.startswith("[") and d!="[]" else "")' || true)"
+newer() { [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -1)" = "$2" ]; }
 if [ "$CUR" != "$PS_TAG" ]; then
-  $DC down -v >/dev/null 2>&1 || true
-  $DC up -d
+  if [ -n "$CUR" ] && [ "${CUR_REL%.*}" = "${REL%.*}" ] && newer "$CUR_REL" "$REL" && [ "${REL%%.*}" = 9 ]; then
+    # MONTÉE INCRÉMENTALE (même branche, version plus récente) : on garde la base MySQL,
+    # seul le code change (schéma identique en 9.1.x : install-dev/data/db_structure.sql inchangé).
+    echo "montée $CUR_REL → $REL (base conservée)"
+    OLD="$($DC ps -q ps)"; rm -rf "$KEEP"; mkdir -p "$KEEP"
+    docker cp "$OLD:/var/www/html/app/config/parameters.php" "$KEEP/parameters.php"
+    # fichiers générés à l'installation (absents de l'image) : images, .htaccess (URL simplifiées), robots.txt
+    docker exec "$OLD" sh -c 'cd /var/www/html && tar -cf - img $(ls -d .htaccess robots.txt 2>/dev/null)' > "$KEEP/img.tar"
+    PS_INSTALL_AUTO=0 $DC up -d --no-deps ps
+    C="$($DC ps -q ps)"
+    echo -n "attente démarrage"; until docker exec "$C" test -d /var/www/html/admin-dev 2>/dev/null; do echo -n .; sleep 3; done; echo
+    docker cp "$KEEP/parameters.php" "$C:/var/www/html/app/config/parameters.php"
+    docker exec -i "$C" tar -C /var/www/html -xf - < "$KEEP/img.tar"
+    docker exec -w /var/www/html "$C" sh -c "rm -rf install install-done; chown www-data: app/config/parameters.php; chown -R www-data: img var .htaccess 2>/dev/null; rm -rf var/cache/* 2>/dev/null; true"
+  else
+    $DC down -v >/dev/null 2>&1 || true
+    PS_INSTALL_AUTO=1 $DC up -d
+  fi
+  PREV_FILES=""
 fi
 C="$($DC ps -q ps)"
 echo -n "attente install"; until curl -sf -o /dev/null "http://localhost:$PS_PORT/"; do echo -n .; sleep 5; done; echo " ok"
+
+# Remet dans l'état de la release les fichiers superposés au passage précédent (évite la contamination entre bugs)
+IFS=, read -ra PF <<< "$PREV_FILES"
+for f in "${PF[@]}"; do
+  [ -z "$f" ] && continue
+  tmp="$(mktemp)"
+  if git -C "$PS" show "$REL:$f" > "$tmp" 2>/dev/null; then docker cp "$tmp" "$C:/var/www/html/$f"; docker exec "$C" chown www-data: "/var/www/html/$f"
+  else docker exec "$C" rm -f "/var/www/html/$f"; fi
+  rm -f "$tmp"
+done
+printf '%s\n%s\n' "$REL" "$FILES" > "$STATE"
 
 # Fichiers touchés : état pre (base) ou post (merge), puis patch éventuel
 REF="$BASE"; [ "$MODE" = post ] && REF="$MERGE"
@@ -49,5 +80,5 @@ for f in "${FS[@]}"; do
 done
 if [ -f "$MODE" ]; then docker cp "$MODE" "$C:/tmp/p.diff"; docker exec -w /var/www/html "$C" patch -p1 < /dev/null -i /tmp/p.diff; fi
 # chown ciblé (un chown -R sur tout l'arbre force la recopie overlayfs de milliers de fichiers)
-docker exec -w /var/www/html "$C" sh -c "chown www-data: ${FS[*]} 2>/dev/null; rm -rf var/cache/*"
+docker exec -w /var/www/html "$C" sh -c "chown www-data: ${FS[*]} 2>/dev/null; rm -rf var/cache/* 2>/dev/null; true"
 echo "prêt : http://localhost:$PS_PORT/  BO : http://localhost:$PS_PORT/admin-dev  (demo@prestashop.com / prestashop_demo)"

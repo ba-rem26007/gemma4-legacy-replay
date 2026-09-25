@@ -168,7 +168,8 @@ def main():
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S") + f"-{a.condition}"
     root = ROOT / "runs" / run_id
     res = []
-    for pr in a.bugs:
+    # du plus ancien au plus récent : les versions montent de façon incrémentale (base conservée, pas de réinstallation)
+    for pr in sorted(a.bugs, key=lambda p: cat[p]["merged_at"] or ""):
         print(f"== #{pr} condition {a.condition} ({a.model})", flush=True)
         try:
             r = run_bug(cat[pr], a.condition, a.model, a.retries, root / str(pr), a.policy)
