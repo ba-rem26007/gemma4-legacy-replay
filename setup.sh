@@ -3,7 +3,7 @@
 # Usage : ./setup.sh [--no-playwright]
 set -euo pipefail
 cd "$(dirname "$0")"
-[ -f .env ] || cp .env.example .env
+[ -f .env ] || cp .env.local.example .env
 if [ ! -d bench/ps/.git ]; then
   git clone --no-checkout https://github.com/PrestaShop/PrestaShop.git bench/ps
 fi

@@ -29,21 +29,27 @@ def load_env():
                 os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
-def chat(messages, model, temperature=0.2, seed=42, max_tokens=2048):
+def chat(messages, model, temperature=0.2, seed=42, max_tokens=4096):
+    """Appel chat/completions compatible OpenAI via curl (urllib bloque en IPv6 sur ce serveur).
+    Les blocs <thought>…</thought> de Gemma 4 sont retirés de la réponse (conservés dans la trace brute)."""
+    import re, subprocess
     base = os.environ.get("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai").rstrip("/")
-    body = {"model": model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens, "seed": seed}
-    req = urllib.request.Request(f"{base}/chat/completions", json.dumps(body).encode(),
-                                 {"Content-Type": "application/json",
-                                  "Authorization": f"Bearer {os.environ.get('GEMMA_API_KEY', '')}"})
+    body = json.dumps({"model": model, "messages": messages, "temperature": temperature,
+                       "max_tokens": max_tokens})  # seed non supporté par l'API Gemini (fixé en local)
     for attempt in range(4):
-        try:
-            with urllib.request.urlopen(req, timeout=600) as r:
-                d = json.loads(r.read())
-            return d["choices"][0]["message"]["content"] or "", d.get("usage", {})
-        except urllib.error.HTTPError as e:
-            if e.code in (429, 500, 503) and attempt < 3:
-                time.sleep(20 * (attempt + 1)); continue
-            raise RuntimeError(f"LLM HTTP {e.code}: {e.read().decode()[:300]}")
+        r = subprocess.run(["curl", "-s", "-m", "600", "-w", "\n%{http_code}", f"{base}/chat/completions",
+                            "-H", "Content-Type: application/json",
+                            "-H", f"Authorization: Bearer {os.environ.get('GEMMA_API_KEY', '')}",
+                            "--data-binary", "@-"], input=body, capture_output=True, text=True)
+        out, _, code = r.stdout.rpartition("\n")
+        if code == "200":
+            d = json.loads(out)
+            raw = d["choices"][0]["message"].get("content") or ""
+            clean = re.sub(r"<thought>.*?(</thought>|$)", "", raw, flags=re.S).strip()
+            return clean, {**d.get("usage", {}), "raw_len": len(raw)}
+        if code in ("429", "500", "503", "000") and attempt < 3:
+            time.sleep(20 * (attempt + 1)); continue
+        raise RuntimeError(f"LLM HTTP {code}: {out[:300]}")
 
 
 def catalog():
@@ -121,18 +127,19 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
 def main():
     load_env()
     ap = argparse.ArgumentParser()
-    ap.add_argument("--bugs", nargs="+", type=int, required=True)
+    ap.add_argument("--bugs", nargs="+", type=int, default=[])
     ap.add_argument("--condition", default="B", choices=["A", "B", "C", "D"])
-    ap.add_argument("--model", default=os.environ.get("LLM_MODEL", "gemma-4-26b-a4b-it"))
+    ap.add_argument("--model", default=os.environ.get("LLM_MODEL", "gemma-4-31b-it"))
     ap.add_argument("--retries", type=int, default=2)
     ap.add_argument("--policy", default="llm", choices=["llm", "reconstruit"],
                     help="reconstruit = rejoue le chemin reconstruit du correctif officiel (démo sans modèle)")
     ap.add_argument("--list-models", action="store_true", help="liste les modèles gemma de l'API et quitte")
     a = ap.parse_args()
     if a.list_models:
-        base = os.environ.get("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai").rstrip("/")
-        req = urllib.request.Request(f"{base}/models", headers={"Authorization": f"Bearer {os.environ.get('GEMMA_API_KEY', '')}"})
-        print("\n".join(m["id"] for m in json.loads(urllib.request.urlopen(req).read())["data"] if "gemma" in m["id"]))
+        import subprocess
+        out = subprocess.run(["curl", "-s", "-m", "30", "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
+                              "-H", f"x-goog-api-key: {os.environ.get('GEMMA_API_KEY', '')}"], capture_output=True, text=True).stdout
+        print("\n".join(m["name"].split("/")[1] for m in json.loads(out).get("models", []) if "gemma" in m["name"]))
         return
     if a.policy == "reconstruit":
         a.model = "reconstruit"
