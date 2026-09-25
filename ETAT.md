@@ -36,7 +36,7 @@ Mis à jour le 2026-09-24.
 - Catalogue étendu : **1 007 bugs** (2019-07 → 2026-09).
 
 ## TODO (ordre)
-0. [ ] **Clé Gemma dans .env** → runs A/B réels sur la démo.
+0. [x] Clé Gemma (AI Studio) : premier run réel Gemma 4 31B → A 1/2, B 0/3 (voir docs/DEMO.md §4). **À faire** : Ollama local (graine fixe, pas de quota), 3 runs par condition, condition C (glossaire).
 1. [ ] Phase 0 : texte officiel des 2 compétitions dans `REGLES.md` (Rémi colle le texte), puis signaler les points qui touchent le plan.
 2. [ ] Phase 1 : `RELATED.md` (liens vérifiés uniquement) ; date de coupure de Gemma 4 (model card).
 3. [ ] Phase 2 : `mergedAt` dans `select.py`, split TEST/TRAIN, `data/bugs_*.csv` (sortir `data/` du `.gitignore` pour les CSV), `data/ETANCHEITE.md`.

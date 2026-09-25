@@ -36,7 +36,7 @@ def chat(messages, model, temperature=0.2, seed=42, max_tokens=16384):
     base = os.environ.get("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai").rstrip("/")
     body = json.dumps({"model": model, "messages": messages, "temperature": temperature,
                        "max_tokens": max_tokens})  # seed non supporté par l'API Gemini (fixé en local)
-    for attempt in range(4):
+    for attempt in range(7):
         r = subprocess.run(["curl", "-s", "-m", "600", "-w", "\n%{http_code}", f"{base}/chat/completions",
                             "-H", "Content-Type: application/json",
                             "-H", f"Authorization: Bearer {os.environ.get('GEMMA_API_KEY', '')}",
@@ -47,9 +47,12 @@ def chat(messages, model, temperature=0.2, seed=42, max_tokens=16384):
             raw = d["choices"][0]["message"].get("content") or ""
             clean = re.sub(r"<thought>.*?(</thought>|$)", "", raw, flags=re.S).strip()
             return clean, {**d.get("usage", {}), "raw_len": len(raw)}
-        if code in ("429", "500", "503", "000") and attempt < 3:
-            time.sleep(20 * (attempt + 1)); continue
-        raise RuntimeError(f"LLM HTTP {code}: {out[:300]}")
+        if code in ("429", "500", "503", "000") and attempt < 6:
+            m = re.search(r'"retryDelay":\s*"(\d+)', out)
+            wait = int(m.group(1)) + 5 if m else 60 * (attempt + 1)
+            print(f"   HTTP {code}, nouvel essai dans {wait}s", flush=True)
+            time.sleep(wait); continue
+        raise RuntimeError(f"LLM HTTP {code}: {re.sub(r'\s+', ' ', out)[:1500]}")
 
 
 def catalog():
