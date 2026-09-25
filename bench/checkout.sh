@@ -4,7 +4,10 @@
 set -euo pipefail
 B="$(cd "$(dirname "$0")" && pwd)"; PS="$B/ps"; ENV="$B/env"
 PR="${1:?pr}"; MODE="${2:-pre}"
-export PS_PORT="${PS_PORT:-8081}"
+# Instance : PSB=1 (défaut, psbench/8081), PSB=2 (psbench2/8082), PSB=3 (psbench3/8083)…
+PSB="${PSB:-1}"; PROJ="psbench$([ "$PSB" = 1 ] || echo "$PSB")"
+export PS_PORT="${PS_PORT:-$((8080 + PSB))}"
+DC="docker compose -p $PROJ -f $ENV/docker-compose.yml"
 
 read -r BASE MERGE FILES BRANCH < <(python3 -c "
 import json,sys
@@ -27,12 +30,12 @@ export PS_TAG="$IMG"
 echo "PR #$PR  base=${BASE:0:10}  release=$REL  image=prestashop:$PS_TAG  mode=$MODE"
 
 # (re)démarre la stack si l'image a changé
-CUR="$(docker compose -f "$ENV/docker-compose.yml" images ps --format json 2>/dev/null | python3 -c 'import sys,json;d=sys.stdin.read().strip();print(json.loads(d)[0]["Tag"] if d.startswith("[") and d!="[]" else "")' || true)"
+CUR="$($DC images ps --format json 2>/dev/null | python3 -c 'import sys,json;d=sys.stdin.read().strip();print(json.loads(d)[0]["Tag"] if d.startswith("[") and d!="[]" else "")' || true)"
 if [ "$CUR" != "$PS_TAG" ]; then
-  docker compose -f "$ENV/docker-compose.yml" down -v >/dev/null 2>&1 || true
-  docker compose -f "$ENV/docker-compose.yml" up -d
+  $DC down -v >/dev/null 2>&1 || true
+  $DC up -d
 fi
-C="$(docker compose -f "$ENV/docker-compose.yml" ps -q ps)"
+C="$($DC ps -q ps)"
 echo -n "attente install"; until curl -sf -o /dev/null "http://localhost:$PS_PORT/"; do echo -n .; sleep 5; done; echo " ok"
 
 # Fichiers touchés : état pre (base) ou post (merge), puis patch éventuel

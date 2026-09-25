@@ -12,10 +12,11 @@ __pycache__/
 bench/ps/
 bench/replay/node_modules/
 bench/replay/test-results/
-bench/replay/results.json
+bench/replay/results*.json
+bench/replay/test-results*/
 bench/replay/.auth/
 bench/train_20*.jsonl
 runs/*/*/trace.jsonl.tmp
 training/lora/
 # runs : on garde les traces (données de fine-tuning futures)
-bench/.eval.lock
+bench/.eval*.lock

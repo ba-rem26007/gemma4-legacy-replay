@@ -1,5 +1,4 @@
 # PrestaShop release (image officielle) + MySQL. Tag choisi par checkout.sh selon le bug.
-name: psbench
 services:
   db:
     image: mysql:8.0

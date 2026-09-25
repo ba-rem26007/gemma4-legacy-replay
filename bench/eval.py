@@ -5,11 +5,12 @@ Usage : python3 bench/eval.py <pr> <patch.diff|pre|post>
 Sortie JSON : {"pr", "applied", "fixed", "regression", "replay_error", "seconds"}
 Contrôle : post → fixed=true ; pre (patch vide) → fixed=false.
 """
-import json, re, subprocess, sys, time, urllib.request
+import json, os, re, subprocess, sys, time, urllib.request
 from pathlib import Path
 
 B = Path(__file__).resolve().parent
-PORT = 8081
+PSB = os.environ.get("PSB", "1")
+PORT = int(os.environ.get("PS_PORT", 8080 + int(PSB)))
 
 
 def sh(cmd, timeout=900):
@@ -39,7 +40,7 @@ def replay_error(out):
 def evaluate(pr, patch):
     """Un seul accès à la stack Docker à la fois (verrou fichier)."""
     import fcntl
-    with open(B / ".eval.lock", "w") as lock:
+    with open(B / f".eval{PSB}.lock", "w") as lock:  # un verrou par instance
         fcntl.flock(lock, fcntl.LOCK_EX)
         return _evaluate(pr, patch)
 

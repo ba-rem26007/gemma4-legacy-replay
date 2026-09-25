@@ -6,5 +6,5 @@ setup('connexion BO', async ({ page }) => {
   await page.fill('#passwd', 'prestashop_demo');
   await page.click('#submit_login');
   await page.waitForURL(/AdminDashboard/);
-  await page.context().storageState({ path: '.auth/bo.json' });
+  await page.context().storageState({ path: `.auth/bo-${process.env.PS_PORT || 8081}.json` });
 });

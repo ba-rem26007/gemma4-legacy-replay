@@ -36,6 +36,9 @@ def main():
         elif r["parcours_repro"] not in ("fo", "bo", "fo+bo", "http"):
             reason = "exclu:parcours_inconnu"
         prev = old.get(str(c["pr"]), {}).get("statut", "")
+        st = HERE / "replay" / str(c["pr"]) / "STATUS"  # écrit lors de la validation pre/post de l'oracle
+        if st.exists():
+            prev = st.read_text().splitlines()[0].strip() or prev
         r["statut"] = prev if prev and not prev.startswith("exclu:js") else (reason or "candidat")
         if r["statut"].startswith("exclu"):
             excl[r["statut"]] = excl.get(r["statut"], 0) + 1

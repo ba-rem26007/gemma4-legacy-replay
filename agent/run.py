@@ -61,7 +61,7 @@ def catalog():
 
 def replay_spec(pr):
     d = ROOT / "bench" / "replay" / str(pr)
-    return "\n\n".join(p.read_text() for p in sorted(d.glob("*.spec.js"))) if d.exists() else ""
+    return "\n\n".join(p.read_text() for p in sorted(d.glob("replay*.spec.js"))) if d.exists() else ""  # jamais oracle*
 
 
 def scripted(bug):
