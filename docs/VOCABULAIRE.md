@@ -12,13 +12,19 @@
 | **Parcours** | Suite de clics sur le front ou le BO, déclarée en YAML, pilotée par Playwright | `replay/` |
 | **Test de rejeu (replay)** | Parcours rejoué et comparé au golden master : le **vérificateur** donné à l'agent | `bench/replay/<pr>/` |
 | **Golden master** | Réponses HTTP et SQL capturées sur le code de référence, normalisées (tokens, dates, ids) | `replay/` |
-| **Oracle** | Test « échoue avant / passe après » dérivé du correctif officiel, **caché à l'agent**. Il décide si un bug est résolu | `eval/` |
+| **Oracle** | Test « échoue avant / passe après » dérivé du correctif officiel, **caché à l'agent**. Il décide si un bug est résolu | `bench/replay/<pr>/oracle*.spec.js` |
 | **Régression** | Un test de rejeu qui passait casse après le patch de l'agent | `eval/results.csv` |
 | **Contexte PrestaShop** | Outil qui donne la connaissance métier : schéma de base, `_lang`/`_shop`, déclinaisons, ObjectModel, hooks, overrides, legacy vs Symfony | `agent/` |
 | **Condition A/B/C/D** | A = ticket seul · B = + replay · C = + contexte PrestaShop · D = C + modèle fine-tuné | `docs/PROTOCOLE.md` |
 | **Glossaire métier** | Vocabulaire du ticket (FR/EN) → symboles du code (classes, tables, méthodes). Contenu de l'outil de la condition C | `glossaire/glossaire.csv` |
 | **Localisation** | Étape 1 de l'agent : trouver les fichiers à modifier. Mesurée par comparaison avec le diff officiel | `eval/` |
 | **Catalogue** | Fiche déterministe par bug : ticket, résolution, fonctions touchées, date | `bench/catalog.jsonl` |
+| **Condition R** | « Fine-tuning simulé » : les 2 corrections TRAIN les plus proches du ticket sont injectées en exemples | `agent/fewshot.py` |
+| **Instance** | Une stack Docker PrestaShop indépendante : `PSB=n` → projet `psbench<n>`, port `808n` | `bench/checkout.sh` |
+| **Reset** | Restauration de l'instantané de base pris après l'installation, avant chaque bug | `bench/env/.snap-*` |
+| **Montée incrémentale** | Passage à une version plus récente de la même branche en gardant la base (9.1.x) | `bench/checkout.sh` |
+| **Rattrapage de code** | Application des fichiers serveur modifiés entre la release de l'image et le commit de base | `bench/checkout.sh` |
+| **Oracle automatique** | Test généré par différentiel pre/post des pages (sans modèle) | `bench/autooracle.py` |
 | **Déroulé fixe** | Étapes imposées à l'agent : localiser → lire → éditer → tester (pas d'agent libre) | `agent/` |
 | **Trajectoire** | Trace brute complète d'un run d'agent : entrée, décision, outil, résultat, temps, tokens | `runs/<run>/` |
 | **Chemin** | Trajectoire **condensée** et validée : uniquement les étapes utiles, au format exact des appels d'outils. C'est l'unité d'entraînement | `trajectories/train.jsonl` |

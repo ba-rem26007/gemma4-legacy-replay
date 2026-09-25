@@ -10,7 +10,8 @@ générés automatiquement (clics front/BO → appels enregistrés → replay).
 - `ETAT.md` — phase courante, fait, TODO, budget GPU (à tenir à jour à chaque étape)
 - `DECISIONS.md` — chaque choix structurant, daté
 - `REGLES.md` — règlement officiel + règles non négociables
-- `docs/PROTOCOLE.md`, `docs/DONNEES_FT.md`, `docs/PILOTE.md`, `docs/VOCABULAIRE.md`
+- `docs/PROCEDURES.md` — **toutes les commandes** (collecte, checkout, oracles, éval, agent, entraînement)
+- `docs/PROTOCOLE.md`, `docs/DONNEES_FT.md`, `docs/PILOTE.md`, `docs/VOCABULAIRE.md`, `docs/DEMO.md`
 
 ## Règles clés (voir REGLES.md)
 - Tâche = **corriger** un bug connu. Pas de chasse aux bugs, **jamais de sécurité**.
