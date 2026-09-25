@@ -29,14 +29,50 @@ def load_env():
                 os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
+RATE_FILE = ROOT / "runs" / "_rate.json"
+
+
+def rate_limit(est_tokens):
+    """Limiteur partagé entre processus : ≤ TPM_LIMIT tokens d'entrée par minute (quota Gemma 4 31B : 16 000)."""
+    import fcntl
+    limit = int(os.environ.get("TPM_LIMIT", 15000))
+    RATE_FILE.parent.mkdir(exist_ok=True)
+    while True:
+        with open(str(RATE_FILE) + ".lock", "w") as lk:
+            fcntl.flock(lk, fcntl.LOCK_EX)
+            now = time.time()
+            hist = [h for h in (json.loads(RATE_FILE.read_text()) if RATE_FILE.exists() else []) if now - h[0] < 62]
+            used = sum(h[1] for h in hist)
+            if used + est_tokens <= limit or not hist:
+                hist.append([now, est_tokens]); RATE_FILE.write_text(json.dumps(hist))
+                return
+            wait = 62 - (now - hist[0][0])
+        time.sleep(max(wait, 2))
+
+
+def fit(messages, max_tokens=13000):
+    """Plafond par requête : tronque les blocs CONTENU (fichiers lus) les plus longs si le prompt dépasse."""
+    est = lambda ms: sum(len(m["content"]) for m in ms) // 3
+    ms = [dict(m) for m in messages]
+    while est(ms) > max_tokens:
+        i = max((k for k, m in enumerate(ms) if m["role"] == "user"), key=lambda k: len(ms[k]["content"]))
+        c = ms[i]["content"]
+        if len(c) < 2000:
+            break
+        ms[i]["content"] = c[: int(len(c) * 0.7)] + "\n[… tronqué pour respecter le quota …]"
+    return ms, est(ms)
+
+
 def chat(messages, model, temperature=0.2, seed=42, max_tokens=16384):
     """Appel chat/completions compatible OpenAI via curl (urllib bloque en IPv6 sur ce serveur).
     Les blocs <thought>…</thought> de Gemma 4 sont retirés de la réponse (conservés dans la trace brute)."""
     import re, subprocess
     base = os.environ.get("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai").rstrip("/")
+    messages, est = fit(messages)
     body = json.dumps({"model": model, "messages": messages, "temperature": temperature,
                        "max_tokens": max_tokens})  # seed non supporté par l'API Gemini (fixé en local)
     for attempt in range(7):
+        rate_limit(est)
         r = subprocess.run(["curl", "-s", "-m", "600", "-w", "\n%{http_code}", f"{base}/chat/completions",
                             "-H", "Content-Type: application/json",
                             "-H", f"Authorization: Bearer {os.environ.get('GEMMA_API_KEY', '')}",
@@ -187,17 +223,28 @@ def main():
     cat = catalog()
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S") + f"-{a.condition}"
     root = ROOT / "runs" / run_id
-    res = []
+    res, skipped = [], []
     # du plus ancien au plus récent : les versions montent de façon incrémentale (base conservée, pas de réinstallation)
     for pr in sorted(a.bugs, key=lambda p: cat[p]["merged_at"] or ""):
         print(f"== #{pr} condition {a.condition} ({a.model})", flush=True)
         try:
             r = run_bug(cat[pr], a.condition, a.model, a.retries, root / str(pr), a.policy)
         except (SystemExit, RuntimeError) as e:
-            print(f"   ignoré : {e}", flush=True)
+            if "BUDGET" in str(e):
+                raise
+            print(f"   ignoré : {str(e)[:200]}", flush=True)
+            skipped.append(pr)
             continue
         print(json.dumps({k: r[k] for k in ("applied", "fixed", "regression", "loc_hit", "turns")}), flush=True)
         res.append(r)
+    for pr in skipped:  # seconde chance (quota) pour les bugs sautés
+        print(f"== #{pr} condition {a.condition} ({a.model}) [reprise]", flush=True)
+        try:
+            r = run_bug(cat[pr], a.condition, a.model, a.retries, root / str(pr), a.policy)
+            print(json.dumps({k: r[k] for k in ("applied", "fixed", "regression", "loc_hit", "turns")}), flush=True)
+            res.append(r)
+        except (SystemExit, RuntimeError) as e:
+            print(f"   ignoré définitivement : {str(e)[:200]}", flush=True)
     summary = {"run": run_id, "condition": a.condition, "model": a.model, "n": len(res),
                "fixed": sum(r["fixed"] for r in res), "loc_hit": sum(r["loc_hit"] for r in res), "results": res}
     (root / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1))
