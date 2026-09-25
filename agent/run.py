@@ -174,21 +174,40 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
         return reply
 
     reply = backtrack(reply)
+    # Retour d'exécution (B/C/D/R) : UNIQUEMENT les tests de rejeu visibles (replay*.spec.js) + anti-régression.
+    # L'oracle (oracle*.spec.js) n'est JAMAIS montré : il ne sert qu'au verdict final.
+    has_replay = bool(list((ROOT / "bench" / "replay" / str(bug["pr"])).glob("replay*.spec.js")))
+    feedback = condition != "A" and has_replay
+    feedbacks = []
     for attempt in range(retries + 1):
         state, errors = flow.apply_edits(base, flow.parse_edits(reply), state)
         diff = flow.to_diff(base, state) if state else ""
         (out / "patch.diff").write_text(diff)
-        if errors and not diff:
-            result = {"pr": bug["pr"], "applied": False, "fixed": False, "regression": None,
-                      "replay_error": "; ".join(errors)}
-        else:
-            result = evaluate(bug["pr"], str(out / "patch.diff")) if diff else {"pr": bug["pr"], "applied": False, "fixed": False, "regression": None, "replay_error": "aucune édition"}
-            if errors:
-                result["replay_error"] = ("; ".join(errors) + "\n" + result.get("replay_error", "")).strip()
-        # 4. TESTER : retour d'exécution seulement si la condition donne les tests (B, C, D)
-        if result["fixed"] or condition == "A" or attempt == retries:
+        if not feedback or attempt == retries:
             break
-        reply = backtrack(turn("corriger", flow.msg_test(result), "test", result))
+        if not diff:
+            fb = {"fixed": False, "replay_error": "; ".join(errors) or "aucune édition applicable"}
+        else:
+            fb = evaluate(bug["pr"], str(out / "patch.diff"), tests="replay")
+            if errors:
+                fb["replay_error"] = ("; ".join(errors) + "\n" + fb.get("replay_error", "")).strip()
+            if fb.get("regression"):
+                fb["fixed"] = False
+                fb["replay_error"] = ("RÉGRESSION : l'accueil de la boutique ou la connexion au back-office ne répond plus.\n"
+                                      + fb.get("replay_error", "")).strip()
+        feedbacks.append({k: fb.get(k) for k in ("fixed", "regression", "replay_error")})
+        if fb.get("fixed"):
+            break
+        reply = backtrack(turn("corriger", flow.msg_test(fb), "test", fb))
+    # VERDICT : oracle caché
+    if diff:
+        result = evaluate(bug["pr"], str(out / "patch.diff"), tests="oracle")
+        if errors:
+            result["edit_errors"] = "; ".join(errors)
+    else:
+        result = {"pr": bug["pr"], "applied": False, "fixed": False, "regression": None,
+                  "replay_error": "; ".join(errors) or "aucune édition"}
+    result["feedbacks"] = feedbacks
     result.update({"condition": condition, "model": model, "files_read": files, "keywords": kws,
                    "official_files": bug["files"],
                    "loc_hit": bool(set(files) & set(bug["files"])), "turns": len(msgs) // 2})

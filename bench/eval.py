@@ -37,15 +37,16 @@ def replay_error(out):
     return "\n".join(keep[:15])[:1500]
 
 
-def evaluate(pr, patch):
+def evaluate(pr, patch, tests="oracle"):
     """Un seul accès à la stack Docker à la fois (verrou fichier)."""
     import fcntl
     with open(B / f".eval{PSB}.lock", "w") as lock:  # un verrou par instance
         fcntl.flock(lock, fcntl.LOCK_EX)
-        return _evaluate(pr, patch)
+        return _evaluate(pr, patch, tests)
 
 
-def _evaluate(pr, patch):
+def _evaluate(pr, patch, tests="oracle"):
+    """tests = "oracle" (verdict, caché à l'agent) ou "replay" (retour donné à l'agent en B/C/D/R)."""
     t = time.time()
     code, out = sh(f"{B}/checkout.sh {pr} {patch}")
     if code != 0:
@@ -53,7 +54,7 @@ def _evaluate(pr, patch):
                 "replay_error": out[-800:], "seconds": round(time.time() - t)}
     # anti-régression AVANT l'oracle : base remise à zéro + patch, sans l'état laissé par setup.sql / le test
     reg = not smoke()
-    code, rout = sh(f"{B}/replay/run.sh {pr}")
+    code, rout = sh(f"{B}/replay/run.sh {pr} {tests}")
     return {"pr": pr, "applied": True, "fixed": code == 0, "regression": reg,
             "replay_error": "" if code == 0 else replay_error(rout), "seconds": round(time.time() - t)}
 

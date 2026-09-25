@@ -9,10 +9,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from eval import evaluate
 
+CAT = {json.loads(l)["pr"]: json.loads(l).get("merged_at") or "" for l in open(Path(__file__).resolve().parent / "catalog.jsonl")}
 for run in sys.argv[1:]:
-    for d in sorted(Path(run).iterdir()):
+    # du plus ancien au plus récent (montée de version incrémentale, pas de réinstallation)
+    dirs = [d for d in Path(run).iterdir() if d.is_dir() and d.name.isdigit()]
+    for d in sorted(dirs, key=lambda d: CAT.get(int(d.name), "")):
         p = d / "patch.diff"
-        if not d.is_dir() or not p.exists():
+        if not p.exists() or (d / "result_reeval.json").exists():
             continue
         r = evaluate(int(d.name), str(p)) if p.read_text().strip() else {"pr": int(d.name), "applied": False, "fixed": False, "regression": None}
         (d / "result_reeval.json").write_text(json.dumps(r, ensure_ascii=False, indent=1))
