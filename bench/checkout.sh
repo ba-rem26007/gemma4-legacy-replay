@@ -98,8 +98,10 @@ fi
 # RATTRAPAGE DE CODE : si le commit de base est POSTÉRIEUR à la release de l'image, on applique tous les fichiers
 # serveur (php/tpl/twig) modifiés entre les deux → le code est exactement celui du commit (ex. méthode arrivée en 9.1.2).
 DRIFT=()
-if git -C "$PS" merge-base --is-ancestor "$REL" "$BASE" 2>/dev/null; then
-  mapfile -t DRIFT < <(git -C "$PS" diff --name-only "$REL" "$BASE" -- '*.php' '*.tpl' '*.twig' ':!tests/**' ':!install-dev/**' ':!vendor/**')
+# DÉSACTIVÉ par défaut (DRIFT=1 pour l'activer) : sans les dépendances Composer / la config de l'image,
+# recopier les classes récentes casse le conteneur Symfony (BO 500/308) → faux négatifs à l'évaluation.
+if [ "${DRIFT:-0}" = 1 ] && git -C "$PS" merge-base --is-ancestor "$REL" "$BASE" 2>/dev/null; then
+  mapfile -t DRIFT < <(git -C "$PS" diff --name-only "$REL" "$BASE" -- '*.php' '*.tpl' '*.twig' '*.yml' '*.yaml' '*.xml' ':!tests/**' ':!install-dev/**' ':!vendor/**' ':!*.dist' ':!phpunit*' ':!.github/**')
   if [ "${#DRIFT[@]}" -gt 400 ]; then echo "rattrapage ignoré : ${#DRIFT[@]} fichiers (> 400)"; DRIFT=()
   elif [ "${#DRIFT[@]}" -gt 0 ]; then
     EXIST=(); for f in "${DRIFT[@]}"; do git -C "$PS" cat-file -e "$BASE:$f" 2>/dev/null && EXIST+=("$f") || docker exec "$C" rm -f "/var/www/html/$f"; done
@@ -121,4 +123,23 @@ done
 if [ -f "$MODE" ]; then docker cp "$MODE" "$C:/tmp/p.diff"; docker exec -w /var/www/html "$C" patch -p1 < /dev/null -i /tmp/p.diff; fi
 # chown ciblé (un chown -R sur tout l'arbre force la recopie overlayfs de milliers de fichiers)
 docker exec -w /var/www/html "$C" sh -c "chown www-data: ${FS[*]} 2>/dev/null; rm -rf var/cache/* 2>/dev/null; true"
+
+# SANTÉ : le rattrapage de code peut casser le conteneur Symfony (dépendances Composer absentes de l'image).
+# Si le BO ne répond plus alors qu'un rattrapage a été appliqué → on l'annule (fichiers de la release) et on repart
+# de la seule superposition des fichiers du bug.
+health() { local c; c=$(curl -s -o /dev/null -w "%{http_code}" -m 60 "http://localhost:$PS_PORT/admin-dev/index.php?controller=AdminLogin"); [ "$c" != 500 ] && [ "$c" != 000 ]; }
+if [ "${#DRIFT[@]}" -gt 0 ] && ! health; then
+  echo "rattrapage de code annulé : le BO répond 500 (dépendances absentes de l'image)"
+  EXIST=(); for f in "${DRIFT[@]}"; do git -C "$PS" cat-file -e "$REL:$f" 2>/dev/null && EXIST+=("$f") || docker exec "$C" rm -f "/var/www/html/$f"; done
+  [ "${#EXIST[@]}" -gt 0 ] && git -C "$PS" archive "$REL" -- "${EXIST[@]}" | docker exec -i "$C" tar -C /var/www/html -xf -
+  for f in "${FS[@]}"; do
+    tmp="$(mktemp)"
+    if git -C "$PS" show "$REF:$f" > "$tmp" 2>/dev/null; then docker cp "$tmp" "$C:/var/www/html/$f"; else docker exec "$C" rm -f "/var/www/html/$f"; fi
+    rm -f "$tmp"
+  done
+  if [ -f "$MODE" ]; then docker cp "$MODE" "$C:/tmp/p.diff"; docker exec -w /var/www/html "$C" patch -p1 -i /tmp/p.diff; fi
+  docker exec -w /var/www/html "$C" sh -c "rm -rf var/cache/* 2>/dev/null; true"
+  printf '%s\n%s\n' "$REL" "$(IFS=,; echo "${DRIFT[*]},$FILES")" > "$STATE"
+  echo "DRIFT=annule" >> "$STATE"
+fi
 echo "prêt : http://localhost:$PS_PORT/  BO : http://localhost:$PS_PORT/admin-dev  (demo@prestashop.com / prestashop_demo)"

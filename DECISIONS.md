@@ -19,3 +19,4 @@ Une entrée par choix structurant : date, décision, raison.
 - **2026-09-25 : Budget ≤ 30 €.** Gemma 4 sur l'API Gemini est gratuit (pas d'offre payante, seulement des quotas) ; garde-fou `--budget-eur` (compteur cumulé `runs/_budget.json`, prix via LLM_PRICE_IN/OUT) pour toute API payante.
 - **2026-09-25 : Tests écrits par Claude = oracles uniquement** (jugent un correctif), jamais données d'entraînement.
 - **2026-09-25 : Époque 1.6/1.7 → vivier TRAIN** (tickets 1.6 = description de PR, l'ancienne forge Jira n'étant plus en ligne). Oracles par différentiel automatique pre/post (`bench/autooracle.py`).
+- **2026-09-25 : Rattrapage de code DÉSACTIVÉ par défaut** (`DRIFT=1` pour l'activer). Recopier les classes PHP postérieures à la release casse le conteneur Symfony (dépendances Composer / services absents de l'image : BO 500/308). Les évaluations faites avec (checkout v2) sont à **réévaluer** (`bench/reeval.py`) après réinstallation des instances.
