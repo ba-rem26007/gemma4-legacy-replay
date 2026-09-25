@@ -19,8 +19,7 @@ test('changement de type -> standard remet cache_default_attribute à 0 partout'
 
   // Contexte boutique 1 (la page produit n'est pas disponible en contexte « toutes boutiques »)
   await page.goto('/admin-dev/');
-  const dash = await page.locator('a[href*="controller=AdminDashboard"]').first().getAttribute('href');
-  await page.goto(new URL(dash, page.url()).href + '&setShopContext=s-1');
+  await page.goto(page.url() + '&setShopContext=s-1');
   const href = await page.locator('a[href*="sell/catalog/products"]').first().getAttribute('href');
   const tok = href.match(/_token=([^&#]+)/)[1];
   await page.goto(`/admin-dev/index.php/sell/catalog/products/941468/edit?_token=${tok}`);

@@ -1,5 +1,10 @@
 const { test } = require('@playwright/test');
+const fs = require('fs');
+const S = '/tmp/claude-1000/-home-elrems-kaggle/144dfd91-272c-4a17-b325-fc1a6d449767/scratchpad/';
 test('x', async ({ page }) => { await require('./login')(page);
-  await page.goto('/admin-dev/');
-  console.log('URL', page.url(), await page.locator('a[href*="attribute-groups"]').count());
+  const href = await page.locator('a[href*="sell/orders"]').first().getAttribute('href');
+  const tok = href.match(/_token=([^&#]+)/)[1];
+  await page.goto(`/admin-dev/sell/orders/941665/view?_token=${tok}`);
+  fs.writeFileSync(S + 'page.html', await page.content());
+  await page.screenshot({ path: S + 'p.png' });
 });

@@ -1,8 +1,8 @@
 // Issue #41457 : avec « Ajouter l'année au numéro de facture » activé, le nom du fichier PDF
 // de facture ne contient plus que l'année (ex. 2026.pdf) car le numéro formaté contient un « / ».
-// setup.sql crée la facture n° 7706 de 2026 (préfixe #IN, année après le numéro).
+// setup.sql crée la facture n° 7706 de 2026 (préfixe FA en français, année après le numéro).
 // Vérifie que le nom de fichier proposé au téléchargement contient préfixe + numéro + année,
-// sans « / » (attendu : #IN007706-2026.pdf).
+// sans « / » (attendu : #FA007706-2026.pdf, et non 2026.pdf).
 const { test, expect } = require('@playwright/test');
 
 test('nom du PDF de facture complet quand l’année est ajoutée', async ({ page }) => {
@@ -13,7 +13,7 @@ test('nom du PDF de facture complet quand l’année est ajoutée', async ({ pag
   await page.locator('a:has-text("Oui")').first().click();
   const download = await dl;
   const name = download.suggestedFilename();
-  expect(name).toContain('007706');
-  expect(name).toContain('IN');
-  expect(name).toMatch(/2026\.pdf$/);
+  expect(name).not.toContain('/');
+  // préfixe (FA en français) + numéro sur 6 chiffres + année
+  expect(name).toMatch(/[A-Z]{2}007706\W?2026\.pdf$/);
 });
