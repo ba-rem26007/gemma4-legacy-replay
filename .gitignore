@@ -18,3 +18,4 @@ bench/train_20*.jsonl
 runs/*/*/trace.jsonl.tmp
 training/lora/
 # runs : on garde les traces (données de fine-tuning futures)
+bench/.eval.lock

@@ -7,15 +7,16 @@ Les réponses de l'agent sont celles du **chemin reconstruit** à partir du corr
 Ce run prouve que le format, les outils, l'application du patch et l'évaluation fonctionnent de bout en bout.
 
 ```
-python3 agent/run.py --bugs 35322 35902 --condition B --policy reconstruit
+python3 agent/run.py --bugs 35322 35384 35902 --condition B --policy reconstruit
 ```
 
 | Bug | Mots-clés (étape 1) | Fichier lu (étape 2) | Patch appliqué | Replay | Régression | Durée éval. |
 |---|---|---|---|---|---|---|
 | [#35322](https://github.com/PrestaShop/PrestaShop/pull/35322) frais de port HT/TTC (FO) | OrderDetailLazyArray, getShipping | src/Adapter/Presenter/Order/OrderDetailLazyArray.php | ✓ | ✓ corrigé | aucune | 9 s |
+| [#35384](https://github.com/PrestaShop/PrestaShop/pull/35384) stock, recherche à 2 mots-clés (BO) | StockController, listProductsAction | src/PrestaShopBundle/Controller/Api/StockController.php | ✓ | ✓ corrigé | aucune | ~15 s |
 | [#35902](https://github.com/PrestaShop/PrestaShop/pull/35902) quantité minimale (FO) | ProductController, displayAjaxRefresh… | controllers/front/ProductController.php | ✓ | ✓ corrigé | aucune | ~15 s |
 
-Trace complète de chaque tour (entrée, réponse, outil, résultat, temps) : `runs/20260924-233019-B/<pr>/trace.jsonl`, patch `patch.diff`, verdict `result.json`.
+Résultat : **3/3 corrigés, localisation 3/3, 0 régression** (run `runs/20260925-000132-B`, évaluations sérialisées par verrou). Trace complète de chaque tour (entrée, réponse, outil, résultat, temps) : `runs/20260925-000132-B/<pr>/trace.jsonl`, patch `patch.diff`, verdict `result.json`.
 
 ## 2. Données d'entraînement prêtes
 - `trajectories/train.jsonl` : **573 chemins reconstruits vérifiés** (vivier TRAIN, avant la coupure provisoire au 2025-06-01). Chaque chemin reproduit exactement le fichier corrigé. Aucun modèle n'a servi à les produire.
@@ -33,4 +34,3 @@ A = ticket seul · B = + test de rejeu + retour d'exécution (2 essais de correc
 ## Limites de cette démo
 - Les 2 bugs sont en vivier **TRAIN** (2024) : il s'agit d'une démo de la chaîne, pas d'une évaluation. L'évaluation se fera sur le vivier TEST (9.x, après la coupure).
 - Le test de rejeu a été écrit à la main ; la chaîne automatique de génération (phase 4) viendra ensuite.
-- #35384 n'est pas reconstructible en l'état (bloc SEARCH ambigu) : il faut élargir le contexte.

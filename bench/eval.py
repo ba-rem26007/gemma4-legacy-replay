@@ -37,6 +37,14 @@ def replay_error(out):
 
 
 def evaluate(pr, patch):
+    """Un seul accès à la stack Docker à la fois (verrou fichier)."""
+    import fcntl
+    with open(B / ".eval.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        return _evaluate(pr, patch)
+
+
+def _evaluate(pr, patch):
     t = time.time()
     code, out = sh(f"{B}/checkout.sh {pr} {patch}")
     if code != 0:
