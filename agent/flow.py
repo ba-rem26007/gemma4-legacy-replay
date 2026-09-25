@@ -14,7 +14,7 @@ CODE_EXT = ("php", "tpl", "twig", "js", "ts", "vue")
 MAX_FILES_READ, WINDOW, MAX_LINES_PER_FILE, MAX_GREP_FILES = 3, 30, 260, 25
 
 SYSTEM = """Tu es un agent qui corrige des bugs dans PrestaShop (PHP, legacy + Symfony).
-Tu suis un déroulé FIXE en étapes. À chaque étape, tu réponds UNIQUEMENT dans le format demandé, sans explication.
+Tu suis un déroulé FIXE en étapes. À chaque étape, réfléchis brièvement puis réponds UNIQUEMENT dans le format demandé, sans explication.
 1. LOCALISER : proposer des mots-clés de recherche (noms de classes, méthodes, variables, clés de traduction).
 2. LIRE : choisir au plus 3 fichiers à lire parmi les résultats de recherche.
 3. ÉDITER : produire des blocs SEARCH/REPLACE. Le texte SEARCH doit être copié EXACTEMENT depuis le fichier lu.

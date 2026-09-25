@@ -29,7 +29,7 @@ def load_env():
                 os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
-def chat(messages, model, temperature=0.2, seed=42, max_tokens=4096):
+def chat(messages, model, temperature=0.2, seed=42, max_tokens=16384):
     """Appel chat/completions compatible OpenAI via curl (urllib bloque en IPv6 sur ce serveur).
     Les blocs <thought>…</thought> de Gemma 4 sont retirés de la réponse (conservés dans la trace brute)."""
     import re, subprocess
