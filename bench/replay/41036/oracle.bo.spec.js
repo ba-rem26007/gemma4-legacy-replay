@@ -20,5 +20,5 @@ test('prénom/nom composés d’un espace : erreur de validation, pas de 500', a
   await page.waitForLoadState();
   await expect(page).toHaveURL(/customers\/new/);
   await expect(page.locator('#customer_first_name')).toBeVisible();
-  await expect(page.locator('form[name="customer"] .invalid-feedback, form[name="customer"] .form-error, form[name="customer"] .alert-danger').first()).toBeVisible();
+  await expect(page.getByText('Ce champ ne peut pas être vide').first()).toBeVisible();
 });

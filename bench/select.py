@@ -10,7 +10,7 @@ from pathlib import Path
 REPO = "PrestaShop/PrestaShop"
 BRANCH = "8.1.x"
 MAX_LINES, MAX_FILES = 60, 3
-SECURITY = re.compile(r"secur|xss|csrf|injection|sqli|vulnerab|exploit|cve|rce|privilege", re.I)
+SECURITY = re.compile(r"secur|xss|csrf|injection|sqli|vulnerab|exploit|cve|rce|privilege|forbid|sanitiz|htmlentit|strip_tags|permission|access right|escap", re.I)
 NON_UI = re.compile(r"^(tests?/|\.github/|composer\.|package|\.docker|docker|install-dev/)", re.I)
 HERE = Path(__file__).parent
 
@@ -34,11 +34,14 @@ def main():
     ap.add_argument("--max-lines", type=int, default=MAX_LINES)
     ap.add_argument("--max-files", type=int, default=MAX_FILES)
     ap.add_argument("--merged", default=None, help="fenêtre de merge GitHub, ex. 2022-01-01..2023-03-01")
+    ap.add_argument("--label", default="Bug fix", help="label GitHub requis ('' = aucun, pour 1.6/1.7)")
+    ap.add_argument("--type-bugfix", action="store_true", help="exiger « Type? | bug fix » dans la description de la PR")
+    ap.add_argument("--allow-no-issue", action="store_true", help="sans issue liée, le ticket = titre + description de la PR (1.6 : tickets sur l'ancienne forge)")
     ap.add_argument("--skip", type=int, default=0, help="ignorer les N PR les plus récentes (déjà traitées)")
     a = ap.parse_args()
 
     prs = json.loads(gh("pr", "list", "-R", REPO, "--state", "merged", *([] if a.branch == "all" else ["--base", a.branch]),
-                        "--label", "Bug fix", "--limit", str(a.limit),
+                        *(["--label", a.label] if a.label else []), "--limit", str(a.limit),
                         *(["--search", f"merged:{a.merged}"] if a.merged else []),
                         "--json", "number,title,body,additions,deletions,changedFiles,files,labels,mergeCommit,url,baseRefName"))
     prs = prs[a.skip:]
@@ -54,8 +57,13 @@ def main():
             reason = "securite"
         elif all(NON_UI.match(f) for f in files):
             reason = "non_ui"
+        if not reason and a.type_bugfix:
+            m = re.search(r"\|\s*Type\?\s*\|\s*([^|\n]*)", pr["body"] or "", re.I)
+            # 1.7 : ligne « Type? | bug fix » ; 1.6 (avant mi-2016) : préfixe « [-] » dans le titre
+            if not (m and "bug" in m.group(1).lower()) and not re.match(r"\s*\[-\]", pr["title"]):
+                reason = "pas_bugfix"
         issues = linked_issues(pr["body"] or "")
-        if not reason and not issues:
+        if not reason and not issues and not a.allow_no_issue:
             reason = "sans_issue"
         if reason:
             stats[reason] = stats.get(reason, 0) + 1
@@ -63,15 +71,23 @@ def main():
 
         try:
             issue = json.loads(gh("issue", "view", str(issues[0]), "-R", REPO,
-                              "--json", "number,title,body,labels"))
+                              "--json", "number,title,body,labels")) if issues else None
         except subprocess.CalledProcessError:
-            stats["issue_introuvable"] = stats.get("issue_introuvable", 0) + 1
-            continue
+            issue = None
+        if issue is None:
+            if not a.allow_no_issue:
+                stats["issue_introuvable"] = stats.get("issue_introuvable", 0) + 1
+                continue
+            # ticket de substitution : description de la PR (ticket d'origine sur l'ancienne forge Jira)
+            desc = re.search(r"\|\s*Description\?\s*\|\s*(.*)", pr["body"] or "")
+            steps = re.search(r"\|\s*How to test\?\s*\|\s*(.*)", pr["body"] or "")
+            issue = {"number": 0, "title": pr["title"], "labels": [],
+                     "body": f"### Describe the bug\n{desc.group(1).strip() if desc else pr['title']}\n\n### Steps to reproduce\n{steps.group(1).strip() if steps else ''}"}
         ibody = issue["body"] or ""
         if SECURITY.search(issue["title"] + " " + " ".join(l["name"] for l in issue["labels"])):
             stats["securite"] = stats.get("securite", 0) + 1
             continue
-        if not re.search(r"steps to reproduce|how to reproduce|reproduce", ibody, re.I):
+        if not a.allow_no_issue and not re.search(r"steps to reproduce|how to reproduce|reproduce", ibody, re.I):
             stats["sans_repro"] = stats.get("sans_repro", 0) + 1
             continue
 
