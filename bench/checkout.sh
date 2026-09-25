@@ -32,5 +32,6 @@ for f in "${FS[@]}"; do
   rm -f "$tmp"
 done
 if [ -f "$MODE" ]; then docker cp "$MODE" "$C:/tmp/p.diff"; docker exec -w /var/www/html "$C" patch -p1 < /dev/null -i /tmp/p.diff; fi
-docker exec "$C" sh -c 'chown -R www-data: /var/www/html && rm -rf /var/www/html/var/cache/*'
+# chown ciblé (un chown -R sur tout l'arbre force la recopie overlayfs de milliers de fichiers)
+docker exec -w /var/www/html "$C" sh -c "chown www-data: ${FS[*]} 2>/dev/null; rm -rf var/cache/*"
 echo "prêt : http://localhost:$PS_PORT/  BO : http://localhost:$PS_PORT/admin-dev  (demo@prestashop.com / prestashop_demo)"

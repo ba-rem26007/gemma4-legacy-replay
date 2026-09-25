@@ -32,7 +32,7 @@ Projet pour le hackathon Kaggle **Gemma 4**.
 cp .env.local.example .env                   # PC : Gemma en local (Ollama), runs officiels + modèle fine-tuné
 # ou cp .env.api.example .env                # API Google AI Studio (mise au point) + GEMMA_API_KEY
 ```
-- **Fine-tuning sur ton GPU** : voir [training/README.md](training/README.md). Les données sont déjà dans `trajectories/train.jsonl` : 573 chemins vérifiés.
+- **Fine-tuning sur ton GPU** : voir [training/README.md](training/README.md). Les données sont déjà dans `trajectories/train.jsonl` : 569 chemins vérifiés.
 - **Agent + évaluation** (nécessite Docker) : `bench/checkout.sh <pr> pre`, puis `python3 agent/run.py --bugs 35902 --condition B`.
 
 ## Structure

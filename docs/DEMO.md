@@ -19,7 +19,7 @@ python3 agent/run.py --bugs 35322 35384 35902 --condition B --policy reconstruit
 Résultat : **3/3 corrigés, localisation 3/3, 0 régression** (run `runs/20260925-000132-B`, évaluations sérialisées par verrou). Trace complète de chaque tour (entrée, réponse, outil, résultat, temps) : `runs/20260925-000132-B/<pr>/trace.jsonl`, patch `patch.diff`, verdict `result.json`.
 
 ## 2. Données d'entraînement prêtes
-- `trajectories/train.jsonl` : **573 chemins reconstruits vérifiés** (vivier TRAIN, avant la coupure provisoire au 2025-06-01). Chaque chemin reproduit exactement le fichier corrigé. Aucun modèle n'a servi à les produire.
+- `trajectories/train.jsonl` : **569 chemins reconstruits vérifiés** (vivier TRAIN, avant la coupure provisoire au 2025-06-01). Chaque chemin reproduit exactement le fichier corrigé. Aucun modèle n'a servi à les produire.
 - 58 bugs TRAIN exclus par le contrôle d'étanchéité (même fonction qu'un bug TEST) : `data/ETANCHEITE.md`.
 - Fine-tuning QLoRA prêt pour ton GPU : `training/README.md`.
 

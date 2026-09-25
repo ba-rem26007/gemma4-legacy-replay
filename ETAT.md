@@ -30,7 +30,7 @@ Mis à jour le 2026-09-24.
 ## Démo 1 (2026-09-24) : voir docs/DEMO.md
 - `agent/flow.py` (déroulé fixe, format commun éval/entraînement), `agent/run.py` (API compatible OpenAI, politique `reconstruit`), `bench/eval.py`.
 - Chaîne de bout en bout validée sur les 3 pilotes #35322, #35384, #35902 : 3/3 corrigés, 0 régression (politique reconstruit).
-- `trajectories/reconstruct.py` : **573 chemins vérifiés** (coupure provisoire au 2025-06-01, 58 exclus pour étanchéité) → `trajectories/train.jsonl`.
+- `trajectories/reconstruct.py` : **569 chemins vérifiés** (coupure provisoire au 2025-06-01, 58 exclus pour étanchéité) → `trajectories/train.jsonl`.
 - `training/train_qlora.py` : QLoRA, loss sur les tours assistant uniquement, reprise auto.
 - Dépôt privé : https://github.com/ba-rem26007/gemma4-legacy-replay (`./setup.sh` après clone).
 - Catalogue étendu : **1 007 bugs** (2019-07 → 2026-09).

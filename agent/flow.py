@@ -50,20 +50,22 @@ def grep(commit, keywords):
     pats = [x for k in kws for x in ("-e", k)]
     out = git("grep", "-I", "-o", "-i", "-F", *pats, commit, "--", *(f"*.{e}" for e in CODE_EXT))
     for l in out.splitlines():
-        parts = l.split(":", 3)
-        if len(parts) < 4 or parts[1].startswith(EXCLUDE):
+        parts = l.split(":", 2)  # commit:fichier:correspondance (-o, sans -n)
+        if len(parts) < 3 or parts[1].startswith(EXCLUDE):
             continue
-        f, m = parts[1], parts[3].lower()
+        f, m = parts[1], parts[2].lower()
         found.setdefault(f, set()).add(m)
         lines[f] = lines.get(f, 0) + 1
+    # recherche par chemin : seulement pour les mots-clés PRÉCIS (CamelCase, chemin, snake_case, long)
+    specific = [k.lower() for k in kws if re.search(r"[A-Z/_.]", k[1:]) or len(k) >= 12]
     for f in git("ls-tree", "-r", "--name-only", commit).splitlines():
         if f.endswith(tuple(CODE_EXT)) and not f.startswith(EXCLUDE):
             fl = f.lower()
-            for k in kl:
+            for k in specific:
                 if k in fl:
                     found.setdefault(f, set()).add(k)
                     lines.setdefault(f, 0)
-    name_hit = lambda f: any(k in f.rsplit("/", 1)[-1].lower() or ("/" in k and k in f.lower()) for k in kl)
+    name_hit = lambda f: any(k in f.rsplit("/", 1)[-1].lower() or ("/" in k and k in f.lower()) for k in specific)
     ranked = sorted(found, key=lambda f: (not name_hit(f), -len(found[f]), -lines[f]))[:MAX_GREP_FILES]
     return {f: lines[f] for f in ranked}
 
@@ -130,16 +132,20 @@ def msg_grep(hits):
     return f'RÉSULTATS DE RECHERCHE (fichier, nb de lignes)\n{lst}\n\nÉTAPE 2 LIRE. Réponds en JSON : {{"files": ["..."]}} (1 à 3 fichiers).'
 
 
+BACKTRACK = ('Si ces fichiers ne sont pas les bons, tu peux à la place répondre {"files": [...]} pour lire '
+             'd\'autres fichiers, ou {"keywords": [...]} pour relancer une recherche (2 fois au plus).')
+
+
 def msg_read(contents):
     body = "\n\n".join(f"===== {f} =====\n{c}" for f, c in contents.items())
-    return f"CONTENU\n{body}\n\nÉTAPE 3 ÉDITER.\n{EDIT_FORMAT}"
+    return f"CONTENU\n{body}\n\nÉTAPE 3 ÉDITER.\n{EDIT_FORMAT}\n{BACKTRACK}"
 
 
 def msg_test(result):
     if result.get("fixed"):
         return "RÉSULTAT DU TEST : OK."
     err = result.get("replay_error") or "patch non applicable"
-    return f"RÉSULTAT DU TEST : ÉCHEC\n{err}\n\nÉTAPE 4 CORRIGER.\n{EDIT_FORMAT}"
+    return f"RÉSULTAT DU TEST : ÉCHEC\n{err}\n\nÉTAPE 4 CORRIGER.\n{EDIT_FORMAT}\n{BACKTRACK}"
 
 
 # ---------------------------------------------------------------- parsing / application des éditions

@@ -8,7 +8,7 @@ LLM : API compatible OpenAI. Variables (.env) :
   LLM_MODEL       défaut gemma-4-26b-a4b-it
 Sortie : runs/<run_id>/<pr>/trace.jsonl + patch.diff + result.json, runs/<run_id>/summary.json
 """
-import argparse, json, os, sys, time, urllib.request
+import argparse, json, os, re, sys, time, urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -98,9 +98,27 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
     files = [f for f in flow.parse_json(turn("lire", flow.msg_grep(hits), "grep", {"keywords": kws, "hits": hits}), "files")
              if flow.show(base, f)][:flow.MAX_FILES_READ]
     contents = {f: flow.windows(flow.show(base, f), kws) for f in files}
-    # 3. ÉDITER
+    # 3. ÉDITER (avec au plus 2 retours arrière : relire d'autres fichiers ou relancer une recherche)
     reply = turn("editer", flow.msg_read(contents), "read", {"files": files})
-    state, result = {}, None
+    state, result, backtracks = {}, None, 0
+
+    def backtrack(reply):
+        """Si la réponse demande une relecture / recherche au lieu d'éditer, on l'exécute."""
+        nonlocal backtracks, files, contents, kws
+        while backtracks < 2 and not flow.parse_edits(reply) and re.search(r'"(files|keywords)"', reply):
+            backtracks += 1
+            if '"keywords"' in reply:
+                kws = flow.parse_json(reply, "keywords")
+                h = flow.grep(base, kws)
+                reply = turn("relocaliser", flow.msg_grep(h), "grep", {"keywords": kws, "hits": h})
+            new = [f for f in flow.parse_json(reply, "files") if flow.show(base, f)][:flow.MAX_FILES_READ]
+            if new:
+                files = new
+                contents = {f: flow.windows(flow.show(base, f), kws) for f in files}
+                reply = turn("relire", flow.msg_read(contents), "read", {"files": files})
+        return reply
+
+    reply = backtrack(reply)
     for attempt in range(retries + 1):
         state, errors = flow.apply_edits(base, flow.parse_edits(reply), state)
         diff = flow.to_diff(base, state) if state else ""
@@ -115,7 +133,7 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
         # 4. TESTER : retour d'exécution seulement si la condition donne les tests (B, C, D)
         if result["fixed"] or condition == "A" or attempt == retries:
             break
-        reply = turn("corriger", flow.msg_test(result), "test", result)
+        reply = backtrack(turn("corriger", flow.msg_test(result), "test", result))
     result.update({"condition": condition, "model": model, "files_read": files, "keywords": kws,
                    "official_files": bug["files"],
                    "loc_hit": bool(set(files) & set(bug["files"])), "turns": len(msgs) // 2})
