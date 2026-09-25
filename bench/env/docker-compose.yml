@@ -1,7 +1,7 @@
 # PrestaShop release (image officielle) + MySQL. Tag choisi par checkout.sh selon le bug.
 services:
   db:
-    image: mysql:8.0
+    image: ${DB_IMAGE:-mysql:8.0}
     environment:
       MYSQL_ROOT_PASSWORD: admin
       MYSQL_DATABASE: prestashop

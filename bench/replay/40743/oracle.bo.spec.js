@@ -10,12 +10,12 @@ test('paiement enregistré au passage à « Paiement accepté » avec factures d
   await expect(header).toContainText('(0)');
 
   // Changement de statut via le formulaire du haut de page
-  await page.locator('#update_order_status_action_input').selectOption({ label: 'Paiement accepté' });
+  await page.locator('#update_order_status_action_input').selectOption('2'); // 2 = Paiement accepté (paid = 1)
   await Promise.all([
     page.waitForNavigation(),
     page.locator('#update_order_status_action_btn').click(),
   ]);
-  await expect(page.locator('#update_order_status_action_input option:checked')).toHaveText(/Paiement accepté/);
+  await expect(page.locator('#update_order_status_action_input')).toHaveValue('2');
 
   // Un paiement doit avoir été enregistré
   await expect(header).toContainText('(1)');

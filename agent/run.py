@@ -55,6 +55,20 @@ def chat(messages, model, temperature=0.2, seed=42, max_tokens=16384):
         raise RuntimeError(f"LLM HTTP {code}: {re.sub(r'\s+', ' ', out)[:1500]}")
 
 
+BUDGET_FILE = ROOT / "runs" / "_budget.json"
+BUDGET_EUR = 30.0
+
+
+def spend(usage):
+    """Compteur de coût cumulé (tous runs). Prix en €/M tokens via LLM_PRICE_IN / LLM_PRICE_OUT (Gemma 4 sur l'API : gratuit)."""
+    b = json.loads(BUDGET_FILE.read_text()) if BUDGET_FILE.exists() else {"in": 0, "out": 0, "eur": 0.0, "calls": 0}
+    i, o = usage.get("prompt_tokens", 0), usage.get("total_tokens", 0) - usage.get("prompt_tokens", 0)
+    b["in"] += i; b["out"] += o; b["calls"] += 1
+    b["eur"] += i / 1e6 * float(os.environ.get("LLM_PRICE_IN", 0)) + o / 1e6 * float(os.environ.get("LLM_PRICE_OUT", 0))
+    BUDGET_FILE.parent.mkdir(exist_ok=True); BUDGET_FILE.write_text(json.dumps(b, indent=1))
+    return b["eur"]
+
+
 def catalog():
     return {c["pr"]: c for c in map(json.loads, open(ROOT / "bench" / "catalog.jsonl"))}
 
@@ -88,6 +102,8 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
         msgs.append({"role": "user", "content": user})
         t = time.time()
         reply, usage = chat(msgs, model)
+        if spend(usage) > BUDGET_EUR:
+            raise SystemExit(f"BUDGET dépassé ({BUDGET_EUR} €) : arrêt")
         msgs.append({"role": "assistant", "content": reply})
         trace.write(json.dumps({"step": step, "user": user, "assistant": reply, "seconds": round(time.time() - t, 1),
                                 "usage": usage, "tool": tool, "tool_result": tool_result}, ensure_ascii=False) + "\n")
@@ -149,7 +165,9 @@ def main():
     load_env()
     ap = argparse.ArgumentParser()
     ap.add_argument("--bugs", nargs="+", type=int, default=[])
-    ap.add_argument("--condition", default="B", choices=["A", "B", "C", "D"])
+    ap.add_argument("--condition", default="B", choices=["A", "B", "C", "D", "R"],
+                    help="A ticket · B +replay · C +glossaire · D modèle fine-tuné · R fine-tuning simulé (exemples TRAIN injectés)")
+    ap.add_argument("--budget-eur", type=float, default=float(os.environ.get("BUDGET_EUR", 30)))
     ap.add_argument("--model", default=os.environ.get("LLM_MODEL", "gemma-4-31b-it"))
     ap.add_argument("--retries", type=int, default=2)
     ap.add_argument("--policy", default="llm", choices=["llm", "reconstruit"],
@@ -164,6 +182,8 @@ def main():
         return
     if a.policy == "reconstruit":
         a.model = "reconstruit"
+    global BUDGET_EUR
+    BUDGET_EUR = a.budget_eur
     cat = catalog()
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S") + f"-{a.condition}"
     root = ROOT / "runs" / run_id

@@ -29,7 +29,7 @@ test('les chaînes du thème enfant apparaissent dans l’éditeur de traduction
   await page.selectOption('#form_theme', 'benchchild');
   await page.selectOption('#form_language', 'fr');
   const first = page.waitForResponse(r => /\/api\/translations\/fr-FR\/[^/]+\/benchchild/.test(r.url()));
-  await Promise.all([page.waitForNavigation(), page.getByRole('button', { name: 'Modifier' }).click()]);
+  await Promise.all([page.waitForNavigation(), page.locator('.card', { has: page.locator('#form_translation_type') }).locator('.card-footer button.btn-primary').click()]);
   const url = (await first).url().replace(/fr-FR\/[^/]+\/benchchild/, 'fr-FR/ShopThemeGlobal/benchchild');
 
   // Parcours des pages du domaine Shop.Theme.Global (même API que l'éditeur)

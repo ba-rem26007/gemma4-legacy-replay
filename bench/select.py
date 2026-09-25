@@ -91,8 +91,25 @@ def main():
             stats["sans_repro"] = stats.get("sans_repro", 0) + 1
             continue
 
-        mc = pr["mergeCommit"]["oid"]
-        parents = json.loads(gh("api", f"repos/{REPO}/commits/{mc}", "--jq", "[.parents[].sha]"))
+        mc = (pr.get("mergeCommit") or {}).get("oid")
+        if not mc:  # PR anciennes : champ absent → API REST
+            mc = gh("api", f"repos/{REPO}/pulls/{pr['number']}", "--jq", ".merge_commit_sha").strip()
+        if not mc or mc == "null":
+            stats["sans_merge_commit"] = stats.get("sans_merge_commit", 0) + 1
+            continue
+        local = subprocess.run(["git", "-C", str(HERE / "ps"), "cat-file", "-e", f"{mc}^{{commit}}"], capture_output=True).returncode == 0
+        try:
+            if not local:
+                raise subprocess.CalledProcessError(1, "merge absent de l'historique")
+            parents = json.loads(gh("api", f"repos/{REPO}/commits/{mc}", "--jq", "[.parents[].sha]"))
+        except subprocess.CalledProcessError:
+            # PR rebasées / cherry-pickées (époque 1.6) : avant = parent du 1er commit de la PR, après = dernier commit
+            try:
+                cs = json.loads(gh("api", f"repos/{REPO}/pulls/{pr['number']}/commits", "--jq", "[.[].sha, .[0].parents[0].sha]"))
+                mc, parents = cs[-2], [cs[-1]]
+            except (subprocess.CalledProcessError, IndexError):
+                stats["merge_commit_introuvable"] = stats.get("merge_commit_introuvable", 0) + 1
+                continue
         d = HERE / "diffs" / f"{pr['number']}.diff"
         if not d.exists(): d.write_text(gh("pr", "diff", str(pr["number"]), "-R", REPO))
         out.append({

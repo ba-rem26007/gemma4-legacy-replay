@@ -117,12 +117,17 @@ def ticket_text(bug):
 
 def msg_ticket(bug, condition, replay_spec=""):
     s = f"TICKET\n{ticket_text(bug)}\n"
-    if condition in ("B", "C", "D") and replay_spec:
+    if condition in ("B", "C", "D", "R") and replay_spec:
         s += f"\nTEST DE REJEU (doit passer après correction)\n```js\n{replay_spec[:3000]}\n```\n"
-    if condition in ("C", "D"):
+    if condition in ("C", "D", "R"):
         g = glossary_hits(ticket_text(bug))
         if g:
             s += f"\nCONTEXTE PRESTASHOP (vocabulaire métier → code)\n{g}\n"
+    if condition == "R":  # fine-tuning simulé : exemples de corrections similaires (vivier TRAIN)
+        import fewshot
+        ex = fewshot.render(bug)
+        if ex:
+            s += f"\nEXEMPLES DE CORRECTIONS SIMILAIRES (même déroulé, pour t'inspirer)\n{ex}\n"
     s += '\nÉTAPE 1 LOCALISER. Réponds en JSON : {"keywords": ["...", "..."]} (3 à 8 mots-clés).'
     return s
 

@@ -16,7 +16,7 @@ module.exports = defineConfig({
   },
   projects: [
     { name: 'setup', testMatch: 'auth.setup.js' },
-    { name: 'fo', testMatch: /\/(replay|oracle)\.spec\.js$/ },
-    { name: 'bo', testMatch: /\/(replay|oracle)\.bo\.spec\.js$/, dependencies: ['setup'], use: { storageState: `.auth/bo-${PORT}.json` } },
+    { name: 'fo', testMatch: /\/(replay|oracle\w*)\.spec\.js$/ },
+    { name: 'bo', testMatch: /\/(replay|oracle\w*)\.bo\.spec\.js$/, dependencies: ['setup'], use: { storageState: `.auth/bo-${PORT}.json` } },
   ],
 });

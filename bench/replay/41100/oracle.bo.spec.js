@@ -11,7 +11,7 @@ test("aperçu HTML des e-mails de modules non vide", async ({ page }) => {
   await page.selectOption('#form_email_content_type', 'body');
   await page.selectOption('#form_theme', 'classic');
   await page.selectOption('#form_language', 'fr');
-  await Promise.all([page.waitForNavigation(), page.getByRole('button', { name: 'Modifier' }).click()]);
+  await Promise.all([page.waitForNavigation(), page.locator('.card', { has: page.locator('#form_translation_type') }).locator('.card-footer button.btn-primary').click()]);
 
   const moduleSrc = await page.locator('.email-html-frame[data-email-src*="/modules/ps_emailsubscription/mails/fr/"]').first().getAttribute('data-email-src');
   const coreSrc = await page.locator('.email-html-frame[data-email-src*="/mails/fr/"]:not([data-email-src*="/modules/"])').first().getAttribute('data-email-src');

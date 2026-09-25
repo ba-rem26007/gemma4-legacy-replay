@@ -25,7 +25,7 @@ async function uploadHeaderLogo(page, themesUrl, shopContext, name, rgb) {
   await page.locator('#form_header_logo').setInputFiles({ name, mimeType: 'image/png', buffer: png(60, 30, rgb) });
   const form = page.locator('#form_header_logo').locator('xpath=ancestor::form');
   await Promise.all([page.waitForNavigation(), form.locator('button.btn-primary').first().click()]);
-  await expect(page.getByText('Le réglage a bien été mis à jour.')).toBeVisible();
+  await expect(page.locator('.alert-success:visible').first()).toBeVisible();
   return page.locator('img.header-logo').getAttribute('src');
 }
 

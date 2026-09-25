@@ -26,7 +26,7 @@ test('actionCarrierUpdate déclenché à l’édition d’un transporteur (page 
     page.waitForNavigation(),
     page.locator('form[name="carrier"] button[type="submit"], #save-button, button.btn-primary:has-text("Enregistrer")').first().click(),
   ]);
-  await expect(page.getByText('Mise à jour réussie')).toBeVisible();
+  await expect(page.locator('.alert-success:visible').first()).toBeVisible();
 
   // Le module doit avoir reçu le hook
   await page.goto(modulesUrl.replace(/manage\/?\?/, 'manage/action/configure/benchcarrierhook?'));
