@@ -4,7 +4,7 @@
 const { test, expect } = require('@playwright/test');
 
 test('custom feature values should not be displayed in the default values list', async ({ page }) => {
-  // Navigate directly to the feature values list for the specific feature
+  // Navigate to the feature values list for the specific feature
   await page.goto('/admin-dev/catalog/features/values?featureId=9999');
 
   // Handle the security warning page if it appears
@@ -12,15 +12,15 @@ test('custom feature values should not be displayed in the default values list',
     await page.getByText(/comprends les risques|understand the risks/i).click();
   }
 
-  // Ensure we are on the correct page
+  // Ensure we are on the correct page and the grid has loaded
   await expect(page).toHaveURL(/catalog\/features\/values/);
+  const grid = page.locator('table');
+  await expect(grid).toBeVisible({ timeout: 10000 });
 
-  // The grid should contain the default value
-  const grid = page.locator('.grid-container, table');
-  await expect(grid).toBeVisible();
+  // The default value (custom=0) must be visible
   await expect(grid).toContainText('Default Value');
 
-  // The custom value should NOT be visible in the grid.
+  // The custom value (custom=1) must NOT be visible.
   // Before the fix, the query did not filter by 'custom = 0', so 'Custom Value 123' would appear.
   await expect(grid).not.toContainText('Custom Value 123');
 });
