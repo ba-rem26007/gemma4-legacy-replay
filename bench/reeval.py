@@ -19,6 +19,10 @@ for run in sys.argv[1:]:
         p = d / "patch.diff"
         if not p.exists() or (d / OUT).exists():
             continue
-        r = evaluate(int(d.name), str(p)) if p.read_text().strip() else {"pr": int(d.name), "applied": False, "fixed": False, "regression": None}
+        try:
+            r = evaluate(int(d.name), str(p)) if p.read_text().strip() else {"pr": int(d.name), "applied": False, "fixed": False, "regression": None}
+        except Exception as e:  # délai dépassé (machine chargée) : pas de verdict écrit → repris au passage suivant
+            print(run, d.name, "ÉCHEC ÉVAL", type(e).__name__, flush=True)
+            continue
         (d / OUT).write_text(json.dumps(r, ensure_ascii=False, indent=1))
         print(run, json.dumps({k: r.get(k) for k in ("pr", "applied", "fixed", "regression")}), flush=True)

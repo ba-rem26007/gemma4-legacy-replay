@@ -48,7 +48,7 @@ def evaluate(pr, patch, tests="oracle"):
 def _evaluate(pr, patch, tests="oracle"):
     """tests = "oracle" (verdict, caché à l'agent) ou "replay" (retour donné à l'agent en B/C/D/R)."""
     t = time.time()
-    code, out = sh(f"{B}/checkout.sh {pr} {patch}")
+    code, out = sh(f"{B}/checkout.sh {pr} {patch}", timeout=1800)
     if code != 0:
         return {"pr": pr, "applied": False, "fixed": False, "regression": None,
                 "replay_error": out[-800:], "seconds": round(time.time() - t)}
