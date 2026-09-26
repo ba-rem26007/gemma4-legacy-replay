@@ -34,8 +34,8 @@ Mis à jour : 2026-09-26. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 
 ## Stratégie retenue (26 sept.) : boucle d'auto-apprentissage 100 % Gemma
 1. Gemma écrit les oracles des bugs TRAIN (`bench/gentest.py`, ticket + correctif, gardé si échoue en pre / passe en post) — **pilote 10 bugs 9.0.x en cours** (`runs/gentest_pilot.log`, instance 4).
-2. L'agent Gemma corrige ces bugs TRAIN avec l'oracle comme retour (mode O : +9,8 pts sur TEST).
-3. Chemins réussis vérifiés → données de fine-tuning (source `gemma_self`, aucune sortie propriétaire), en plus des 569 chemins reconstruits.
+2. L'agent Gemma corrige ces bugs TRAIN avec l'oracle comme retour (mode O : +9,8 pts sur TEST) : `ORACLE_PREFIX=g python3 agent/run.py --condition O --bugs …` (**prêt**).
+3. Chemins réussis vérifiés → `trajectories/self_paths.py` (**prêt**, testé sur runs TEST hors trajectories/ : 25 chemins / 29 résolus ; garde-fou d'étanchéité) → données de fine-tuning (source `gemma_self`, aucune sortie propriétaire), en plus des 569 chemins reconstruits.
 4. QLoRA → condition D sur TEST (go/no-go 22 oct.).
 Oracles Gemma = vérificateurs ; les trajectoires gardées sont celles de Gemma, validées par exécution.
 

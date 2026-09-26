@@ -70,6 +70,29 @@ def edit_text(blocks):
     return "\n\n".join(f"FILE: {f}\n<<<<<<< SEARCH\n{s}\n=======\n{r}\n>>>>>>> REPLACE" for f, s, r in blocks)
 
 
+def make_blocks(f, src, file_hunks):
+    """Hunks d'un fichier → blocs SEARCH/REPLACE dont le SEARCH est unique dans src (contexte ajouté au besoin)."""
+    rows, blocks = src.splitlines(), []
+    for touched_lines, s, r in file_hunks:
+        k = 0
+        while s.strip() and src.count(s) > 1 and k < 8:
+            # ajoute une ligne de contexte avant et après, identique des deux côtés
+            k += 1
+            i = src.find(s)
+            start = src[:i].count("\n")
+            end = start + s.count("\n") + 1
+            before = rows[start - 1] if start > 0 else None
+            after = rows[end] if end < len(rows) else None
+            if before is not None:
+                s, r = before + "\n" + s, before + "\n" + r
+            if after is not None:
+                s, r = s + "\n" + after, r + "\n" + after
+        if not s.strip() or src.count(s) != 1:
+            return None
+        blocks.append((f, s, r))
+    return blocks
+
+
 def build(bug):
     base, merge = bug["base_commit"], bug["merge_commit"]
     diff = (ROOT / "bench" / "diffs" / f"{bug['pr']}.diff").read_text()
@@ -88,24 +111,10 @@ def build(bug):
             return None, "fichier_nouveau"
         touched = [i for t, _, _ in hs[f] for i in t]
         contents[f] = flow.windows(src, kws, extra_lines=touched)
-        rows = src.splitlines()
-        for touched_lines, s, r in hs[f]:
-            k = 0
-            while s.strip() and src.count(s) > 1 and k < 8:
-                # ajoute une ligne de contexte avant et après, identique des deux côtés
-                k += 1
-                i = src.find(s)
-                start = src[:i].count("\n")
-                end = start + s.count("\n") + 1
-                before = rows[start - 1] if start > 0 else None
-                after = rows[end] if end < len(rows) else None
-                if before is not None:
-                    s, r = before + "\n" + s, before + "\n" + r
-                if after is not None:
-                    s, r = s + "\n" + after, r + "\n" + after
-            if not s.strip() or src.count(s) != 1:
-                return None, "search_non_unique"
-            blocks.append((f, s, r))
+        b = make_blocks(f, src, hs[f])
+        if b is None:
+            return None, "search_non_unique"
+        blocks += b
     # contrôle : les blocs reproduisent exactement le fichier corrigé
     state, errors = flow.apply_edits(base, flow.parse_edits(edit_text(blocks)))
     if errors or any(state[f].rstrip("\n") != flow.show(merge, f).rstrip("\n") for f in files):
