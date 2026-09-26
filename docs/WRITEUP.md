@@ -48,7 +48,7 @@ Agentic code-repair benchmarks are dominated by Python projects with rich unit t
 - B: tests written from the ticket reproduce 10/33 bugs, only 1 faithfully; on those 10, ⟦B 3.5 vs A 4.5⟧.
 - O: first attempt ⟦13/33⟧ (≈ A ⟦12.8⟧), ⟦16/33⟧ after oracle feedback (+3 bugs) → a perfect verifier adds ≈ ⟦+9 pts⟧; it is the ceiling of any replay chain on this flow.
 - Model size: 26B-A4B ⟦15 %⟧ vs 31B ⟦39 %⟧ at similar localisation.
-- C: ⟦en cours⟧.
+- C (automatic glossary, 1 trial): ⟦13/33⟧ vs A ⟦12.8⟧; on the 16 tickets where it fires, right file ⟦6⟧ vs A ⟦7.75⟧ → an automatically mined glossary does not help localisation (negative result).
 
 ## 6. Why (failure analysis)
 - Taxonomy (`docs/ECHECS.md`): ⟦35 %⟧ wrong file, ⟦14 %⟧ no usable edit, ⟦12 %⟧ wrong fix, 0 regressions.
