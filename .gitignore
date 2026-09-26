@@ -24,3 +24,4 @@ bench/env/.state-*
 bench/env/.keep-*
 bench/env/.snap-*
 runs/_rate.json*
+runs/_symbols/
