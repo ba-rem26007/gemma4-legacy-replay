@@ -97,12 +97,11 @@ def glossary_hits(ticket_text):
     """Condition C : entrées du glossaire métier dont le terme ou un synonyme apparaît dans le ticket."""
     # GLOSSAIRE=glossaire_auto.csv → glossaire extrait automatiquement (provisoire, avant relecture de Rémi)
     import os
-    p = ROOT / "glossaire" / os.environ.get("GLOSSAIRE", "glossaire.csv")
-    if not p.exists():
-        return ""
+    # plusieurs fichiers possibles : GLOSSAIRE=glossaire_auto.csv,pages.csv (pages.csv = index des pages BO, glossaire/pages.py)
+    paths = [ROOT / "glossaire" / n for n in os.environ.get("GLOSSAIRE", "glossaire.csv").split(",")]
     t = ticket_text.lower()
     lines = []
-    for r in csv.DictReader(open(p)):
+    for r in (r for p in paths if p.exists() for r in csv.DictReader(open(p))):
         names = [r["terme"]] + [s for s in r["synonymes"].split("|") if s]
         if any(n.lower() in t for n in names):
             syn = f" ({', '.join(names[1:4])})" if len(names) > 1 else ""

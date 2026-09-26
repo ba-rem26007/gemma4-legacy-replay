@@ -267,7 +267,7 @@ def main():
             res.append(r)
         except (SystemExit, RuntimeError) as e:
             print(f"   ignoré définitivement : {str(e)[:200]}", flush=True)
-    summary = {"run": run_id, "condition": a.condition, "model": a.model, "n": len(res),
+    summary = {"run": run_id, "condition": a.condition, "model": a.model, "glossaire": os.environ.get("GLOSSAIRE", "glossaire.csv"), "n": len(res),
                "fixed": sum(r["fixed"] for r in res), "loc_hit": sum(r["loc_hit"] for r in res), "results": res}
     (root / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1))
     print(f"→ {root}  corrigés {summary['fixed']}/{len(res)}  localisation {summary['loc_hit']}/{len(res)}")

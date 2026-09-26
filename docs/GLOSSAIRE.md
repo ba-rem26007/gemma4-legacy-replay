@@ -33,3 +33,10 @@ La dictée phonétique reste **hors du papier** : le concours porte sur des agen
 - **Étanchéité** : aucune entrée dérivée d'un bug TEST.
 - Le glossaire est une ressource **d'inférence** (outil de la condition C), pas une donnée d'entraînement. Il n'est pas généré par un modèle propriétaire. Claude écrit uniquement le script d'extraction.
 - Il est publié avec le papier comme ressource (positionnement « Best New Resource »).
+
+## Index des pages du BO (`glossaire/pages.csv`)
+Généré par `python3 glossaire/pages.py [commit]` (défaut 9.1.0, antérieur aux bugs TEST) depuis le code seul :
+`install-dev/data/xml/tab.xml` (menu, `class_name`) + libellés anglais + routes Symfony (`_legacy_controller` → `_controller`).
+79 pages : « Shopping Carts » → `AdminCarts`, `src/PrestaShopBundle/Controller/Admin/Sell/Order/CartController.php`.
+Contrôle hors ligne (sans modèle) sur les 33 tickets TEST : entrée pour 28 tickets, fichier corrigé (ou classe homonyme) pointé pour 7 (glossaire automatique : 4).
+Combinable : `GLOSSAIRE=glossaire_auto.csv,pages.csv` (run « C+pages », `runs/test_Cp1.log`).
