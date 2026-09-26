@@ -38,6 +38,15 @@ def enclosing_function(rows, i):
     return "(hors fonction)"
 
 
+def similarity(d, pr):
+    """Proximité avec le correctif officiel (0-1) : ratio difflib entre lignes ajoutées/retirées. 1.0 = identique.
+    Sert de seuil de qualité à l'entraînement (ex. #37955 : correction partielle + clé de config inventée)."""
+    import difflib
+    ch = lambda t: "\n".join(l.strip() for l in t.splitlines() if l[:1] in "+-" and not l.startswith(("+++", "---")) and l[1:].strip())
+    off = ROOT / "bench" / "diffs" / f"{pr}.diff"
+    return round(difflib.SequenceMatcher(None, ch((d / "patch.diff").read_text()), ch(off.read_text())).ratio(), 2) if off.exists() else None
+
+
 def verdict(d):
     r = json.loads((d / "result.json").read_text())
     for name in ("result_reeval2.json", "result_reeval.json"):
@@ -143,7 +152,7 @@ def main():
                         why = "trop_long"
                     else:
                         out.append({"pr": pr, "issue": bug["issue"], "merged_at": bug["merged_at"], "source": "gemma_self",
-                                    "run": Path(run).name, "tokens_est": tok, "messages": msgs})
+                                    "run": Path(run).name, "tokens_est": tok, "similarite": similarity(d, pr), "messages": msgs})
             stats[why] = stats.get(why, 0) + 1
     with open(a.out, "w") as f:
         for o in out:
