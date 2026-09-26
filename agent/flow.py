@@ -148,11 +148,24 @@ def msg_read(contents):
     return f"CONTENU\n{body}\n\nÉTAPE 3 ÉDITER.\n{EDIT_FORMAT}\n{BACKTRACK}"
 
 
-def msg_test(result):
+def msg_test(result, state=None, commit=None):
     if result.get("fixed"):
         return "RÉSULTAT DU TEST : OK."
     err = result.get("replay_error") or "patch non applicable"
-    return f"RÉSULTAT DU TEST : ÉCHEC\n{err}\n\nÉTAPE 4 CORRIGER.\n{EDIT_FORMAT}\n{BACKTRACK}"
+    cur = ""
+    if state and commit:
+        # état ACTUEL des fichiers déjà modifiés : les blocs SEARCH suivants doivent être copiés depuis CE texte
+        # (sinon « bloc SEARCH introuvable » en boucle après une première édition, cf. #38341)
+        import difflib
+        parts = []
+        for f, new in state.items():
+            old = show(commit, f).splitlines()
+            rows = new.splitlines()
+            changed = [j for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, old, rows).get_opcodes()
+                       if tag != "equal" for j in range(j1, max(j2, j1 + 1))]
+            parts.append(f"===== {f} (état actuel, après tes éditions) =====\n{windows(new, [], extra_lines=changed)}")
+        cur = "\n\nFICHIERS MODIFIÉS — copie tes blocs SEARCH depuis CE texte :\n" + "\n\n".join(parts)
+    return f"RÉSULTAT DU TEST : ÉCHEC\n{err}{cur}\n\nÉTAPE 4 CORRIGER.\n{EDIT_FORMAT}\n{BACKTRACK}"
 
 
 # ---------------------------------------------------------------- parsing / application des éditions

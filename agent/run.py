@@ -201,7 +201,7 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
         feedbacks.append({k: fb.get(k) for k in ("fixed", "regression", "replay_error")})
         if fb.get("fixed"):
             break
-        reply = backtrack(turn("corriger", flow.msg_test(fb), "test", fb))
+        reply = backtrack(turn("corriger", flow.msg_test(fb, state, base), "test", fb))
     # VERDICT : oracle caché
     if diff:
         result = evaluate(bug["pr"], str(out / "patch.diff"), tests="oracle")
