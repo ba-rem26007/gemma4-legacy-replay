@@ -73,7 +73,22 @@ def context(bug):
     kws = [fn.split("::")[-1] for fns in bug["functions"].values() for fn in fns if not fn.startswith("(")][:6]
     code = "\n\n".join(f"===== {f} =====\n{flow.windows(flow.show(bug['base_commit'], f), kws)[:3000]}"
                        for f in bug["files"][:2] if flow.show(bug["base_commit"], f))
-    return f"TICKET\n{flow.ticket_text(bug)[:3000]}\n\nCORRECTIF OFFICIEL (diff)\n```diff\n{diff}\n```\n\nCODE AVANT CORRECTIF (extraits)\n{code[:6000]}"
+    return (f"TICKET\n{flow.ticket_text(bug)[:3000]}\n\nCORRECTIF OFFICIEL (diff)\n```diff\n{diff}\n```\n\n"
+            f"CODE AVANT CORRECTIF (extraits)\n{code[:6000]}\n\n{schema(bug, diff + code)}")
+
+
+def schema(bug, text):
+    """Tables RÉELLES de la base (db_structure.sql au commit de base) : liste complète + schéma des tables citées.
+    Évite les tables inventées dans setup.sql (ex. ps_tab_access, inexistante)."""
+    sql = flow.show(bug["base_commit"], "install-dev/data/db_structure.sql")
+    tables = dict(re.findall(r"CREATE TABLE `PREFIX_(\w+)` \((.*?)\n\)", sql, re.S))
+    if not tables:
+        return ""
+    low = text.lower()
+    cited = [t for t in sorted(tables, key=len, reverse=True) if re.search(rf"\b(ps_|_db_prefix_\s*\.\s*')?{t}\b", low)][:6]
+    detail = "\n\n".join(f"CREATE TABLE ps_{t} ({tables[t].strip()[:1500]}\n)" for t in cited)
+    return ("TABLES DE LA BASE (préfixe ps_, n'utilise AUCUNE autre table dans setup.sql)\n"
+            + ", ".join(sorted(tables)) + (f"\n\nSCHÉMA DES TABLES CITÉES\n{detail}" if detail else ""))
 
 
 def parse(reply):
