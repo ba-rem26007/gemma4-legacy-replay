@@ -8,7 +8,6 @@ Context::getContext()->language = new Language(1);
 
 /**
  * Dummy module to capture the hook parameters.
- * PrestaShop's Hook::exec will instantiate this class if it's defined and registered.
  */
 class HookTestModule extends Module
 {
@@ -30,13 +29,17 @@ class HookTestModule extends Module
 }
 
 try {
-    // 1. Prepare the dummy module in the database
     $moduleName = 'hooktestmodule';
-    Db::getInstance()->execute('DELETE FROM ' . _DB_PREFIX_ . 'module WHERE name = "' . $moduleName . '"');
-    Db::getInstance()->execute('INSERT INTO ' . _DB_PREFIX_ . 'module (name, active) VALUES ("' . $moduleName . '", 1)');
     
-    // 2. Register the module to the specific hook
-    Db::getInstance()->execute('DELETE FROM ' . _DB_PREFIX_ . 'hook_module WHERE module = "' . $moduleName . '"');
+    // 1. Ensure the module exists in the ps_module table
+    $idModule = (int)Db::getInstance()->getValue('SELECT id_module FROM ' . _DB_PREFIX_ . 'module WHERE name = "' . pSQL($moduleName) . '"');
+    if (!$idModule) {
+        Db::getInstance()->execute('INSERT INTO ' . _DB_PREFIX_ . 'module (name, active) VALUES ("' . pSQL($moduleName) . '", 1)');
+        $idModule = (int)Db::getInstance()->getValue('SELECT id_module FROM ' . _DB_PREFIX_ . 'module WHERE name = "' . pSQL($moduleName) . '"');
+    }
+
+    // 2. Register the module to the hook using the PrestaShop API
+    // This handles the insertion into ps_hook_module correctly using id_module
     Hook::registerHook('actionEmailSendBefore', $moduleName);
 
     // 3. Disable actual mail sending to avoid errors/spam during test
