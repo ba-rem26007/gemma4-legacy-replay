@@ -54,7 +54,10 @@ ENV_PHP = """ORACLE PHP (exécuté en ligne de commande DANS le conteneur Presta
 - Commence par : <?php require 'config/config.inc.php';  (charge PrestaShop : classes legacy, Db, Context, conteneur Symfony)
 - Context::getContext() : boutique 1, langue 1 (fr), aucun client/employé connecté (crée-les si besoin, ex. new Employee(1)).
 - Données de démo : produits 1..19, clients 1..2, commandes 1..5, catégories 2..9. Base MySQL préfixe ps_ (Db::getInstance()).
-- Services Symfony (src/) : SymfonyContainer::getInstance()->get(...) ou instanciation directe de la classe.
+- Le conteneur Symfony N'EST PAS disponible en ligne de commande : instancie DIRECTEMENT les classes de src/ avec new
+  (use Namespace\\Complet\\Classe;) en leur passant leurs dépendances (souvent des objets legacy : Cart, Context…).
+- N'utilise QUE des classes et méthodes qui existent : celles du correctif, du code montré, et les classes legacy
+  courantes (Cart, Order, Product, Customer, Context, Db, Tools, Configuration). Ne devine jamais un nom de classe.
 - RÉUTILISE D'ABORD les données de démo existantes (new Order(1), new Cart(1), new Customer(1), new Product(1)…) :
   créer une commande ou un panier complet est long (nombreux champs requis). Ne crée que ce qui manque.
 - PAS de SQL à part : crée les données nécessaires DANS le script avec les classes PrestaShop
