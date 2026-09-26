@@ -28,3 +28,7 @@ Pousser le dépôt comme dataset Kaggle, puis dans le notebook :
 - `trajectories/train.jsonl` : **chemins reconstruits** depuis les correctifs officiels (vivier TRAIN, avant la coupure), vérifiés.
 - Régénérer : `python trajectories/reconstruct.py --cutoff <date>` (nécessite `bench/ps`, voir le README racine).
 - Aucune donnée générée par un modèle propriétaire.
+
+## Longueur de séquence
+`--max-len 8192` par défaut : les chemins font jusqu'à ~8 000 tokens (médiane ≈ 3 900). Les exemples plus longs sont **écartés**, pas tronqués (l'édition finale est à la fin), et leur nombre est affiché.
+Mémoire insuffisante (12 Go) → `--max-len 6144` (perd ≈ 10 % des chemins) plutôt que 4096 (≈ 40 %).

@@ -58,7 +58,8 @@ def main():
     # plusieurs fichiers séparés par des virgules : chemins reconstruits + chemins Gemma vérifiés (boucle d'auto-apprentissage)
     ap.add_argument("--data", default=",".join(str(ROOT / "trajectories" / f) for f in ("train.jsonl", "self.jsonl")))
     ap.add_argument("--out", default=str(ROOT / "training" / "lora"))
-    ap.add_argument("--max-len", type=int, default=4096)
+    # 8192 : cohérent avec la borne < 8 000 tokens des chemins ; à 4096, ~40 % des chemins reconstruits étaient ÉCARTÉS
+    ap.add_argument("--max-len", type=int, default=8192)
     ap.add_argument("--epochs", type=float, default=2)
     ap.add_argument("--lr", type=float, default=1e-4)
     ap.add_argument("--rank", type=int, default=16)
@@ -78,7 +79,7 @@ def main():
     ds = Dataset.from_list([{"messages": r["messages"]} for r in rows])
     ds = ds.map(lambda e: tokenize(e, tok, a.max_len), remove_columns=["messages"])
     ds = ds.filter(lambda e: e["input_ids"] is not None)
-    print(f"{len(ds)} exemples ≤ {a.max_len} tokens")
+    print(f"{len(ds)} exemples ≤ {a.max_len} tokens ({len(rows) - len(ds)} écartés car trop longs)")
 
     bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True,
                              bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16)
