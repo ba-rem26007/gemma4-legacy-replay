@@ -177,7 +177,10 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
     # Retour d'exécution (B/C/D/R) : UNIQUEMENT les tests de rejeu visibles (replay*.spec.js) + anti-régression.
     # L'oracle (oracle*.spec.js) n'est JAMAIS montré : il ne sert qu'au verdict final.
     has_replay = bool(list((ROOT / "bench" / "replay" / str(bug["pr"])).glob("replay*.spec.js")))
-    feedback = condition != "A" and has_replay
+    # Condition O (« B* », borne haute) : le retour vient de l'ORACLE lui-même = vérificateur parfait.
+    # Fuite VOLONTAIRE et documentée : mesure ce qu'un vérificateur fidèle peut apporter au maximum.
+    fb_tests = "oracle" if condition == "O" else "replay"
+    feedback = condition == "O" or (condition != "A" and has_replay)
     feedbacks = []
     for attempt in range(retries + 1):
         state, errors = flow.apply_edits(base, flow.parse_edits(reply), state)
@@ -188,7 +191,7 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
         if not diff:
             fb = {"fixed": False, "replay_error": "; ".join(errors) or "aucune édition applicable"}
         else:
-            fb = evaluate(bug["pr"], str(out / "patch.diff"), tests="replay")
+            fb = evaluate(bug["pr"], str(out / "patch.diff"), tests=fb_tests)
             if errors:
                 fb["replay_error"] = ("; ".join(errors) + "\n" + fb.get("replay_error", "")).strip()
             if fb.get("regression"):
@@ -220,8 +223,8 @@ def main():
     load_env()
     ap = argparse.ArgumentParser()
     ap.add_argument("--bugs", nargs="+", type=int, default=[])
-    ap.add_argument("--condition", default="B", choices=["A", "B", "C", "D", "R"],
-                    help="A ticket · B +replay · C +glossaire · D modèle fine-tuné · R fine-tuning simulé (exemples TRAIN injectés)")
+    ap.add_argument("--condition", default="B", choices=["A", "B", "C", "D", "R", "O"],
+                    help="A ticket · B +replay · C +glossaire · D modèle fine-tuné · R fine-tuning simulé (exemples TRAIN injectés) · O borne haute (oracle comme retour, fuite volontaire)")
     ap.add_argument("--budget-eur", type=float, default=float(os.environ.get("BUDGET_EUR", 30)))
     ap.add_argument("--model", default=os.environ.get("LLM_MODEL", "gemma-4-31b-it"))
     ap.add_argument("--retries", type=int, default=2)
