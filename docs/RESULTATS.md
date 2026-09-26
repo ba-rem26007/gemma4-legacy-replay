@@ -68,6 +68,6 @@ C'est le meilleur retour qu'un vérificateur puisse donner : il borne l'apport d
 | A, moyenne des 4 essais | 12.8/33 |
 | O, 1re tentative (même consigne que A) | 13/33 |
 | O, après retour de l'oracle | **16/33** (+3 : #41394, #41299, #41923) |
-| O, verdict final réévalué (dernier patch) | 14/33 |
+| O, verdict final réévalué (dernier patch) | 16/33 |
 
 Lecture : même un vérificateur parfait n'ajoute que quelques bugs ; les échecs restants ne trouvent pas le bon fichier ou ne savent pas corriger malgré le signal (voir `docs/ECHECS.md`).
