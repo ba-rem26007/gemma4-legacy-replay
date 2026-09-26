@@ -42,6 +42,15 @@ Agentic code-repair benchmarks are dominated by Python projects with rich unit t
 | O | ticket + **oracle** feedback (deliberate leak) | upper bound of any verifier |
 | D | fine-tuned model | planned |
 
+## 4b. Self-improvement loop (Gemma only, no distillation)
+The only condition with a significant gain is O: execution feedback from a faithful verifier. We turn that into training data without any proprietary model:
+1. **Gemma writes verifiers for TRAIN bugs** (`bench/gentest.py`): from the ticket and the official fix, it writes a Playwright oracle, kept only if it **fails on the pre-fix code and passes on the fix** (up to 3 attempts with the error fed back). Verifiers are never training data.
+2. **Gemma fixes TRAIN bugs with that verifier as feedback** (condition O on TRAIN, `ORACLE_PREFIX=g`).
+3. **Successful runs become condensed paths** (`trajectories/self_paths.py`): Gemma's own keywords and file choices plus its final patch rewritten as SEARCH/REPLACE blocks; failed attempts dropped; blocks must reproduce the final patch exactly. Source label `gemma_self`, alongside ⟦569⟧ paths reconstructed from official fixes.
+4. **QLoRA** on these paths → condition D on TEST (same fixed flow, same message format).
+Leak-proofing: TRAIN bugs are merged before the cutoff, bugs touching a TEST function are excluded, and the exporter refuses TEST bugs.
+⟦Pilot: n oracles validated / 10; paths collected; D results⟧
+
 ## 5. Results
 ⟦Tableau définitif depuis `docs/RESULTATS.md` : 4 essais A/R, pass@4, IC bootstrap apparié⟧
 - R vs A: ⟦−0.8 pt, 95 % CI −10.6/+8.3⟧ → no measurable effect.

@@ -5,7 +5,7 @@
 const { test, expect } = require('@playwright/test');
 
 test('inactive parent tabs should not be selectable as the default page', async ({ page }) => {
-  // Go directly to the employee profile page
+  // Go to the employee profile page
   await page.goto('/admin-dev/employee/profile');
 
   // Handle the Symfony security warning page if it appears
@@ -14,12 +14,14 @@ test('inactive parent tabs should not be selectable as the default page', async 
     await securityWarning.click();
   }
 
-  // The "Default page" is a select dropdown
-  const defaultPageSelect = page.locator('select[name="default_page"]');
+  // The "Default page" is a select dropdown.
+  // In Symfony forms, the name is typically 'employee[default_page]'
+  const defaultPageSelect = page.locator('select[name*="default_page"]');
   await expect(defaultPageSelect).toBeVisible();
 
-  // Before the fix, the tab with id 999 (inactive but has children) was listed.
+  // Before the fix, the tab with id 9999 (inactive but has children) was listed.
   // After the fix, it must be absent from the options.
-  const inactiveTabOption = defaultPageSelect.locator('option[value="999"]');
-  await expect(inactiveTabOption).toHaveCount(0);
+  // We check for the specific value '9999' in the options.
+  const option = defaultPageSelect.locator('option[value="9999"]');
+  await expect(option).toHaveCount(0);
 });
