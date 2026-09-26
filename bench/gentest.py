@@ -117,7 +117,19 @@ def validate(pr, gdir):
         return True, "OK"
     if c_pre == 0:
         return False, "Le test PASSE déjà sur le code AVANT correctif : il ne détecte pas le bug. Rends l'assertion plus précise."
-    return False, f"Le test ÉCHOUE sur le code APRÈS correctif (il devrait passer) :\n{err(o_post)}"
+    return False, f"Le test ÉCHOUE sur le code APRÈS correctif (il devrait passer) :\n{err(o_post)}{snapshot(gdir)}"
+
+
+def snapshot(gdir):
+    """Arbre d'accessibilité de la page au moment de l'échec (error-context.md de Playwright) : les vrais libellés
+    et rôles de la page, pour que Gemma corrige ses sélecteurs au lieu de deviner (cf. bench/reprotest.py)."""
+    port = 8080 + int(PSB)
+    ctx = sorted((B / "replay" / f"test-results-{port}").glob(f"{gdir.name}-*/error-context.md"), key=lambda p: p.stat().st_mtime)
+    if not ctx:
+        return ""
+    snap = ctx[-1].read_text(errors="ignore")
+    snap = snap[snap.find("# Page snapshot"):] if "# Page snapshot" in snap else snap
+    return f"\n\nÉTAT DE LA PAGE AU MOMENT DE L'ÉCHEC (arbre d'accessibilité, tronqué) :\n{snap[:5000]}"
 
 
 def process(pr, model, tries):
