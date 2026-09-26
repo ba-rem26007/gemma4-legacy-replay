@@ -24,7 +24,7 @@ Projet pour le hackathon Kaggle **Gemma 4**.
 - [Pilote : 3 bugs validés](docs/PILOTE.md)
 - [Données de fine-tuning](docs/DONNEES_FT.md)
 - [**Plan pour gagner**](docs/PLAN.md)
-- [**Procédures** (commandes pas à pas)](docs/PROCEDURES.md)
+- [**Procédures** (commandes pas à pas)](docs/PROCEDURES.md) · [Enregistrer une reproduction (expert)](docs/ENREGISTREMENT.md)
 - [Résultats](docs/RESULTATS.md) · [Taxonomie des échecs](docs/ECHECS.md)
 - [Vocabulaire](docs/VOCABULAIRE.md) · [Glossaire métier](docs/GLOSSAIRE.md) · [Catalogue des bugs](docs/CATALOGUE.md)
 - [État](ETAT.md) · [Décisions](DECISIONS.md) · [Règles](REGLES.md) · [Kit](KIT.md)
