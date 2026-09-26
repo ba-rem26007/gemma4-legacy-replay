@@ -5,7 +5,12 @@ set -euo pipefail
 cd "$(dirname "$0")"; PR="${1:?pr}"
 PSB="${PSB:-1}"; PROJ="psbench$([ "$PSB" = 1 ] || echo "$PSB")"
 export PS_PORT="${PS_PORT:-$((8080 + PSB))}"
-[ -f "$PR/setup.sql" ] && docker exec -i "$PROJ-db-1" mysql -padmin prestashop < "$PR/setup.sql" 2>/dev/null
+if [ -f "$PR/setup.sql" ]; then
+  # erreur MySQL affichée (auparavant masquée : arrêt silencieux, retour vide pour l'agent / gentest)
+  if ! SQLOUT=$(docker exec -i "$PROJ-db-1" mysql -padmin prestashop < "$PR/setup.sql" 2>&1); then
+    echo "ERREUR setup.sql : $(echo "$SQLOUT" | grep -v 'Using a password')"; exit 3
+  fi
+fi
 docker exec "$PROJ-ps-1" sh -c 'rm -rf /var/www/html/var/cache/*'
 # Par défaut : l'oracle seul s'il existe (verdict) ; sinon tous les tests du dossier (bugs pilotes).
 FILTER="${2:-}"

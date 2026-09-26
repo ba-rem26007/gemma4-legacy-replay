@@ -94,7 +94,10 @@ def validate(pr, gdir):
     c_pre, o_pre = sh(f"PSB={PSB} {B}/replay/run.sh {gdir.name}", 600)
     sh(f"PSB={PSB} {B}/checkout.sh {pr} post")
     c_post, o_post = sh(f"PSB={PSB} {B}/replay/run.sh {gdir.name}", 600)
-    err = lambda o: "\n".join(l for l in o.splitlines() if re.search(r"Error|Expected|Received|Timeout|✘|SyntaxError|at .*spec", l))[:1500]
+    def err(o):
+        e = "\n".join(l for l in o.splitlines() if re.search(r"Error|Expected|Received|Timeout|✘|SyntaxError|at .*spec", l))[:1500]
+        # aucune ligne reconnue (ex. setup.sql refusé par MySQL : run.sh s'arrête sans sortie Playwright) → fin brute
+        return e or ("\n".join(o.strip().splitlines()[-25:])[:1500] or "aucune sortie : le setup.sql a probablement échoué (vérifie la syntaxe SQL et les tables ps_*)")
     if c_pre != 0 and c_post == 0:
         return True, "OK"
     if c_pre == 0:
@@ -147,6 +150,7 @@ def main():
                 r = {"pr": pr, "statut": "erreur", "err": str(e)[:300]}
             print(json.dumps({k: v for k, v in r.items() if k != "log"}, ensure_ascii=False), flush=True)
             out.write(json.dumps(r, ensure_ascii=False) + "\n")
+            out.flush()
 
 
 if __name__ == "__main__":
