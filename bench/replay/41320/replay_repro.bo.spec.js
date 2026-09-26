@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const { execSync: __x } = require('child_process');
 const __P = 'psbench' + ((process.env.PS_PORT||'8081')==='8081' ? '' : String(Number(process.env.PS_PORT)-8080));
-test.beforeAll(() => { __x(`docker exec -i ${__P}-db-1 mysql -padmin prestashop`, { input: "-- On s'assure que la commande 1 contient au moins deux produits (le produit 1 et le produit 2)\n-- pour pouvoir en supprimer un sans vider la commande.\nDELETE FROM ps_order_detail WHERE id_order = 1;\nINSERT INTO ps_order_detail (id_order, product_id, product_quantity, unit_price_tax_incl, unit_price_tax_excl, total_price_tax_incl, total_price_tax_excl)\nVALUES (1, 1, 1, 10, 10, 10, 10), (1, 2, 1, 10, 10, 10, 10);\n\n-- On supprime le produit 1 du catalogue pour reproduire le bug\nDELETE FROM ps_product_shop WHERE id_product = 1;\nDELETE FROM ps_product WHERE id_product = 1;" }); });
+test.beforeAll(() => { __x(`docker exec -i ${__P}-db-1 mysql -padmin prestashop`, { input: "-- Au lieu d'un INSERT qui \u00e9choue sur les contraintes NOT NULL, \n-- on modifie une ligne existante de la commande 1 pour qu'elle pointe vers le produit 1.\nUPDATE ps_order_detail SET product_id = 1 WHERE id_order = 1 LIMIT 1;\n\n-- On supprime le produit 1 du catalogue pour reproduire le bug.\nDELETE FROM ps_product_shop WHERE id_product = 1;\nDELETE FROM ps_product WHERE id_product = 1;" }); });
 // Issue: Unable to delete product from order when product is deleted from catalog.
 // The system throws a 500 error because it tries to load the Product object during deletion.
 
