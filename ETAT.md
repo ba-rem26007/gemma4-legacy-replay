@@ -35,6 +35,7 @@ Mis à jour : 2026-09-25. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 ## TODO (ordre)
 - [x] **Taxonomie des échecs** (`docs/ECHECS.md`) : 35 % mauvais fichier, 14 % aucune édition, 12 % correctif faux, 0 régression → la localisation est le premier levier (condition C).
 - [~] **B\* / condition O** (borne haute : oracle comme retour, 2 corrections) sur 33 bugs — en cours (`runs/test_O1.log`).
+- [~] **Condition C** (glossaire automatique provisoire `glossaire/glossaire_auto.csv`, 51 entrées + 4 graines, 16/33 tickets TEST concernés) — en file après O (`runs/test_C1.log`). Relecture de Rémi attendue pour la version définitive.
 - [~] **Modèle 26B-A4B** en condition A (comparaison avec 31B) — en cours (`runs/test_A26_1.log`).
 0. [ ] **PRIORITÉ (jalon 20 oct.) : condition B sur TEST** = tests de rejeu générés par la chaîne (phase 4) → démontrer Q1. Sans ça, pas de thèse.
 1. [ ] Fin des runs A/R → `bench/reeval.py` → tableau final (docs/DEMO.md ou docs/RESULTATS.md).

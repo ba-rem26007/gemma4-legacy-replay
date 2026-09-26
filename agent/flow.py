@@ -95,7 +95,9 @@ def windows(src, keywords, extra_lines=()):
 
 def glossary_hits(ticket_text):
     """Condition C : entrées du glossaire métier dont le terme ou un synonyme apparaît dans le ticket."""
-    p = ROOT / "glossaire" / "glossaire.csv"
+    # GLOSSAIRE=glossaire_auto.csv → glossaire extrait automatiquement (provisoire, avant relecture de Rémi)
+    import os
+    p = ROOT / "glossaire" / os.environ.get("GLOSSAIRE", "glossaire.csv")
     if not p.exists():
         return ""
     t = ticket_text.lower()
@@ -103,7 +105,8 @@ def glossary_hits(ticket_text):
     for r in csv.DictReader(open(p)):
         names = [r["terme"]] + [s for s in r["synonymes"].split("|") if s]
         if any(n.lower() in t for n in names):
-            lines.append(f"- {r['terme']} ({', '.join(names[1:4])}) → {r['symboles'].replace('|', ', ')}")
+            syn = f" ({', '.join(names[1:4])})" if len(names) > 1 else ""
+            lines.append(f"- {r['terme']}{syn} → {r['symboles'].replace('|', ', ')}")
     return "\n".join(lines)
 
 
