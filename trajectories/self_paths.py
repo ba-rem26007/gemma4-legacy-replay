@@ -57,6 +57,12 @@ def build(bug, d):
     hs = {f: h for f, h in hunks(diff).items() if f.endswith(CODE) and not f.startswith(flow.EXCLUDE)}
     if not hs or len(hs) > flow.MAX_FILES_READ:
         return None, "hors_format"
+    # garde-fou anti-contournement (reward hacking) : un oracle écrit par le modèle peut être satisfait par un patch
+    # symptomatique ailleurs (ex. #38417 : cas particulier ajouté dans ImageType au lieu de corriger l'appel fautif).
+    # Sur TRAIN on connaît le correctif officiel → on n'accepte que des éditions DANS ses fichiers.
+    official = set(bug["files"])
+    if not set(hs) <= official:
+        return None, "hors_fichiers_officiels"
     kws, chosen = trace_choices(d)
     hits = flow.grep(base, kws)
     edited = list(hs)
