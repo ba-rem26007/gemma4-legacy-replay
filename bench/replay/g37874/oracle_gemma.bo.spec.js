@@ -10,11 +10,10 @@ test('la recherche d\'un produit inexistant dans les mouvements de stock ne prod
   await page.goto('/admin-dev/');
 
   // 2. Navigation vers la page Mouvements de stock
-  // On récupère l'URL du lien pour éviter les problèmes de visibilité/menus déroulants
-  const movementsLink = page.locator('a[href*="stock-movements"]').first();
-  await expect(movementsLink).toBeAttached();
-  const url = await movementsLink.getAttribute('href');
-  await page.goto(url);
+  // On utilise un sélecteur basé sur le texte pour être plus robuste que l'URL exacte
+  // On utilise force: true car le lien peut être dans un menu déroulant fermé
+  const movementsLink = page.locator('a', { hasText: /Mouvements/i }).first();
+  await movementsLink.click({ force: true });
 
   // Gestion de la page de sécurité Symfony si elle apparaît
   const risksLink = page.locator('text=/comprends les risques|understand the risks/i');
@@ -23,7 +22,7 @@ test('la recherche d\'un produit inexistant dans les mouvements de stock ne prod
   }
 
   // 3. Recherche d'un produit qui n'existe pas
-  // On attend que la page soit chargée (présence du champ de recherche)
+  // On attend que le champ de recherche soit disponible
   const searchInput = page.locator('input[name="search"]');
   await expect(searchInput).toBeVisible();
   await searchInput.fill('PRODUIT_INEXISTANT_999');
@@ -32,11 +31,11 @@ test('la recherche d\'un produit inexistant dans les mouvements de stock ne prod
   await page.locator('button[type="submit"]').first().click();
 
   // 4. Vérification du comportement
-  // On attend la réponse du serveur
+  // On attend la réponse du serveur pour s'assurer que la recherche a été traitée
   await page.waitForResponse(resp => resp.url().includes('movements') && resp.status() === 200);
 
   // Le bug se manifestait par une notification contenant le texte "undefined"
-  // On vérifie que ce texte n'est PAS présent dans les notifications
+  // On vérifie que ce texte n'est PAS présent dans les notifications ou alertes
   const notification = page.locator('.notification, .alert, .toast, .text-danger');
   await expect(notification).not.toContainText('undefined');
 
@@ -45,7 +44,7 @@ test('la recherche d\'un produit inexistant dans les mouvements de stock ne prod
   await expect(loader).not.toBeVisible();
 
   // Assertion métier : on doit voir un message indiquant qu'aucun résultat n'a été trouvé
-  // ou que le tableau est vide, mais pas un état de chargement infini.
+  // ou que le tableau est rendu (même vide), mais pas un état de chargement infini.
   const noResults = page.locator('text=/aucun résultat|no results|aucun enregistrement/i');
   const table = page.locator('table');
   

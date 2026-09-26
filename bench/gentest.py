@@ -50,6 +50,38 @@ KIND: fo|bo
 ```"""
 
 
+ENV_PHP = """ORACLE PHP (exécuté en ligne de commande DANS le conteneur PrestaShop, depuis /var/www/html)
+- Commence par : <?php require 'config/config.inc.php';  (charge PrestaShop : classes legacy, Db, Context, conteneur Symfony)
+- Context::getContext() : boutique 1, langue 1 (fr), aucun client/employé connecté (crée-les si besoin, ex. new Employee(1)).
+- Données de démo : produits 1..19, clients 1..2, commandes 1..5, catégories 2..9. Base MySQL préfixe ps_ (Db::getInstance()).
+- Services Symfony (src/) : SymfonyContainer::getInstance()->get(...) ou instanciation directe de la classe.
+- Appelle DIRECTEMENT le code touché par le correctif (méthode, validateur, requête) avec des entrées qui déclenchent le bug.
+- exit(0) si le comportement est CORRIGÉ, exit(1) sinon ; affiche (echo) les valeurs observées pour le diagnostic.
+- Une exception ou erreur fatale non rattrapée = échec (code non nul) : rattrape-la (try/catch \\Throwable) si le bug
+  EST l'exception, pour conclure proprement avec exit(1).
+- Le test doit ÉCHOUER sur le code d'avant le correctif et PASSER après. Pas de sortie HTML, pas de navigateur."""
+
+EXAMPLE_PHP = """--- EXEMPLE de forme (autre sujet) :
+```php
+<?php
+require 'config/config.inc.php';
+$p = new Product(1, false, 1);
+$price = Product::getPriceStatic(1, false);
+echo "prix HT produit 1 : $price\\n";
+exit($price > 0 ? 0 : 1);
+```"""
+
+FORMAT_PHP = """RÉPONDS EXACTEMENT dans ce format (rien d'autre) :
+KIND: php
+```sql
+-- contenu de setup.sql (ou vide)
+```
+```php
+<?php
+// contenu de l'oracle PHP
+```"""
+
+
 def catalog(pr):
     for f in ("catalog.jsonl", "catalog_legacy.jsonl"):
         p = B / f
@@ -94,6 +126,9 @@ def schema(bug, text):
 def parse(reply):
     kind = "bo" if re.search(r"KIND:\s*bo", reply, re.I) else "fo"
     sql = re.search(r"```sql\n(.*?)```", reply, re.S)
+    if re.search(r"KIND:\s*php", reply, re.I) or re.search(r"```php\n", reply):
+        php = re.search(r"```php\n(.*?)```", reply, re.S)
+        return "php", (sql.group(1).strip() if sql else ""), (php.group(1).strip() if php else "")
     js = re.search(r"```(?:js|javascript)\n(.*?)```", reply, re.S)
     return kind, (sql.group(1).strip() if sql else ""), (js.group(1).strip() if js else "")
 
@@ -109,15 +144,21 @@ def validate(pr, gdir):
     c_pre, o_pre = sh(f"PSB={PSB} {B}/replay/run.sh {gdir.name}", 600)
     sh(f"PSB={PSB} {B}/checkout.sh {pr} post")
     c_post, o_post = sh(f"PSB={PSB} {B}/replay/run.sh {gdir.name}", 600)
+    php = (gdir / "oracle_gemma.php").exists()
+    tail = lambda o: "\n".join(o.strip().splitlines()[-30:])[:2000]
+
     def err(o):
+        if php:  # sortie complète de l'oracle PHP (valeurs affichées, erreur fatale, trace)
+            return tail(o) or "aucune sortie"
         e = "\n".join(l for l in o.splitlines() if re.search(r"Error|Expected|Received|Timeout|✘|SyntaxError|at .*spec", l))[:1500]
         # aucune ligne reconnue (ex. setup.sql refusé par MySQL : run.sh s'arrête sans sortie Playwright) → fin brute
         return e or ("\n".join(o.strip().splitlines()[-25:])[:1500] or "aucune sortie : le setup.sql a probablement échoué (vérifie la syntaxe SQL et les tables ps_*)")
     if c_pre != 0 and c_post == 0:
         return True, "OK"
     if c_pre == 0:
-        return False, "Le test PASSE déjà sur le code AVANT correctif : il ne détecte pas le bug. Rends l'assertion plus précise."
-    return False, f"Le test ÉCHOUE sur le code APRÈS correctif (il devrait passer) :\n{err(o_post)}{snapshot(gdir)}"
+        seen = f"\nSortie sur le code AVANT correctif :\n{tail(o_pre)}" if php else ""
+        return False, "Le test PASSE déjà sur le code AVANT correctif : il ne détecte pas le bug. Rends l'assertion plus précise." + seen
+    return False, f"Le test ÉCHOUE sur le code APRÈS correctif (il devrait passer) :\n{err(o_post)}{'' if php else snapshot(gdir)}"
 
 
 def snapshot(gdir):
@@ -158,39 +199,50 @@ def explore(pr, reply):
     return "PAGES OBSERVÉES (code AVANT correctif)\n" + "\n\n".join(out)
 
 
-def process(pr, model, tries, explore_first=False):
+def process(pr, model, tries, explore_first=False, mode="ui"):
     bug = catalog(pr)
     gdir = B / "replay" / f"g{pr}"
     gdir.mkdir(exist_ok=True)
     kind0 = "bo" if bug.get("area") == "BO" or any("admin" in f.lower() or "/Admin/" in f for f in bug["files"]) else "fo"
-    intro = f"{ENV_NOTES}\n\n{example(kind0)}\n\n{context(bug)}"
-    msgs = [{"role": "system", "content": "Tu écris des tests Playwright de non-régression pour PrestaShop. Réponds uniquement dans le format demandé."}]
+    fmt = FORMAT_PHP if mode == "php" else FORMAT
+    if mode == "php":  # oracle PHP en ligne de commande : pas de navigateur, pas de sélecteurs
+        explore_first = False
+        intro = f"{ENV_PHP}\n\n{EXAMPLE_PHP}\n\n{context(bug)}"
+        role = "Tu écris des tests PHP de non-régression pour PrestaShop (exécutés en ligne de commande)."
+    else:
+        intro = f"{ENV_NOTES}\n\n{example(kind0)}\n\n{context(bug)}"
+        role = "Tu écris des tests Playwright de non-régression pour PrestaShop."
+    msgs = [{"role": "system", "content": role + " Réponds uniquement dans le format demandé."}]
     if explore_first:  # étape d'observation : le modèle choisit les pages, on lui montre leur contenu réel
         msgs.append({"role": "user", "content": f"{intro}\n\n{EXPLORE_ASK}"})
         reply, usage = agentrun.chat(msgs, model)
         agentrun.spend(usage)
         msgs += [{"role": "assistant", "content": reply}, {"role": "user", "content": f"{explore(pr, reply)}\n\nÉcris maintenant le test.\n{FORMAT}"}]
     else:
-        msgs.append({"role": "user", "content": f"{intro}\n\n{FORMAT}"})
+        msgs.append({"role": "user", "content": f"{intro}\n\n{fmt}"})
     t0, log = time.time(), []
     for attempt in range(tries):
         reply, usage = agentrun.chat(msgs, model)
         agentrun.spend(usage)
         msgs.append({"role": "assistant", "content": reply})
         kind, sql, js = parse(reply)
-        for f in gdir.glob("oracle_gemma*.spec.js"):
+        for f in list(gdir.glob("oracle_gemma*.spec.js")) + list(gdir.glob("oracle_gemma*.php")):
             f.unlink()
         if not js:
-            msg = "Réponse sans bloc ```js```. Respecte le format."
+            msg = f"Réponse sans bloc ```{'php' if mode == 'php' else 'js'}```. Respecte le format."
         else:
-            (gdir / f"oracle_gemma{'.bo' if kind == 'bo' else ''}.spec.js").write_text(f"// Oracle écrit par Gemma ({model}) pour PR #{pr}, validé pre/post automatiquement\n{js}\n")
+            if kind == "php":
+                code = js if js.lstrip().startswith("<?php") else "<?php\n" + js
+                (gdir / "oracle_gemma.php").write_text(code.replace("<?php", f"<?php\n// Oracle écrit par Gemma ({model}) pour PR #{pr}, validé pre/post automatiquement", 1) + "\n")
+            else:
+                (gdir / f"oracle_gemma{'.bo' if kind == 'bo' else ''}.spec.js").write_text(f"// Oracle écrit par Gemma ({model}) pour PR #{pr}, validé pre/post automatiquement\n{js}\n")
             (gdir / "setup.sql").write_text(sql + "\n") if sql else (gdir / "setup.sql").unlink(missing_ok=True)
             ok, msg = validate(pr, gdir)
             log.append({"attempt": attempt + 1, "ok": ok, "msg": msg[:300]})
             if ok:
                 (gdir / "STATUS").write_text(f"valide\ngemma essai {attempt + 1}\n")
                 return {"pr": pr, "statut": "valide", "essais": attempt + 1, "s": round(time.time() - t0), "log": log}
-        msgs.append({"role": "user", "content": f"VALIDATION : {msg}\nCorrige le test. {FORMAT}"})
+        msgs.append({"role": "user", "content": f"VALIDATION : {msg}\nCorrige le test. {fmt}"})
     (gdir / "STATUS").write_text(f"exclu:gemma_{tries}_essais\n{log[-1]['msg'] if log else ''}\n")
     return {"pr": pr, "statut": "echec", "essais": tries, "s": round(time.time() - t0), "log": log}
 
@@ -201,6 +253,7 @@ def main():
     ap.add_argument("prs", nargs="+", type=int)
     ap.add_argument("--model", default=os.environ.get("LLM_MODEL", "gemma-4-31b-it"))
     ap.add_argument("--tries", type=int, default=3)
+    ap.add_argument("--mode", choices=["ui", "php"], default="ui", help="ui = Playwright (FO/BO) ; php = oracle PHP en ligne de commande dans le conteneur")
     ap.add_argument("--explore", action="store_true", help="le modèle observe 1-2 pages réelles (code avant correctif) avant d'écrire")
     a = ap.parse_args()
     with open(B / "gentest.jsonl", "a") as out:
@@ -208,7 +261,7 @@ def main():
             if (B / "replay" / f"g{pr}" / "STATUS").exists():  # déjà traité (valide ou exclu) : on ne refait pas
                 continue
             try:
-                r = process(pr, a.model, a.tries, a.explore)
+                r = process(pr, a.model, a.tries, a.explore, a.mode)
             except Exception as e:
                 r = {"pr": pr, "statut": "erreur", "err": str(e)[:300]}
             print(json.dumps({k: v for k, v in r.items() if k != "log"}, ensure_ascii=False), flush=True)

@@ -9,17 +9,16 @@ test('opening a .webp attachment in customer service does not throw an exception
   fs.writeFileSync(filePath, 'dummy webp content');
 
   // 1. FO: Send a contact message with a .webp attachment
-  // Based on the snapshot, the contact page is at /nous-contacter
+  // The snapshot shows the contact page is at /nous-contacter
   await page.goto('/nous-contacter');
   
-  await page.fill('input[name="Customer[name]"]', 'Test User');
-  await page.fill('input[name="Customer[email]"]', 'test@example.com');
-  await page.fill('input[name="Message[subject]"]', 'Test WebP Attachment');
-  await page.fill('textarea[name="Message[message]"]', 'This is a test message with a webp file.');
+  // Use standard PrestaShop contact form field names
+  await page.fill('input[name="email"]', 'test@example.com');
+  await page.fill('textarea[name="message"]', 'This is a test message with a webp file.');
   await page.setInputFiles('input[type="file"]', filePath);
   await page.click('button[type="submit"]');
   
-  // Wait for the form to be processed (usually stays on the same page with a success message)
+  // Wait for the form to be submitted
   await page.waitForLoadState('networkidle');
 
   // 2. BO: Navigate to Customer Service
@@ -31,7 +30,7 @@ test('opening a .webp attachment in customer service does not throw an exception
     await riskWarning.click();
   }
 
-  // Navigate to Customer Threads (Service Client) using the controller name in the URL
+  // Navigate to Customer Threads (Service Client)
   const customerServiceLink = page.locator('a[href*="controller=AdminCustomerThreads"]').first();
   await customerServiceLink.click();
 
@@ -45,7 +44,6 @@ test('opening a .webp attachment in customer service does not throw an exception
   const attachmentLink = page.locator('a[href*="filename="]').filter({ hasText: /\.webp$/i }).first();
   
   // If the bug is present, the server calls die(Tools::displayError('Invalid file extension.'));
-  // which results in a simple page containing that text.
   await attachmentLink.click();
 
   // Assertion: The page should not contain the specific error message thrown by the bug
