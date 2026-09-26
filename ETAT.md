@@ -26,7 +26,8 @@ Mis à jour : 2026-09-25. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 **Résultats**
 - Démo pilotes (chemins reconstruits) : 3/3.
 - Premier run réel Gemma 4 31B sur pilotes : A 1/2, B 0/3.
-- **Éval TEST** : essai 2 (environnement propre) A 12/33 · R 11/33 → pas de gain visible de R ; essais 3-4 en cours. Essai 1 faussé par l'environnement.
+- **Éval TEST définitive** (4 essais, réévalués) : **A 39 %** (12,8/33) · **R 38 %** (12,5/33), écart −0,8 pt (IC95 −10,6/+8,3), 0 régression. Voir `docs/RESULTATS.md`.
+- **Condition B** : tests de reproduction depuis le ticket seul → 5 reproduits / 17, 1 fidèle (en cours).
 - (historique) **Éval TEST en cours** (Gemma 4 31B, 1 run/bug) : A 3/22 · **R 4/16** (fine-tuning simulé). Régressions en cours de run non fiables (anti-régression déplacée avant l'oracle ; `bench/reeval.py` à lancer en fin de run).
 - Oracles automatiques par différentiel : **0/12** (résultat négatif, à publier).
 - Coût : **0 €** (Gemma gratuit sur l'API ; quota 16 000 tokens/min).

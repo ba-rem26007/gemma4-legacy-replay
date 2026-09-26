@@ -35,7 +35,10 @@ ENV_NOTES = """ENVIRONNEMENT DE TEST (PrestaShop en Docker, données de démo FR
 - setup.sql : exécuté AVANT chaque run (base remise à zéro juste avant) ; doit être idempotent.
 - Boutique en mode production (erreurs PHP non affichées) ; aucune règle de taxe installée.
 - Le test doit vérifier le comportement CORRIGÉ : il doit ÉCHOUER sur le code d'avant le correctif et PASSER après.
-  Vise une assertion métier précise (valeur, texte, statut HTTP, ligne en base), pas un simple chargement de page."""
+  Vise une assertion métier précise (valeur, texte, statut HTTP, ligne en base), pas un simple chargement de page.
+- ROBUSTESSE : boutique en FRANÇAIS. Ne devine JAMAIS un libellé exact (titres, messages) : préfère le statut HTTP,
+  la présence/absence d'un élément, une valeur numérique, un montant, une ligne en base (sql(...)), ou une regex large.
+  Une seule assertion décisive vaut mieux que plusieurs assertions fragiles."""
 
 FORMAT = """RÉPONDS EXACTEMENT dans ce format (rien d'autre) :
 KIND: fo|bo

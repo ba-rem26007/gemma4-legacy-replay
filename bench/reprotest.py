@@ -67,8 +67,17 @@ def process(pr, model, tries):
             if code == 0:
                 msg = "Le test PASSE sur la boutique actuelle : il ne reproduit pas le bug. Vérifie le comportement fautif décrit dans le ticket."
             else:
-                err = "\n".join(l for l in out.splitlines() if re.search(r"Error|Timeout|✘|SyntaxError|locator", l))[:1500]
+                err = "\n".join(l for l in out.splitlines()
+                                 if re.search(r"error|timeout|✘|syntax|locator|unknown column|doesn't exist|duplicate", l, re.I))[:2500]
                 msg = f"Le test échoue pour une raison technique (pas une assertion métier) :\n{err}"
+                # arbre d'accessibilité de la page au moment de l'échec (écrit par Playwright)
+                port = 8080 + int(PSB)
+                ctx = sorted((B / "replay" / f"test-results-{port}").glob(f"{pr}-replay_repro*/error-context.md"),
+                             key=lambda p: p.stat().st_mtime)
+                if ctx:
+                    snap = ctx[-1].read_text(errors="ignore")
+                    snap = snap[snap.find("# Page snapshot"):] if "# Page snapshot" in snap else snap
+                    msg += f"\n\nÉTAT DE LA PAGE AU MOMENT DE L'ÉCHEC (arbre d'accessibilité, tronqué) :\n{snap[:5000]}"
             log.append({"attempt": attempt + 1, "msg": msg[:300]})
         msgs.append({"role": "user", "content": f"VALIDATION : {msg}\nCorrige le test. {g.FORMAT}"})
     for f in d.glob("replay_repro*.spec.js"):
@@ -82,7 +91,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("prs", nargs="+", type=int)
     ap.add_argument("--model", default=os.environ.get("LLM_MODEL", "gemma-4-31b-it"))
-    ap.add_argument("--tries", type=int, default=3)
+    ap.add_argument("--tries", type=int, default=4)
     a = ap.parse_args()
     with open(B / "reprotest.jsonl", "a") as out:
         for pr in sorted(a.prs, key=lambda p: g.catalog(p).get("merged_at") or ""):
@@ -91,7 +100,7 @@ def main():
             except Exception as e:
                 r = {"pr": pr, "statut": "erreur", "err": str(e)[:300]}
             print(json.dumps({k: v for k, v in r.items() if k != "log"}, ensure_ascii=False), flush=True)
-            out.write(json.dumps(r, ensure_ascii=False) + "\n")
+            out.write(json.dumps(r, ensure_ascii=False) + "\n"); out.flush()
 
 
 if __name__ == "__main__":

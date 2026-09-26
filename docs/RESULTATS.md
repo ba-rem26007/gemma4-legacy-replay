@@ -9,39 +9,39 @@ L'essai 1 a tourné sur un environnement partiellement défectueux : sa généra
 
 | Condition | Essai 1 | Essai 2 | Essai 3 | Essai 4 | Moyenne | Écart-type | Résolu ≥ 1 fois (pass@4) | Bon fichier (moy.) | Régressions |
 |---|---|---|---|---|---|---|---|---|---|
-| A · ticket seul | 2/33 | 12/33 | 15/33 | 11/33 | 10.0 (30%) | 4.8 | 17/33 | 19.8 | 16 |
-| R · ticket + 2 corrections TRAIN similaires | 3/33 | 11/33 | 14/33 | 11/33 | 9.8 (30%) | 4.1 | 14/33 | 20.2 | 19 |
+| A · ticket seul | 12/33 | 13/33 | 15/33 | 11/33 | 12.8 (39%) | 1.5 | 17/33 | 19.8 | 0 |
+| R · ticket + 2 corrections TRAIN similaires | 14/33 | 12/33 | 14/33 | 10/33 | 12.5 (38%) | 1.7 | 15/33 | 20.2 | 0 |
 
 ## R contre A (apparié par bug)
 
-Écart moyen du taux de résolution R − A : **-0.8%** (IC 95 % bootstrap : -8.3% à +7.6%).
+Écart moyen du taux de résolution R − A : **-0.8%** (IC 95 % bootstrap : -10.6% à +8.3%).
 Si l'intervalle contient 0, l'injection de corrections similaires n'a pas d'effet démontré.
 
 - Bugs jamais résolus (0/8) : **15**
-- Bugs toujours résolus (8/8) : **1**
+- Bugs toujours résolus (8/8) : **3**
 
 ## Détail par bug (nombre d'essais résolus sur 4)
 
 | Bug | Ticket | A | R |
 |---|---|---|---|
 | [#40971](https://github.com/PrestaShop/PrestaShop/pull/40971) | Uploading logo in Design -> Theme & Logo in multistore with a single s | 4 | 4 |
+| [#41193](https://github.com/PrestaShop/PrestaShop/pull/41193) | [9.1.0] Child theme translations are not displayed in Back Office tran | 4 | 4 |
+| [#41007](https://github.com/PrestaShop/PrestaShop/pull/41007) | CountryQueryBuilder::getCountQueryBuilder() always returns 1 instead o | 4 | 4 |
 | [#40853](https://github.com/PrestaShop/PrestaShop/pull/40853) | Search::find fuzzy search does not escape closest word and breaks SQL  | 3 | 4 |
 | [#40651](https://github.com/PrestaShop/PrestaShop/pull/40651) | Bad product name | 3 | 4 |
-| [#41007](https://github.com/PrestaShop/PrestaShop/pull/41007) | CountryQueryBuilder::getCountQueryBuilder() always returns 1 instead o | 3 | 3 |
-| [#41299](https://github.com/PrestaShop/PrestaShop/pull/41299) | Invalid product URLs trigger Fatal in ProductController::assignPriceAn | 3 | 2 |
-| [#41130](https://github.com/PrestaShop/PrestaShop/pull/41130) | When the Admin API is used with multistore enabled, any write operatio | 2 | 3 |
-| [#42004](https://github.com/PrestaShop/PrestaShop/pull/42004) | Duplicating with DuplicateProductCommand: Invalid Product localized pr | 2 | 3 |
-| [#41929](https://github.com/PrestaShop/PrestaShop/pull/41929) | Cannot edit a product when the experimental Catalog price rules featur | 3 | 2 |
-| [#41652](https://github.com/PrestaShop/PrestaShop/pull/41652) | Changing an order's status throws "Duplicate entry '<idp>-<idpa>-0-0'  | 3 | 2 |
-| [#41468](https://github.com/PrestaShop/PrestaShop/pull/41468) | Multishop: cache_default_attribute is not reset for all shops when cha | 3 | 2 |
-| [#41193](https://github.com/PrestaShop/PrestaShop/pull/41193) | [9.1.0] Child theme translations are not displayed in Back Office tran | 2 | 2 |
-| [#40898](https://github.com/PrestaShop/PrestaShop/pull/40898) | Bug: reserved_quantity not updated when "Share available quantities fo | 2 | 2 |
-| [#41665](https://github.com/PrestaShop/PrestaShop/pull/41665) | B O - Order view page - The Invoice prefix is displayed in the custome | 1 | 3 |
+| [#41299](https://github.com/PrestaShop/PrestaShop/pull/41299) | Invalid product URLs trigger Fatal in ProductController::assignPriceAn | 4 | 3 |
+| [#42004](https://github.com/PrestaShop/PrestaShop/pull/42004) | Duplicating with DuplicateProductCommand: Invalid Product localized pr | 3 | 4 |
+| [#41929](https://github.com/PrestaShop/PrestaShop/pull/41929) | Cannot edit a product when the experimental Catalog price rules featur | 4 | 3 |
+| [#41468](https://github.com/PrestaShop/PrestaShop/pull/41468) | Multishop: cache_default_attribute is not reset for all shops when cha | 4 | 3 |
+| [#41130](https://github.com/PrestaShop/PrestaShop/pull/41130) | When the Admin API is used with multistore enabled, any write operatio | 2 | 4 |
+| [#41665](https://github.com/PrestaShop/PrestaShop/pull/41665) | B O - Order view page - The Invoice prefix is displayed in the custome | 2 | 4 |
+| [#41652](https://github.com/PrestaShop/PrestaShop/pull/41652) | Changing an order's status throws "Duplicate entry '<idp>-<idpa>-0-0'  | 4 | 2 |
+| [#40898](https://github.com/PrestaShop/PrestaShop/pull/40898) | Bug: reserved_quantity not updated when "Share available quantities fo | 2 | 3 |
+| [#41320](https://github.com/PrestaShop/PrestaShop/pull/41320) | Unable to delete product from order when product is deleted from catal | 3 | 0 |
 | [#41530](https://github.com/PrestaShop/PrestaShop/pull/41530) | BO - Shopping carts - Custom product image does not appear | 0 | 3 |
-| [#41320](https://github.com/PrestaShop/PrestaShop/pull/41320) | Unable to delete product from order when product is deleted from catal | 2 | 0 |
+| [#41675](https://github.com/PrestaShop/PrestaShop/pull/41675) | HTMLPurifier through twig extension is not adhering to cache dir confi | 2 | 1 |
 | [#41524](https://github.com/PrestaShop/PrestaShop/pull/41524) | BO - Order - Invoice / Payment method is not printed on invoice if the | 2 | 0 |
 | [#41394](https://github.com/PrestaShop/PrestaShop/pull/41394) | [Multishop] Error when updating "Schema of URLs" for a single shop | 1 | 0 |
-| [#41675](https://github.com/PrestaShop/PrestaShop/pull/41675) | HTMLPurifier through twig extension is not adhering to cache dir confi | 1 | 0 |
 | [#40743](https://github.com/PrestaShop/PrestaShop/pull/40743) | Bug: when invoicing is disabled, changing order status to "paid=1" doe | 0 | 0 |
 | [#40070](https://github.com/PrestaShop/PrestaShop/pull/40070) | actionCarrierUpdate not triggered on migrated carrier page | 0 | 0 |
 | [#41100](https://github.com/PrestaShop/PrestaShop/pull/41100) | All non core HTML emails are empty | 0 | 0 |
