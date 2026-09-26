@@ -9,14 +9,14 @@ try {
     Context::getContext()->currency = new Currency(1);
 
     // 2. Create Zones and Countries
-    // Zone 1: Europe, Zone 2: South America
+    // Use strings instead of arrays for names to avoid preg_match errors in PHP 8+
     $zone1 = new Zone();
-    $zone1->name = array(1 => 'Europe');
+    $zone1->name = 'Europe';
     $zone1->add();
     $id_zone1 = $zone1->id;
 
     $zone2 = new Zone();
-    $zone2->name = array(1 => 'South America');
+    $zone2->name = 'South America';
     $zone2->add();
     $id_zone2 = $zone2->id;
 
@@ -26,7 +26,7 @@ try {
     $country1->contains_states = 0;
     $country1->need_identification_number = 0;
     $country1->display_tax_label = 1;
-    $country1->name = array(1 => 'France');
+    $country1->name = 'France';
     $country1->active = 1;
     $country1->add();
     $id_country1 = $country1->id;
@@ -37,25 +37,23 @@ try {
     $country2->contains_states = 0;
     $country2->need_identification_number = 0;
     $country2->display_tax_label = 1;
-    $country2->name = array(1 => 'Brazil');
+    $country2->name = 'Brazil';
     $country2->active = 1;
     $country2->add();
     $id_country2 = $country2->id;
 
     // 3. Create Carriers
-    // Carrier 1: Only for Zone 1
     $carrier1 = new Carrier();
     $carrier1->id_reference = 100;
-    $carrier1->name = array(1 => 'Carrier Europe');
+    $carrier1->name = 'Carrier Europe';
     $carrier1->active = 1;
     $carrier1->shipping_handling = 1;
     $carrier1->add();
     $id_carrier1 = $carrier1->id;
 
-    // Carrier 2: Only for Zone 2
     $carrier2 = new Carrier();
     $carrier2->id_reference = 101;
-    $carrier2->name = array(1 => 'Carrier South America');
+    $carrier2->name = 'Carrier South America';
     $carrier2->active = 1;
     $carrier2->shipping_handling = 1;
     $carrier2->add();
@@ -117,15 +115,16 @@ try {
     $cart->update();
 
     // 7. Test getDeliveryOptionList
-    // Because Product 2 is restricted to Carrier 2, and Carrier 2 does not cover Zone 1,
-    // getPackageList() will create two packages. One will have no available carrier.
-    // The fix should detect this and return an empty list.
+    // Product 2 is restricted to Carrier 2, but Carrier 2 doesn't cover Zone 1.
+    // getPackageList() will split the cart into 2 packages.
+    // Package 1 (Product 1) has Carrier 1.
+    // Package 2 (Product 2) has NO carrier.
+    // The fix should detect that at least one package has no carrier and return an empty list.
     $options = $cart->getDeliveryOptionList();
 
     echo "Number of delivery options found: " . count($options) . "\n";
 
-    // If the bug is present, it might return options for the first package.
-    // If fixed, it must return an empty array because one package is unshippable.
+    // If fixed, it must return an empty array.
     exit(empty($options) ? 0 : 1);
 
 } catch (\Throwable $t) {
