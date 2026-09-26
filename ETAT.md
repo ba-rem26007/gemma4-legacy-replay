@@ -32,6 +32,13 @@ Mis à jour : 2026-09-26. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 - Oracles automatiques par différentiel : **0/12** (résultat négatif, à publier).
 - Coût : **0 €** (Gemma gratuit sur l'API ; quota 16 000 tokens/min).
 
+## Stratégie retenue (26 sept.) : boucle d'auto-apprentissage 100 % Gemma
+1. Gemma écrit les oracles des bugs TRAIN (`bench/gentest.py`, ticket + correctif, gardé si échoue en pre / passe en post) — **pilote 10 bugs 9.0.x en cours** (`runs/gentest_pilot.log`, instance 4).
+2. L'agent Gemma corrige ces bugs TRAIN avec l'oracle comme retour (mode O : +9,8 pts sur TEST).
+3. Chemins réussis vérifiés → données de fine-tuning (source `gemma_self`, aucune sortie propriétaire), en plus des 569 chemins reconstruits.
+4. QLoRA → condition D sur TEST (go/no-go 22 oct.).
+Oracles Gemma = vérificateurs ; les trajectoires gardées sont celles de Gemma, validées par exécution.
+
 ## TODO (ordre)
 - [x] **Taxonomie des échecs** (`docs/ECHECS.md`) : 35 % mauvais fichier, 14 % aucune édition, 12 % correctif faux, 0 régression → la localisation est le premier levier (condition C).
 - [~] **B\* / condition O** (borne haute : oracle comme retour, 2 corrections) : run terminé : 1re tentative **13/33** (≈ A 12,8), **16/33 après retour de l'oracle** (+3 : #41299, #41394, #41923) → un vérificateur parfait apporte ≈ +9 pts. Section dans `docs/RESULTATS.md` ; **réévalué : 16/33 confirmés** (les 3 faux négatifs dus au bug d’évaluation sont levés).
