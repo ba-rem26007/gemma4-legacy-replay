@@ -14,7 +14,7 @@ $context = Context::getContext();
 $context->shop = new Shop(1);
 $context->language = new Language(1);
 
-// Ensure an employee is connected for the controller
+// Ensure an employee is connected
 $employee = new Employee(1);
 if (!Validate::isLoadedObject($employee)) {
     $employee = new Employee();
@@ -67,12 +67,15 @@ $_POST['custom_tagline_1'] = 'Regression Test Value';
 try {
     $obj = new CustomObjectModel();
     $controller = new TestAdminController();
-    $controller->context = $context;
+    
+    // We do not set $controller->context directly because it is protected.
+    // AdminController uses Context::getContext() internally if needed.
 
     // Execute the method containing the bug
     $controller->publicCopyFromPost($obj, 'custom_object');
 
     // Check if the multilingual field was correctly populated from $_POST
+    // In PrestaShop, multilingual fields are stored as arrays: [id_lang => value]
     $observed = isset($obj->custom_tagline[1]) ? $obj->custom_tagline[1] : null;
     
     echo "Observed value for custom_tagline[1]: " . ($observed ?? 'NULL') . "\n";
