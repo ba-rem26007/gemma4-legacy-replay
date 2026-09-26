@@ -14,16 +14,22 @@ test('le texte d\'aide du champ Accès groupe est affiché dans la modification 
   }
 
   // Navigation vers Catalogue > Catégories
-  // On cherche le lien qui contient "categories" dans l'URL pour éviter les libellés fragiles
-  await page.click('a[href*="categories"]');
+  // On utilise des sélecteurs basés sur l'URL pour éviter les problèmes de libellés avec icônes
+  // On clique d'abord sur le menu parent "Catalogue" pour déployer le sous-menu
+  await page.locator('a[href*="sell/catalog"]').first().click();
+  
+  // On clique sur le lien "Catégories"
+  await page.locator('a[href*="categories"]').first().click();
 
-  // On clique sur "Modifier" pour la première catégorie de la liste
-  await page.click('text=Modifier');
+  // On clique sur le lien "Modifier" de la première catégorie de la liste
+  await page.locator('a:has-text("Modifier")').first().click();
 
   // Le champ "Accès groupe" est un MaterialChoiceTableType.
-  // Le texte d'aide attendu est : "Sélectionnez les groupes de clients qui peuvent accéder à cette catégorie"
-  // On utilise une regex large pour être robuste aux changements mineurs de traduction.
-  const helpText = page.locator('div.help-block, p.help-block, .form-text').filter({ hasText: /S\w+lez les groupes de clients/i });
+  // Le texte d'aide attendu contient "groupes de clients".
+  // On cherche un élément de texte d'aide (classe help-block, form-text ou help) contenant ce motif.
+  const helpText = page.locator('.help-block, .form-text, .help').filter({ 
+    hasText: /groupes de clients/i 
+  });
   
   // Avant le correctif, le bloc {{ block('form_help') }} était absent du template Twig, 
   // donc l'élément n'est pas rendu dans le DOM.

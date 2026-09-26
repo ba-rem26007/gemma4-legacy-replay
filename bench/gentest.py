@@ -55,6 +55,8 @@ ENV_PHP = """ORACLE PHP (exécuté en ligne de commande DANS le conteneur Presta
 - Context::getContext() : boutique 1, langue 1 (fr), aucun client/employé connecté (crée-les si besoin, ex. new Employee(1)).
 - Données de démo : produits 1..19, clients 1..2, commandes 1..5, catégories 2..9. Base MySQL préfixe ps_ (Db::getInstance()).
 - Services Symfony (src/) : SymfonyContainer::getInstance()->get(...) ou instanciation directe de la classe.
+- RÉUTILISE D'ABORD les données de démo existantes (new Order(1), new Cart(1), new Customer(1), new Product(1)…) :
+  créer une commande ou un panier complet est long (nombreux champs requis). Ne crée que ce qui manque.
 - PAS de SQL à part : crée les données nécessaires DANS le script avec les classes PrestaShop
   (ex. $c = new Cart(); $c->id_currency = 1; $c->id_lang = 1; $c->add(); puis $c->updateQty(1, 1);),
   elles remplissent les champs par défaut (dates…). La base est remise à zéro avant chaque exécution.
@@ -199,6 +201,25 @@ def explore(pr, reply):
     return "PAGES OBSERVÉES (code AVANT correctif)\n" + "\n\n".join(out)
 
 
+def required_fields(bug):
+    """Champs requis ('required' => true) des classes ObjectModel legacy touchées ou citées dans le correctif."""
+    diff = (B / "diffs" / f"{bug['pr']}.diff").read_text()
+    names = set(re.findall(r"\bnew\s+(\w+)\s*\(", diff)) | {Path(f).stem for f in bug["files"] if f.startswith("classes/")}
+    names |= {"Order", "Cart", "Customer", "Product"}
+    out = []
+    for n in sorted(names):
+        path = next((f for f in (f"classes/{n}.php", f"classes/order/{n}.php", f"classes/checkout/{n}.php") if flow.show(bug["base_commit"], f)), None)
+        if not path:
+            continue
+        src = flow.show(bug["base_commit"], path)
+        i = src.find("$definition")
+        src = src[i:src.find("\n    ];", i)] if i >= 0 else ""  # bloc $definition seul (pas $webserviceParameters)
+        req = re.findall(r"'(\w+)'\s*=>\s*\[[^\]]*'required'\s*=>\s*true", src)
+        if req:
+            out.append(f"- {n} : {', '.join(r for r in dict.fromkeys(req) if r != 'fields')}")
+    return "CHAMPS REQUIS pour créer ces objets (sinon exception « La propriété X->y est vide ») :\n" + "\n".join(out) if out else ""
+
+
 def process(pr, model, tries, explore_first=False, mode="ui"):
     bug = catalog(pr)
     gdir = B / "replay" / f"g{pr}"
@@ -207,7 +228,7 @@ def process(pr, model, tries, explore_first=False, mode="ui"):
     fmt = FORMAT_PHP if mode == "php" else FORMAT
     if mode == "php":  # oracle PHP en ligne de commande : pas de navigateur, pas de sélecteurs
         explore_first = False
-        intro = f"{ENV_PHP}\n\n{EXAMPLE_PHP}\n\n{context(bug)}"
+        intro = f"{ENV_PHP}\n\n{EXAMPLE_PHP}\n\n{context(bug)}\n\n{required_fields(bug)}"
         role = "Tu écris des tests PHP de non-régression pour PrestaShop (exécutés en ligne de commande)."
     else:
         intro = f"{ENV_NOTES}\n\n{example(kind0)}\n\n{context(bug)}"
