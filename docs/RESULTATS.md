@@ -71,3 +71,13 @@ C'est le meilleur retour qu'un vérificateur puisse donner : il borne l'apport d
 | O, verdict final réévalué (dernier patch) | 16/33 |
 
 Lecture : même un vérificateur parfait n'ajoute que quelques bugs ; les échecs restants ne trouvent pas le bon fichier ou ne savent pas corriger malgré le signal (voir `docs/ECHECS.md`).
+
+## Autres conditions (1 essai) contre A
+
+Gagné = résolu ici mais jamais par A (0/4) ; perdu = raté ici mais toujours résolu par A (4/4).
+
+| Condition | Bugs traités | Résolus | Bon fichier | Gagnés | Perdus |
+|---|---|---|---|---|---|
+| A · moyenne des 4 essais | 33 | 12.8 | 19.8 | — | — |
+| A-26B · ticket seul, Gemma 4 26B-A4B | 33 | 5 | 21 | 0 | 5 |
+| C · + glossaire automatique (provisoire) | 26 | 9 | 15 | 1 (#41530) | 0 |

@@ -17,6 +17,11 @@ TRIALS = {
 LABEL = {"A": "A · ticket seul", "R": "R · ticket + 2 corrections TRAIN similaires"}
 # condition O (borne haute B*) : 1 essai, oracle comme retour (2 corrections) ; union de deux dossiers (run repris)
 O_DIRS = ["20260926-052040-O", "20260926-065152-O"]
+# conditions à 1 essai, comparées à la moyenne de A (4 essais) ; dossiers ajoutés au fil des runs
+SINGLE = {
+    "A-26B · ticket seul, Gemma 4 26B-A4B": ["20260926-052040-A", "20260926-065152-A"],
+    "C · + glossaire automatique (provisoire)": ["20260926-103202-C"],
+}
 
 
 def load(dirs, bugs):
@@ -83,6 +88,7 @@ def main():
     for b in sorted(bugs, key=lambda b: -(per_bug[b]["A"] + per_bug[b]["R"])):
         lines.append(f"| [#{b}](https://github.com/PrestaShop/PrestaShop/pull/{b}) | {title[b][:70]} | {per_bug[b]['A']} | {per_bug[b]['R']} |")
     lines += o_section(bugs, per_bug, solved)
+    lines += single_section(bugs, data, per_bug, solved)
     (ROOT / "docs" / "RESULTATS.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines[:20]))
 
@@ -107,6 +113,25 @@ def o_section(bugs, per_bug, solved):
            f"| O, verdict final réévalué (dernier patch) | {final}/{len(bugs)} |", "",
            "Lecture : même un vérificateur parfait n'ajoute que quelques bugs ; les échecs restants ne trouvent pas le bon fichier "
            "ou ne savent pas corriger malgré le signal (voir `docs/ECHECS.md`)."]
+    return out
+
+
+def single_section(bugs, data, per_bug, solved):
+    """Conditions à 1 essai contre A (moyenne des 4 essais) : résolus, bon fichier, bugs gagnés / perdus."""
+    a_loc = statistics.mean(sum(bool(t.get(b, {}).get("loc_hit")) for b in bugs) for t in data["A"])
+    a_mean = sum(per_bug[b]["A"] for b in bugs) / 4
+    out = ["", "## Autres conditions (1 essai) contre A", "",
+           "Gagné = résolu ici mais jamais par A (0/4) ; perdu = raté ici mais toujours résolu par A (4/4).", "",
+           "| Condition | Bugs traités | Résolus | Bon fichier | Gagnés | Perdus |", "|---|---|---|---|---|---|",
+           f"| A · moyenne des 4 essais | {len(bugs)} | {a_mean:.1f} | {a_loc:.1f} | — | — |"]
+    for name, dirs in SINGLE.items():
+        d = load(dirs, bugs)
+        if not d:
+            continue
+        won = [b for b in d if solved(d[b]) and per_bug[b]["A"] == 0]
+        lost = [b for b in d if not solved(d[b]) and per_bug[b]["A"] == 4]
+        out.append(f"| {name} | {len(d)} | {sum(solved(r) for r in d.values())} | {sum(bool(r.get('loc_hit')) for r in d.values())} | "
+                   f"{len(won)}{' (' + ', '.join('#' + b for b in won) + ')' if won else ''} | {len(lost)} |")
     return out
 
 
