@@ -16,22 +16,36 @@ $product_price = 10.00;
 $customization_price = 5.00;
 $quantity = 1;
 
-// We need a product to exist for Price::priceWithTax and other internal calls
+// Ensure product exists
 $product = new Product($id_product);
 if (!Validate::isLoadedObject($product)) {
     $product = new Product();
     $product->id = $id_product;
     $product->price = $product_price;
-    $product->id_tax_rules_group = 0; // No tax for simplicity
+    $product->id_tax_rules_group = 0; 
     $product->add();
 }
 
-// Prepare the $products array as it would be passed to addCustomizationPrice
-// In the buggy version, the 'unit_price_tax_excl' here is the base product price
+/**
+ * The bug is in Product::addCustomizationPrice.
+ * 
+ * Logic:
+ * 1. It starts with $price = $product_update['unit_price_tax_excl'] (10.00).
+ * 2. It iterates through customized_datas and adds the price of each customization to $price.
+ *    $price = 10.00 + 5.00 = 15.00.
+ * 3. Buggy version: $product_update['total_customization'] = $price * $customization_quantity;
+ *    Result: 15.00 * 1 = 15.00.
+ * 4. Fixed version: $product_update['total_customization'] = $product_update['unit_price_tax_excl'] * $customization_quantity;
+ *    Result: 10.00 * 1 = 10.00.
+ */
 $products = [
     [
         'id_product' => $id_product,
         'id_product_attribute' => $id_product_attribute,
+        'id_address_delivery' => $id_address_delivery,
+        'product_quantity' => $quantity,
+        'product_price' => $product_price,
+        'rate' => 0,
         'unit_price_tax_excl' => $product_price,
         'unit_price_tax_incl' => $product_price,
         'quantity' => $quantity,
@@ -40,13 +54,17 @@ $products = [
     ]
 ];
 
-// Prepare the $customized_datas array as returned by Product::getCustomizedDatas
+// We must provide the exact structure that Product::addCustomizationPrice expects to avoid warnings
+// and to ensure the customization price is actually added to the internal $price variable.
 $customized_datas = [
     (int)$id_product => [
         (int)$id_product_attribute => [
             (int)$id_address_delivery => [
                 (int)$id_customization => [
+                    'id_customization' => $id_customization,
                     'quantity' => $quantity,
+                    'quantity_refunded' => 0,
+                    'quantity_returned' => 0,
                     'datas' => [
                         1 => [ // type 1: text
                             [
@@ -67,22 +85,25 @@ try {
     Product::addCustomizationPrice($products, $customized_datas);
 
     $observed_total_custom = $products[0]['total_customization'];
-    $observed_total_custom_wt = $products[0]['total_customization_wt'];
 
-    echo "Product Price: $product_price\n";
+    echo "Product Base Price: $product_price\n";
     echo "Customization Price: $customization_price\n";
     echo "Observed total_customization: $observed_total_custom\n";
-    echo "Observed total_customization_wt: $observed_total_custom_wt\n";
 
-    // The bug: total_customization was calculated using the product base price ($product_price)
-    // instead of the customization price ($customization_price).
-    // Correct: total_customization = 5.00 * 1 = 5.00
-    // Buggy: total_customization = 10.00 * 1 = 10.00
-    if (abs($observed_total_custom - $customization_price) < 0.0001) {
-        exit(0); // Fixed
+    // After fix, total_customization should only be the base product price * qty
+    $expected_fixed = $product_price * $quantity; // 10.00
+    // Before fix, it was (base + custom) * qty
+    $expected_buggy = ($product_price + $customization_price) * $quantity; // 15.00
+
+    if (abs($observed_total_custom - $expected_fixed) < 0.0001) {
+        echo "Test PASSED: total_customization is the base price.\n";
+        exit(0);
     } else {
-        echo "Error: total_customization is $observed_total_custom, expected $customization_price\n";
-        exit(1); // Bug still present
+        echo "Test FAILED: total_customization is $observed_total_custom, expected $expected_fixed\n";
+        if (abs($observed_total_custom - $expected_buggy) < 0.0001) {
+            echo "Bug detected: total_customization includes the customization price.\n";
+        }
+        exit(1);
     }
 } catch (\Throwable $t) {
     echo "Exception: " . $t->getMessage() . "\n";
