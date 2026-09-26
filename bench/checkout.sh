@@ -31,6 +31,8 @@ if [ "$BRANCH" = "develop" ]; then
 fi
 # Branche 9.1.x développée avant la release 9.1.0 : image 9.1.0 minimum
 [ "$BRANCH" = "9.1.x" ] && case "$REL" in 9.1.*) ;; *) REL="9.1.0" ;; esac
+# idem 9.0.x développée avant la release 9.0.0 (sinon image 8.2.x, incompatible)
+[ "$BRANCH" = "9.0.x" ] && case "$REL" in 9.0.*) ;; *) REL="9.0.0" ;; esac
 # Image Docker : 8.x → tag = version ; 9.x → variante « classic » (thème classic, PHP 8.1)
 case "$REL" in
   9.0.*) IMG="9.0.3-3.0-classic-8.1" ;;
