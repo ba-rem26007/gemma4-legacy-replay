@@ -13,7 +13,7 @@ while true; do
     ORACLE_PREFIX=g PSB=4 python3 -u agent/run.py --bugs "$pr" --condition O --model gemma-4-31b-it --retries 4 2>&1 | grep -E '^→|Traceback'
   done
   # fin : plus aucun lot gentest actif
-  if ! pgrep -f 'bench/gentest.py' >/dev/null; then
+  if ! pgrep -f "bench/gentest.py" >/dev/null && ! pgrep -f queue_lot3 >/dev/null; then
     python3 bench/loop_stats.py > /dev/null
     echo "FIN boucle agent $(date -u +%H:%M)"; break
   fi

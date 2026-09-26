@@ -6,11 +6,10 @@ require 'config/config.inc.php';
 Context::getContext()->shop = new Shop(1);
 Context::getContext()->language = new Language(1);
 
-// Use product 1
 $id_product = 1;
 $query = 'BugTestProduct';
 
-// Ensure product has a searchable name
+// Ensure product has a searchable name and is initialized
 $p_init = new Product($id_product);
 $p_init->name = [1 => $query];
 $p_init->price = 10;
@@ -18,35 +17,37 @@ $p_init->save();
 
 /**
  * Setup the bug condition:
- * 1. Product must be ACTIVE in Shop 1 (product_shop.active = 1)
- * 2. Product must be INACTIVE in Shop 2 (product_shop.active = 0)
- * 3. The global product table must be INACTIVE (product.active = 0)
+ * We need ps_product.active = 0 AND ps_product_shop (shop 1).active = 1.
  * 
- * In PrestaShop, Product::save() updates both 'product' and 'product_shop'.
- * The last save determines the value in 'product'.
+ * In PrestaShop, Product::save() updates both the global table (ps_product) 
+ * and the shop table (ps_product_shop). The last save determines the global value.
  */
 
-// Step 1: Set active in Shop 1
+// 1. Set active in Shop 1
+// This sets ps_product.active = 1 AND ps_product_shop(1).active = 1
 Shop::setContext(Shop::CONTEXT_SHOP, 1);
 $p1 = new Product($id_product);
 $p1->active = 1;
 $p1->save();
 
-// Step 2: Set inactive in Shop 2
-// This will set ps_product.active = 0 AND ps_product_shop (shop 2).active = 0
+// 2. Set inactive in Shop 2
+// This sets ps_product.active = 0 AND ps_product_shop(2).active = 0
+// Crucially, ps_product_shop(1).active remains 1.
 Shop::setContext(Shop::CONTEXT_SHOP, 2);
 $p2 = new Product($id_product);
 $p2->active = 0;
 $p2->save();
 
-// Verification of setup
+// Switch back to Shop 1 context for the search
 Shop::setContext(Shop::CONTEXT_SHOP, 1);
+
+// Verification of setup: ps_product.active must be 0
 $p_verify = new Product($id_product);
-$global_active = (int)$p_verify->active; // This reads from ps_product
+$global_active = (int)$p_verify->active; 
 echo "Global ps_product.active: $global_active\n";
 
 if ($global_active !== 0) {
-    echo "Setup failed: ps_product.active should be 0\n";
+    echo "Setup failed: ps_product.active should be 0 to trigger the bug\n";
     exit(1);
 }
 
