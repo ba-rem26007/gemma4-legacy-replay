@@ -132,13 +132,46 @@ def snapshot(gdir):
     return f"\n\nÉTAT DE LA PAGE AU MOMENT DE L'ÉCHEC (arbre d'accessibilité, tronqué) :\n{snap[:5000]}"
 
 
-def process(pr, model, tries):
+EXPLORE_ASK = """AVANT d'écrire le test, tu peux OBSERVER 1 ou 2 pages de la boutique (code AVANT correctif) :
+on t'en donnera l'arbre d'accessibilité réel (titres, boutons, champs, colonnes).
+Réponds UNIQUEMENT en JSON : {"pages": [{"kind": "bo", "cible": "Catalogue > Produits"}, {"kind": "fo", "cible": "/index.php?id_product=1&controller=product"}]}
+- bo : chemin du menu en libellés français (ex. "Commandes > Commandes", "Paramètres avancés > Performances") ou URL /admin-dev/index.php?controller=AdminXxx
+- fo : URL relative."""
+
+
+def explore(pr, reply):
+    """Ouvre les pages demandées par le modèle sur la boutique AVANT correctif → texte des arbres d'accessibilité."""
+    pages = []
+    try:
+        pages = json.loads(re.search(r"\{.*\}", reply, re.S).group(0)).get("pages", [])[:2]
+    except Exception:
+        pass
+    if not pages:
+        return "PAGES OBSERVÉES : aucune (réponse JSON illisible)."
+    sh(f"PSB={PSB} {B}/checkout.sh {pr} pre")
+    port = 8080 + int(PSB)
+    out = []
+    for p in pages:
+        kind, cible = ("bo" if p.get("kind") == "bo" else "fo"), str(p.get("cible", ""))[:200]
+        _, o = sh(f"cd {B / 'replay'} && PS_PORT={port} timeout 150 node explore.js {kind} {json.dumps(cible)}", 200)
+        out.append(f"===== {kind} : {cible} =====\n{o[:6000]}")
+    return "PAGES OBSERVÉES (code AVANT correctif)\n" + "\n\n".join(out)
+
+
+def process(pr, model, tries, explore_first=False):
     bug = catalog(pr)
     gdir = B / "replay" / f"g{pr}"
     gdir.mkdir(exist_ok=True)
     kind0 = "bo" if bug.get("area") == "BO" or any("admin" in f.lower() or "/Admin/" in f for f in bug["files"]) else "fo"
-    msgs = [{"role": "system", "content": "Tu écris des tests Playwright de non-régression pour PrestaShop. Réponds uniquement dans le format demandé."},
-            {"role": "user", "content": f"{ENV_NOTES}\n\n{example(kind0)}\n\n{context(bug)}\n\n{FORMAT}"}]
+    intro = f"{ENV_NOTES}\n\n{example(kind0)}\n\n{context(bug)}"
+    msgs = [{"role": "system", "content": "Tu écris des tests Playwright de non-régression pour PrestaShop. Réponds uniquement dans le format demandé."}]
+    if explore_first:  # étape d'observation : le modèle choisit les pages, on lui montre leur contenu réel
+        msgs.append({"role": "user", "content": f"{intro}\n\n{EXPLORE_ASK}"})
+        reply, usage = agentrun.chat(msgs, model)
+        agentrun.spend(usage)
+        msgs += [{"role": "assistant", "content": reply}, {"role": "user", "content": f"{explore(pr, reply)}\n\nÉcris maintenant le test.\n{FORMAT}"}]
+    else:
+        msgs.append({"role": "user", "content": f"{intro}\n\n{FORMAT}"})
     t0, log = time.time(), []
     for attempt in range(tries):
         reply, usage = agentrun.chat(msgs, model)
@@ -168,13 +201,14 @@ def main():
     ap.add_argument("prs", nargs="+", type=int)
     ap.add_argument("--model", default=os.environ.get("LLM_MODEL", "gemma-4-31b-it"))
     ap.add_argument("--tries", type=int, default=3)
+    ap.add_argument("--explore", action="store_true", help="le modèle observe 1-2 pages réelles (code avant correctif) avant d'écrire")
     a = ap.parse_args()
     with open(B / "gentest.jsonl", "a") as out:
         for pr in a.prs:
             if (B / "replay" / f"g{pr}" / "STATUS").exists():  # déjà traité (valide ou exclu) : on ne refait pas
                 continue
             try:
-                r = process(pr, a.model, a.tries)
+                r = process(pr, a.model, a.tries, a.explore)
             except Exception as e:
                 r = {"pr": pr, "statut": "erreur", "err": str(e)[:300]}
             print(json.dumps({k: v for k, v in r.items() if k != "log"}, ensure_ascii=False), flush=True)
