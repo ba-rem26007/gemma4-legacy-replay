@@ -8,14 +8,15 @@ Régénéré par `python3 bench/loop_stats.py`.
 |---|---|---|---|---|
 | ui | 0 | 4 | 0 | 0% |
 | explore | 0 | 4 | 0 | 0% |
-| php | 8 | 9 | 0 | 47% |
+| php | 9 | 11 | 0 | 45% |
 
-Oracles validés : #37747, #37877, #37955, #37970, #37996, #38168, #38341, #38417
+Oracles validés : #37589, #37747, #37877, #37955, #37970, #37996, #38168, #38341, #38417
 
 ## Étape 2 — agent Gemma avec l'oracle comme retour (condition O, TRAIN)
 
 | Bug | Run | Résolu (oracle) |
 |---|---|---|
+| #37747 | 20260926-205706-O | non |
 | #37877 | 20260926-200233-O | non |
 | #37955 | 20260926-195641-O | oui |
 | #37970 | 20260926-201731-O | oui |
@@ -26,7 +27,7 @@ Oracles validés : #37747, #37877, #37955, #37970, #37996, #38168, #38341, #3841
 
 ## Étape 3 — chemins acceptés (`trajectories/self_paths.py`)
 
-`2 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 1, 'non_resolu': 3, 'hors_fonctions_officielles': 1, 'ok': 2}`
+`2 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 1, 'non_resolu': 4, 'hors_fonctions_officielles': 1, 'ok': 2}`
 
 Garde-fous : verdict réévalué, éditions limitées aux fichiers du correctif officiel (anti-contournement),
 blocs SEARCH/REPLACE reproduisant exactement le patch, < 8 000 tokens, aucun bug TEST.
