@@ -11,7 +11,7 @@
 A reproducible benchmark of real, post-cutoff PHP bugs with hidden end-to-end browser oracles, and what actually helps a small open model fix them.
 
 ## Abstract
-Agentic code-repair benchmarks are dominated by Python projects with rich unit test suites. Most production code is not like that. We build a benchmark on **PrestaShop**, a large legacy PHP e-commerce platform (1.6 → 9.1): 33 real bugs fixed upstream **after** Gemma 4's knowledge cutoff, each with a hidden **end-to-end oracle** (Playwright test run against a live shop, fails before the official fix, passes after), plus a leak-proof training pool of ≈ 4,800 older bug fixes and 569 verified reconstructed repair paths. We then measure, with a fixed-flow Gemma 4 31B agent, what an environment can add: retrieved similar fixes, tests written from the ticket, a business glossary, and — as an upper bound — the oracle itself as feedback. ⟦Baseline: 39 % solved; retrieved fixes: no effect; oracle as feedback: +3 bugs (39 % → 48 %)⟧. The dominant failure is **localisation** (⟦35 %⟧ of attempts never open the file that was fixed), not patch logic. All tools, data and traces are released; no proprietary model output is used as training data.
+Agentic code-repair benchmarks are dominated by Python projects with rich unit test suites. Most production code is not like that. We build a benchmark on **PrestaShop**, a large legacy PHP e-commerce platform (1.6 → 9.1): 33 real bugs fixed upstream **after** Gemma 4's knowledge cutoff, each with a hidden **end-to-end oracle** (Playwright test run against a live shop, fails before the official fix, passes after), plus a leak-proof training pool of ≈ 4,800 older bug fixes and 569 verified reconstructed repair paths. We then measure, with a fixed-flow Gemma 4 31B agent, what an environment can add: retrieved similar fixes, tests written from the ticket, a business glossary, and — as an upper bound — the oracle itself as feedback. ⟦Baseline: 39 % solved; retrieved fixes and an automatic glossary: no effect; oracle as feedback: 48 % (+9.8 pts, 95 % CI +0.8/+20.5)⟧. The dominant failure is **localisation** (⟦35 %⟧ of attempts never open the file that was fixed), not patch logic. All tools, data and traces are released; no proprietary model output is used as training data.
 
 ## 1. Introduction
 - Legacy code is where developers need help most and where verification is weakest (no tests, UI-driven behaviour, database state).
@@ -53,7 +53,7 @@ Leak-proofing: TRAIN bugs are merged before the cutoff, bugs touching a TEST fun
 
 ## 5. Results
 ⟦Tableau définitif depuis `docs/RESULTATS.md` : 4 essais A/R, pass@4, IC bootstrap apparié⟧
-- R vs A: ⟦−0.8 pt, 95 % CI −10.6/+8.3⟧ → no measurable effect.
+- R vs A: ⟦0.0 pt, paired 95 % CI −9.1/+9.1⟧ → no measurable effect.
 - B: tests written from the ticket reproduce 10/33 bugs, only 1 faithfully; on those 10, ⟦B 3.5 vs A 4.5⟧.
 - O: first attempt ⟦13/33⟧ (≈ A ⟦12.8⟧), ⟦16/33⟧ after oracle feedback (+3 bugs) → a perfect verifier adds ⟦+9.8 pts, paired 95 % CI +0.8/+20.5⟧; it is the ceiling of any replay chain on this flow.
 - Model size: 26B-A4B ⟦15 %⟧ vs 31B ⟦39 %⟧ at similar localisation.

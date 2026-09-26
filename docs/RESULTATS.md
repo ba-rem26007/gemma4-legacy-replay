@@ -10,11 +10,11 @@ L'essai 1 a tourné sur un environnement partiellement défectueux : sa généra
 | Condition | Essai 1 | Essai 2 | Essai 3 | Essai 4 | Moyenne | Écart-type | Résolu ≥ 1 fois (pass@4) | Bon fichier (moy.) | Régressions |
 |---|---|---|---|---|---|---|---|---|---|
 | A · ticket seul | 12/33 | 13/33 | 15/33 | 11/33 | 12.8 (39%) | 1.5 | 17/33 | 19.8 | 0 |
-| R · ticket + 2 corrections TRAIN similaires | 14/33 | 12/33 | 14/33 | 10/33 | 12.5 (38%) | 1.7 | 15/33 | 20.2 | 0 |
+| R · ticket + 2 corrections TRAIN similaires | 14/33 | 12/33 | 14/33 | 11/33 | 12.8 (39%) | 1.3 | 15/33 | 20.2 | 0 |
 
 ## R contre A (apparié par bug)
 
-Écart moyen du taux de résolution R − A : **-0.8%** (IC 95 % bootstrap : -10.6% à +8.3%).
+Écart moyen du taux de résolution R − A : **+0.0%** (IC 95 % bootstrap : -9.1% à +9.1%).
 Si l'intervalle contient 0, l'injection de corrections similaires n'a pas d'effet démontré.
 
 - Bugs jamais résolus (0/8) : **15**
@@ -32,10 +32,10 @@ Si l'intervalle contient 0, l'injection de corrections similaires n'a pas d'effe
 | [#41299](https://github.com/PrestaShop/PrestaShop/pull/41299) | Invalid product URLs trigger Fatal in ProductController::assignPriceAn | 4 | 3 |
 | [#42004](https://github.com/PrestaShop/PrestaShop/pull/42004) | Duplicating with DuplicateProductCommand: Invalid Product localized pr | 3 | 4 |
 | [#41929](https://github.com/PrestaShop/PrestaShop/pull/41929) | Cannot edit a product when the experimental Catalog price rules featur | 4 | 3 |
+| [#41652](https://github.com/PrestaShop/PrestaShop/pull/41652) | Changing an order's status throws "Duplicate entry '<idp>-<idpa>-0-0'  | 4 | 3 |
 | [#41468](https://github.com/PrestaShop/PrestaShop/pull/41468) | Multishop: cache_default_attribute is not reset for all shops when cha | 4 | 3 |
 | [#41130](https://github.com/PrestaShop/PrestaShop/pull/41130) | When the Admin API is used with multistore enabled, any write operatio | 2 | 4 |
 | [#41665](https://github.com/PrestaShop/PrestaShop/pull/41665) | B O - Order view page - The Invoice prefix is displayed in the custome | 2 | 4 |
-| [#41652](https://github.com/PrestaShop/PrestaShop/pull/41652) | Changing an order's status throws "Duplicate entry '<idp>-<idpa>-0-0'  | 4 | 2 |
 | [#40898](https://github.com/PrestaShop/PrestaShop/pull/40898) | Bug: reserved_quantity not updated when "Share available quantities fo | 2 | 3 |
 | [#41320](https://github.com/PrestaShop/PrestaShop/pull/41320) | Unable to delete product from order when product is deleted from catal | 3 | 0 |
 | [#41530](https://github.com/PrestaShop/PrestaShop/pull/41530) | BO - Shopping carts - Custom product image does not appear | 0 | 3 |

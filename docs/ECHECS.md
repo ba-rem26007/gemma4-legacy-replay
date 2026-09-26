@@ -4,12 +4,12 @@ Classement automatique (`bench/taxonomy.py`) à partir des traces et des verdict
 
 | Catégorie | A | R |
 |---|---|---|
-| Résolu | 51 (39%) | 50 (38%) |
+| Résolu | 51 (39%) | 51 (39%) |
 | Régression | 0 (0%) | 0 (0%) |
-| Mauvais fichier (localisation) | 46 (35%) | 46 (35%) |
-| Aucune édition exploitable | 19 (14%) | 19 (14%) |
+| Mauvais fichier (localisation) | 46 (35%) | 45 (34%) |
+| Aucune édition exploitable | 19 (14%) | 18 (14%) |
 | Patch inapplicable | 0 (0%) | 0 (0%) |
-| Correctif appliqué mais faux | 16 (12%) | 17 (13%) |
+| Correctif appliqué mais faux | 16 (12%) | 18 (14%) |
 
 ## Lecture
 
@@ -29,10 +29,10 @@ Classement automatique (`bench/taxonomy.py`) à partir des traces et des verdict
 | #41299 | Résolu | Résolu 7, Correctif appliqué mais faux 1 |
 | #42004 | Résolu | Résolu 7, Correctif appliqué mais faux 1 |
 | #41929 | Résolu | Résolu 7, Correctif appliqué mais faux 1 |
+| #41652 | Résolu | Résolu 7, Mauvais fichier (localisation) 1 |
 | #41468 | Résolu | Résolu 7, Mauvais fichier (localisation) 1 |
 | #41130 | Résolu | Résolu 6, Correctif appliqué mais faux 2 |
 | #41665 | Résolu | Résolu 6, Mauvais fichier (localisation) 2 |
-| #41652 | Résolu | Résolu 6, Mauvais fichier (localisation) 2 |
 | #40898 | Résolu | Résolu 5, Correctif appliqué mais faux 2, Aucune édition exploitable 1 |
 | #41320 | Résolu | Résolu 3, Aucune édition exploitable 3, Mauvais fichier (localisation) 2 |
 | #41530 | Mauvais fichier (localisation) | Mauvais fichier (localisation) 5, Résolu 3 |
@@ -53,4 +53,4 @@ Classement automatique (`bench/taxonomy.py`) à partir des traces et des verdict
 | #41735 | Mauvais fichier (localisation) | Mauvais fichier (localisation) 6, Correctif appliqué mais faux 2 |
 | #41727 | Mauvais fichier (localisation) | Mauvais fichier (localisation) 8 |
 | #41570 | Mauvais fichier (localisation) | Mauvais fichier (localisation) 8 |
-| #41923 | Aucune édition exploitable | Aucune édition exploitable 4, Correctif appliqué mais faux 3, Mauvais fichier (localisation) 1 |
+| #41923 | Correctif appliqué mais faux | Correctif appliqué mais faux 4, Aucune édition exploitable 3, Mauvais fichier (localisation) 1 |

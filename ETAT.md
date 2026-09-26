@@ -26,7 +26,7 @@ Mis à jour : 2026-09-26. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 **Résultats**
 - Démo pilotes (chemins reconstruits) : 3/3.
 - Premier run réel Gemma 4 31B sur pilotes : A 1/2, B 0/3.
-- **Éval TEST définitive** (4 essais, réévalués) : **A 39 %** (12,8/33) · **R 38 %** (12,5/33), écart −0,8 pt (IC95 −10,6/+8,3), 0 régression. Voir `docs/RESULTATS.md`.
+- **Éval TEST définitive** (4 essais, réévalués deux fois) : **A 39 %** (12,8/33) · **R 39 %** (12,8/33), écart 0,0 pt (IC95 −9,1/+9,1), 0 régression · **O 16/33 (48 %)** · C 13/33 · 26B 5/33. Voir `docs/RESULTATS.md`.
 - **Condition B (tests écrits depuis le ticket)** : 10/33 reproduits, 1 fidèle ; sur ces 10 bugs B 3,5/10 vs A 4,5/10 → pas d'aide. Il faut la vraie chaîne de rejeu (capture sur la boutique).
 - (historique) **Éval TEST en cours** (Gemma 4 31B, 1 run/bug) : A 3/22 · **R 4/16** (fine-tuning simulé). Régressions en cours de run non fiables (anti-régression déplacée avant l'oracle ; `bench/reeval.py` à lancer en fin de run).
 - Oracles automatiques par différentiel : **0/12** (résultat négatif, à publier).
@@ -42,7 +42,7 @@ Oracles Gemma = vérificateurs ; les trajectoires gardées sont celles de Gemma,
 ## TODO (ordre)
 - [x] **Taxonomie des échecs** (`docs/ECHECS.md`) : 35 % mauvais fichier, 14 % aucune édition, 12 % correctif faux, 0 régression → la localisation est le premier levier (condition C).
 - [~] **B\* / condition O** (borne haute : oracle comme retour, 2 corrections) : run terminé : 1re tentative **13/33** (≈ A 12,8), **16/33 après retour de l'oracle** (+3 : #41299, #41394, #41923) → un vérificateur parfait apporte ≈ +9 pts. Section dans `docs/RESULTATS.md` ; **réévalué : 16/33 confirmés** (les 3 faux négatifs dus au bug d’évaluation sont levés).
-- [~] **Bug d'évaluation corrigé** (`bench/checkout.sh`) : les fichiers modifiés par l'agent HORS du correctif officiel n'étaient pas restaurés → restaient patchés pour les bugs suivants sur la même image (48/172 patchs A/R concernés ; 3 faux négatifs visibles en O). **Réévaluation complète A/R/26B** sur instances neuves (`runs/reeval2.sh`, `runs/reeval2_*.log` → `result_reeval2.json`, prioritaire dans `bench/results.py`). Chiffres A/R/26B à confirmer — **à mi-parcours : 95/95 verdicts identiques** (le défaut ne touchait en pratique que O, qui évalue deux fois le même patch).
+- [~] **Bug d'évaluation corrigé** (`bench/checkout.sh`) : les fichiers modifiés par l'agent HORS du correctif officiel n'étaient pas restaurés → restaient patchés pour les bugs suivants sur la même image (48/172 patchs A/R concernés ; 3 faux négatifs visibles en O). **Réévaluation complète A/R/26B** sur instances neuves (`runs/reeval2.sh`, `runs/reeval2_*.log` → `result_reeval2.json`, prioritaire dans `bench/results.py`). **Terminée : 290 verdicts réévalués, 1 seul change** (#41652, un essai de R). **Chiffres définitifs : A 12,8/33 (39 %), R 12,8/33 (39 %), R − A = 0,0 pt [−9,1 ; +9,1]**, 0 régression ; taxonomie inchangée (35 % mauvais fichier).
 - [x] **Notebook public** `notebook/resultats.ipynb` (recalcule tout depuis `eval/results.csv`, pandas) : écarts appariés contre A (IC 95 % bootstrap) — **O +9,8 pts [+0,8 ; +20,5]** (significatif), R −0,8 [−10,6 ; +9,1], C +0,8 [−12,9 ; +13,6], 26B −23,5 [−38,6 ; −9,1].
 - [x] `eval/results.csv` (kit phase 8) : une ligne par condition × essai × bug, régénéré par `bench/results.py`.
 - [x] Section « Autres conditions contre A » dans `bench/results.py` (résolus, bon fichier, gagnés/perdus).
