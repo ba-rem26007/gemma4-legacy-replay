@@ -18,9 +18,9 @@ try {
 
     // 2. Setup Attribute Group and Attribute
     $ag = new AttributeGroup();
+    $ag->name = [1 => 'Color', $lang2_id => 'Couleur'];
     $ag->public_name = [1 => 'Color', $lang2_id => 'Couleur'];
-    $ag->group_name = [1 => 'Color', $lang2_id => 'Couleur'];
-    $ag->group_type = 'select'; // Required field
+    $ag->group_type = 'select';
     $ag->add();
 
     $attr = new Attribute();

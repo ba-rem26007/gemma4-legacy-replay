@@ -34,19 +34,26 @@ class MockFormField {
     public function isRequired() { return false; }
 }
 
-// 3. Mock Persister to avoid actual database persistence errors during the test
+// 3. Mock Persister to avoid actual database persistence errors
 class MockPersister {
     public function save($address, $token) { return true; }
 }
 
-// 4. Create a testable version of CustomerAddressForm to bypass validation and persistence
+// 4. Create a testable version of CustomerAddressForm
+// We override the constructor to avoid the "Too few arguments" error
 class TestCustomerAddressForm extends CustomerAddressForm {
+    public function __construct() {
+        // Bypass parent constructor to avoid needing 5 dependencies
+    }
+
     public function validate() { 
         return true; 
     }
+
     protected function getPersister() {
         return new MockPersister();
     }
+
     public function setFields($fields) {
         $this->formFields = $fields;
     }
@@ -55,8 +62,14 @@ class TestCustomerAddressForm extends CustomerAddressForm {
 try {
     // Initialize the form
     $form = new TestCustomerAddressForm();
-    $form->language = new Language(1);
     
+    // Set required properties for submit()
+    $form->language = new Language(1);
+    $form->translator = Context::getContext()->translator;
+    
+    // Set a dummy id_address in Tools to avoid nulls in Address constructor
+    Tools::setValue('id_address', 1);
+
     // Inject fields that do NOT exist in the Address class definition.
     // These will trigger the dynamic property deprecation in PHP 8.3.
     $form->setFields([
