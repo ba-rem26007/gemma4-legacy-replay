@@ -33,6 +33,8 @@ def smoke():
 
 def replay_error(out):
     """Message d'échec Playwright condensé (lisible par un agent)."""
+    if re.search(r"^== .*oracle\w*\.php", out, re.M):  # oracle PHP : sa sortie (valeurs, exception) EST le retour utile
+        return "\n".join(out.strip().splitlines()[-25:])[:1500]
     keep = [l for l in out.splitlines() if re.search(r"Error:|Expected|Received|✘|expect\(|Timeout", l)]
     return "\n".join(keep[:15])[:1500]
 
