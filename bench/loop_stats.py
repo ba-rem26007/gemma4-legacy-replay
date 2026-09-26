@@ -52,11 +52,10 @@ def main():
     # étape 3 : exporteur (sortie jetable, on ne garde que les compteurs)
     out3 = "(aucun run)"
     if runs:
-        tmp = ROOT / "runs" / "_self_stats.jsonl"
-        p = subprocess.run([sys.executable, str(ROOT / "trajectories" / "self_paths.py"), *[str(ROOT / "runs" / r) for r in runs],
-                            "--out", str(tmp)], capture_output=True, text=True)
-        out3 = p.stdout.strip() or p.stderr.strip()[-300:]
-        tmp.unlink(missing_ok=True)
+        # régénère trajectories/self.jsonl depuis TOUS les runs O TRAIN (l'exporteur refuse les bugs TEST)
+        p = subprocess.run([sys.executable, str(ROOT / "trajectories" / "self_paths.py"), *[str(ROOT / "runs" / r) for r in runs]],
+                           capture_output=True, text=True)
+        out3 = (p.stdout.strip() or p.stderr.strip()[-300:]).replace(str(ROOT) + "/", "")
 
     L = ["# Boucle d'auto-apprentissage — rendement (Gemma 4 31B seul)", "",
          "Régénéré par `python3 bench/loop_stats.py`.", "",

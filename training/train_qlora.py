@@ -55,7 +55,8 @@ def collate(batch, pad):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=os.environ.get("BASE_MODEL", "google/gemma-4-e4b-it"))
-    ap.add_argument("--data", default=str(ROOT / "trajectories" / "train.jsonl"))
+    # plusieurs fichiers séparés par des virgules : chemins reconstruits + chemins Gemma vérifiés (boucle d'auto-apprentissage)
+    ap.add_argument("--data", default=",".join(str(ROOT / "trajectories" / f) for f in ("train.jsonl", "self.jsonl")))
     ap.add_argument("--out", default=str(ROOT / "training" / "lora"))
     ap.add_argument("--max-len", type=int, default=4096)
     ap.add_argument("--epochs", type=float, default=2)
@@ -66,7 +67,8 @@ def main():
     ap.add_argument("--max-per-bug", type=int, default=2, help="kit : 2 chemins max par bug")
     a = ap.parse_args()
 
-    rows = [json.loads(l) for l in open(a.data)]
+    rows = [json.loads(l) for p in a.data.split(",") if Path(p).exists() for l in open(p)]
+    print("exemples :", {src: sum(r.get("source") == src for r in rows) for src in {r.get("source") for r in rows}})
     per = {}
     random.seed(0); random.shuffle(rows)
     rows = [r for r in rows if per.setdefault(r["pr"], []).append(1) or len(per[r["pr"]]) <= a.max_per_bug]

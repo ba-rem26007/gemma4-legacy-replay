@@ -6,9 +6,9 @@ Régénéré par `python3 bench/loop_stats.py`.
 
 | Mode | Validés | Échecs | Erreurs | Taux |
 |---|---|---|---|---|
-| ui | 0 | 5 | 0 | 0% |
+| ui | 0 | 4 | 0 | 0% |
 | explore | 0 | 4 | 0 | 0% |
-| php | 6 | 6 | 0 | 50% |
+| php | 6 | 8 | 0 | 43% |
 
 Oracles validés : #37877, #37955, #37970, #38168, #38341, #38417
 
@@ -25,7 +25,7 @@ Oracles validés : #37877, #37955, #37970, #38168, #38341, #38417
 
 ## Étape 3 — chemins acceptés (`trajectories/self_paths.py`)
 
-`2 chemins → /home/elrems/kaggle/runs/_self_stats.jsonl  {'hors_fichiers_officiels': 1, 'non_resolu': 2, 'hors_fonctions_officielles': 1, 'ok': 2}`
+`2 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 1, 'non_resolu': 2, 'hors_fonctions_officielles': 1, 'ok': 2}`
 
 Garde-fous : verdict réévalué, éditions limitées aux fichiers du correctif officiel (anti-contournement),
 blocs SEARCH/REPLACE reproduisant exactement le patch, < 8 000 tokens, aucun bug TEST.

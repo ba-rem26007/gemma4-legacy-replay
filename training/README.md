@@ -24,6 +24,7 @@ Pousser le dépôt comme dataset Kaggle, puis dans le notebook :
 `python training/train_qlora.py --model google/gemma-4-12b-it --out /kaggle/working/lora` (mode « Save & Run All »).
 
 ## Données
+- `trajectories/self.jsonl` : **chemins Gemma vérifiés** (boucle d’auto-apprentissage, `source=gemma_self`), régénéré par `bench/loop_stats.py` ; lus avec train.jsonl par défaut.
 - `trajectories/train.jsonl` : **chemins reconstruits** depuis les correctifs officiels (vivier TRAIN, avant la coupure), vérifiés.
 - Régénérer : `python trajectories/reconstruct.py --cutoff <date>` (nécessite `bench/ps`, voir le README racine).
 - Aucune donnée générée par un modèle propriétaire.
