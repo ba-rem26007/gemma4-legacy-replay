@@ -57,3 +57,17 @@ Si l'intervalle contient 0, l'injection de corrections similaires n'a pas d'effe
 | [#41727](https://github.com/PrestaShop/PrestaShop/pull/41727) | Module Development and Distribution: Prestashop deletes automatically  | 0 | 0 |
 | [#41570](https://github.com/PrestaShop/PrestaShop/pull/41570) | missing column to change the position of the features on prestashop 9. | 0 | 0 |
 | [#41923](https://github.com/PrestaShop/PrestaShop/pull/41923) | Not able to change stock behaviour in shared stock | 0 | 0 |
+
+## Condition B — tests de reproduction écrits par Gemma à partir du TICKET SEUL
+
+Génération (`bench/reprotest.py`, sans correctif ni fichiers touchés) sur les 33 bugs : **10 tests reproduisent le bug** (échouent sur le code d'origine par une assertion), dont **1 seul fidèle** (passe aussi avec le correctif officiel : #40651).
+
+Agent en condition B sur ces 10 bugs : le test de reproduction + l'anti-régression sont rejoués après chaque patch, 2 corrections possibles ; verdict par l'oracle caché.
+
+| Sur les 10 bugs reproduits | Résolus / 10 |
+|---|---|
+| A · ticket seul (4 essais) | 4 · 5 · 5 · 4 → **4,5** |
+| R · + corrections similaires (4 essais) | 4 · 4 · 4 · 4 → **4,0** |
+| **B** · + test de reproduction généré, 2 corrections (2 essais) | 4 · 3 → **3,5** |
+
+**Conclusion** : des tests inventés à partir du texte du ticket (fidèles 1 fois sur 10) **n'aident pas** l'agent et peuvent l'égarer (39 corrections déclenchées sur 20 bug-essais, souvent sur un faux signal). Pour tester la thèse (Q1), les tests doivent être **capturés sur la vraie boutique** (chaîne de rejeu, phase 4 du kit).
