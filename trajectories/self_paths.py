@@ -29,6 +29,15 @@ def apply_diff(src, file_hunks):
     return src
 
 
+def enclosing_function(rows, i):
+    """Nom de la fonction PHP/JS qui contient la ligne i (0-indexée), en remontant jusqu'à la déclaration."""
+    for j in range(min(i, len(rows) - 1), -1, -1):
+        m = re.search(r"\bfunction\s+&?(\w+)\s*\(", rows[j])
+        if m:
+            return m.group(1)
+    return "(hors fonction)"
+
+
 def verdict(d):
     r = json.loads((d / "result.json").read_text())
     for name in ("result_reeval2.json", "result_reeval.json"):
@@ -63,6 +72,15 @@ def build(bug, d):
     official = set(bug["files"])
     if not set(hs) <= official:
         return None, "hors_fichiers_officiels"
+    # … et au niveau FONCTION : #38168, patch dans le bon fichier mais dans une autre méthode (requête rendue vide)
+    # → l'oracle passe, le code est cassé. On exige que chaque fonction éditée soit touchée par le correctif officiel.
+    off_fns = {fn.split("::")[-1] for fns in bug["functions"].values() for fn in fns if not fn.startswith("(")}
+    for f, fh in hs.items():
+        src = flow.show(bug["base_commit"], f).splitlines()
+        for touched, _, _ in fh:
+            fn = enclosing_function(src, min(touched) if touched else 0)
+            if off_fns and fn not in off_fns:
+                return None, "hors_fonctions_officielles"
     kws, chosen = trace_choices(d)
     hits = flow.grep(base, kws)
     edited = list(hs)

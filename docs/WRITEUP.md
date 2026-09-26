@@ -48,7 +48,7 @@ The only condition with a significant gain is O: execution feedback from a faith
 2. **Gemma fixes TRAIN bugs with that verifier as feedback** (condition O on TRAIN, `ORACLE_PREFIX=g`).
 3. **Successful runs become condensed paths** (`trajectories/self_paths.py`): Gemma's own keywords and file choices plus its final patch rewritten as SEARCH/REPLACE blocks; failed attempts dropped; blocks must reproduce the final patch exactly. Source label `gemma_self`, alongside ⟦569⟧ paths reconstructed from official fixes.
 4. **QLoRA** on these paths → condition D on TEST (same fixed flow, same message format).
-Reward hacking: with a model-written verifier, the agent can satisfy the oracle with a symptomatic patch elsewhere (observed on #38417: a special case added in `ImageType` instead of fixing the faulty call). Since the official fix is known on TRAIN, paths are kept only if every edited file belongs to it.
+Reward hacking: with a model-written verifier, the agent can satisfy the oracle with a symptomatic patch elsewhere (observed on #38417: a special case added in `ImageType` instead of fixing the faulty call). A second case (#38168) edited the right file but another method, emptying a query so that the oracle passed. Since the official fix is known on TRAIN, paths are kept only if every edited **function** is touched by it. Cost on 25 successful TEST fixes judged by strong oracles: 20 kept, 5 rejected (valid fixes in another file).
 Leak-proofing: TRAIN bugs are merged before the cutoff, bugs touching a TEST function are excluded, and the exporter refuses TEST bugs.
 ⟦Pilot: n oracles validated / 10; paths collected; D results⟧
 

@@ -12,14 +12,17 @@ require 'config/config.inc.php';
 Configuration::updateValue('PS_SHOP_ENABLE', 0);
 // Admins are allowed to bypass maintenance
 Configuration::updateValue('PS_MAINTENANCE_ALLOW_ADMINS', 1);
-// Set a dummy IP whitelist that does NOT include the current runner's IP
+// Set a dummy IP whitelist that does NOT include the current runner's IP to ensure we test the Admin bypass
 Configuration::updateValue('PS_MAINTENANCE_IP', '1.1.1.1');
 
 // 2. Simulate an Admin session
-// The fix relies on (new Cookie('psAdmin'))->id_employee
-$cookie = new Cookie('psAdmin');
-$cookie->id_employee = 1; 
-// In PrestaShop, setting a property on the Cookie object writes it to $_COOKIE
+// Tools::isAllowedToBypassMaintenance() instantiates 'new Cookie('psAdmin')'.
+// To make this work in CLI, we must create a Cookie object, set the id_employee, 
+// and call save(). save() will encrypt the value and store it in $_COOKIE, 
+// which the subsequent 'new Cookie('psAdmin')' call inside Tools will be able to decrypt.
+$adminCookie = new Cookie('psAdmin');
+$adminCookie->id_employee = 1;
+$adminCookie->save();
 
 // 3. Simulate a request for a specific product
 $idProduct = 1;
@@ -35,14 +38,16 @@ if (!Validate::isLoadedObject($product)) {
 
 echo "Shop status: Maintenance mode (PS_SHOP_ENABLE=0)\n";
 echo "Admin bypass: Enabled (PS_MAINTENANCE_ALLOW_ADMINS=1)\n";
-echo "Simulated User: Employee 1\n";
+echo "Simulated User: Employee 1 (via encrypted Cookie)\n";
 echo "Target Page: Product $idProduct\n";
 
 try {
-    // Call the method touched by the fix
+    // Call the method touched by the fix.
+    // Before the fix, this would return Home metas because it only checked PS_SHOP_ENABLE and IP.
+    // After the fix, it calls Tools::isAllowedToBypassMaintenance(), which detects the admin cookie.
     $observedMetas = Meta::getMetaTags($idLang, 'product');
     
-    // Get what the metas SHOULD be if the bypass works
+    // Get what the metas SHOULD be (Product metas)
     $expectedMetas = Meta::getProductMetas($idProduct, $idLang, 'product');
 
     echo "Observed Meta Title: " . ($observedMetas['meta_title'] ?? 'NULL') . "\n";
