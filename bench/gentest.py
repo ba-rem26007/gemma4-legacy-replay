@@ -55,6 +55,9 @@ ENV_PHP = """ORACLE PHP (exécuté en ligne de commande DANS le conteneur Presta
 - Context::getContext() : boutique 1, langue 1 (fr), aucun client/employé connecté (crée-les si besoin, ex. new Employee(1)).
 - Données de démo : produits 1..19, clients 1..2, commandes 1..5, catégories 2..9. Base MySQL préfixe ps_ (Db::getInstance()).
 - Services Symfony (src/) : SymfonyContainer::getInstance()->get(...) ou instanciation directe de la classe.
+- PAS de SQL à part : crée les données nécessaires DANS le script avec les classes PrestaShop
+  (ex. $c = new Cart(); $c->id_currency = 1; $c->id_lang = 1; $c->add(); puis $c->updateQty(1, 1);),
+  elles remplissent les champs par défaut (dates…). La base est remise à zéro avant chaque exécution.
 - Appelle DIRECTEMENT le code touché par le correctif (méthode, validateur, requête) avec des entrées qui déclenchent le bug.
 - exit(0) si le comportement est CORRIGÉ, exit(1) sinon ; affiche (echo) les valeurs observées pour le diagnostic.
 - Une exception ou erreur fatale non rattrapée = échec (code non nul) : rattrape-la (try/catch \\Throwable) si le bug
@@ -73,9 +76,6 @@ exit($price > 0 ? 0 : 1);
 
 FORMAT_PHP = """RÉPONDS EXACTEMENT dans ce format (rien d'autre) :
 KIND: php
-```sql
--- contenu de setup.sql (ou vide)
-```
 ```php
 <?php
 // contenu de l'oracle PHP
@@ -236,7 +236,7 @@ def process(pr, model, tries, explore_first=False, mode="ui"):
                 (gdir / "oracle_gemma.php").write_text(code.replace("<?php", f"<?php\n// Oracle écrit par Gemma ({model}) pour PR #{pr}, validé pre/post automatiquement", 1) + "\n")
             else:
                 (gdir / f"oracle_gemma{'.bo' if kind == 'bo' else ''}.spec.js").write_text(f"// Oracle écrit par Gemma ({model}) pour PR #{pr}, validé pre/post automatiquement\n{js}\n")
-            (gdir / "setup.sql").write_text(sql + "\n") if sql else (gdir / "setup.sql").unlink(missing_ok=True)
+            (gdir / "setup.sql").write_text(sql + "\n") if sql and kind != "php" else (gdir / "setup.sql").unlink(missing_ok=True)
             ok, msg = validate(pr, gdir)
             log.append({"attempt": attempt + 1, "ok": ok, "msg": msg[:300]})
             if ok:
