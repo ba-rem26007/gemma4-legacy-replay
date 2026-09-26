@@ -17,6 +17,13 @@ print(b['base_commit'],b['merge_commit'],','.join(b['files']),b.get('branch','')
 REL="$(git -C "$PS" describe --tags --abbrev=0 --match '[89].[0-9].[0-9]' --match '1.[67].[0-9]*.[0-9]*' --exclude '*-*' --exclude '*RC*' --exclude '*rc*' "$BASE" 2>/dev/null || true)"
 case "$REL" in 9.*) ;; *) [ "$(git -C "$PS" merge-base --is-ancestor 9.0.0 "$BASE" && echo y)" = y ] && REL="" ;; esac
 [ -z "$REL" ] && REL="$(git -C "$PS" tag --contains "$BASE" --sort=v:refname | grep -E '^9\.[0-9]\.[0-9]$' | head -1)"
+# Fichiers touchés par un patch d'agent HORS du correctif officiel : à restaurer/tracer aussi,
+# sinon ils restent patchés d'une évaluation à l'autre (faux « Reversed patch », pollution du bug suivant).
+if [ -f "$MODE" ]; then
+  for f in $(sed -n 's#^+++ b/\([^[:space:]]*\).*#\1#p' "$MODE" | sort -u); do
+    case ",$FILES," in *",$f,"*) ;; *) FILES="$FILES,$f" ;; esac
+  done
+fi
 # Branche develop : la release pertinente est la PREMIÈRE qui contient ce code (pas le tag ancêtre, d'une autre ligne)
 if [ "$BRANCH" = "develop" ]; then
   NEXT="$(git -C "$PS" tag --contains "$BASE" | grep -E '^(1\.[67]\.[0-9]+\.[0-9]+|[89]\.[0-9]\.[0-9])$' | sort -V | head -1)"

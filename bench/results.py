@@ -26,7 +26,9 @@ def load(dirs, bugs):
             if not r0.exists():
                 continue
             r = json.loads(r0.read_text())
-            rv = base / "result_reeval.json"
+            rv = base / "result_reeval2.json"  # réévaluation après correction de checkout.sh (prioritaire)
+            if not rv.exists():
+                rv = base / "result_reeval.json"
             if rv.exists():
                 v = json.loads(rv.read_text())
                 r.update({k: v.get(k) for k in ("applied", "fixed", "regression")})

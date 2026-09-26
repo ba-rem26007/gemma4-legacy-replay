@@ -1,6 +1,6 @@
 # ÉTAT — reprise : « Lis ETAT.md et reprends »
 
-Mis à jour : 2026-09-25. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Site : https://kaggle.d1dev.fr
+Mis à jour : 2026-09-26. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Site : https://kaggle.d1dev.fr
 
 ## Jalons
 | Date | Jalon | État |
@@ -34,7 +34,8 @@ Mis à jour : 2026-09-25. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 
 ## TODO (ordre)
 - [x] **Taxonomie des échecs** (`docs/ECHECS.md`) : 35 % mauvais fichier, 14 % aucune édition, 12 % correctif faux, 0 régression → la localisation est le premier levier (condition C).
-- [~] **B\* / condition O** (borne haute : oracle comme retour, 2 corrections) sur 33 bugs — en cours (`runs/test_O1.log`).
+- [~] **B\* / condition O** (borne haute : oracle comme retour, 2 corrections) : run terminé, **13/33 bruts** (A : 12,8), 4 bugs résolus seulement après retour de l'oracle. Réévaluation en cours (`runs/reeval_O.log`).
+- [~] **Bug d'évaluation corrigé** (`bench/checkout.sh`) : les fichiers modifiés par l'agent HORS du correctif officiel n'étaient pas restaurés → restaient patchés pour les bugs suivants sur la même image (48/172 patchs A/R concernés ; 3 faux négatifs visibles en O). **Réévaluation complète A/R/26B** sur instances neuves (`runs/reeval2.sh`, `runs/reeval2_*.log` → `result_reeval2.json`, prioritaire dans `bench/results.py`). Chiffres A/R/26B à confirmer.
 - [~] **Condition C** (glossaire automatique provisoire `glossaire/glossaire_auto.csv`, 51 entrées + 4 graines, 16/33 tickets TEST concernés) — en file après O (`runs/test_C1.log`). Relecture de Rémi attendue pour la version définitive.
 - [x] **Modèle 26B-A4B** (condition A) : **5/33 (15 %)** contre 39 % pour le 31B, à localisation égale → un modèle local plus petit sera bien en dessous ; le fine-tuning a de la marge.
 0. [ ] **PRIORITÉ (jalon 20 oct.) : condition B sur TEST** = tests de rejeu générés par la chaîne (phase 4) → démontrer Q1. Sans ça, pas de thèse.
