@@ -43,7 +43,8 @@ Mis à jour : 2026-09-26. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 2. [ ] Tests TRAIN à grande échelle : Gemma écrit le test depuis ticket + correctif, validé pre/post automatiquement (proposé, en attente de GO).
 3. [ ] Condition C (glossaire relu par Rémi) ; 3 runs par condition.
 4. [~] `RELATED.md` : 6 références vérifiées (SWE-bench, Multi-SWE-bench sans PHP, SWE-agent, Agentless, SWE-Gym, SWE-smith) + nouveauté en 3 phrases ; reste golden master / record-replay / model card. Date de coupure réelle (model card Gemma 4) → relancer split / reconstruct / glossaire.
-5. [ ] Régler le texte officiel du concours dans `REGLES.md`.
+5. [~] **Writeup** (phase 9) : brouillon anglais `docs/WRITEUP.md` (structure complète, chiffres provisoires ⟦ ⟧).
+6. [ ] Régler le texte officiel du concours dans `REGLES.md`.
 6. [ ] Fine-tuning QLoRA sur le PC (ou Kaggle), puis condition D.
 
 ## Infos manquantes
