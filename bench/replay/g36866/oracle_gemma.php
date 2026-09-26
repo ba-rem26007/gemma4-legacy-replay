@@ -34,16 +34,35 @@ class MockFormField {
     public function isRequired() { return false; }
 }
 
-// 3. Mock Persister to avoid actual database persistence errors
+// 3. Mock Translator to avoid accessing protected properties
+class MockTranslator {
+    public function trans($id, $parameters, $domain) {
+        return "Translated $id";
+    }
+}
+
+// 4. Mock Persister to avoid actual database persistence errors
 class MockPersister {
     public function save($address, $token) { return true; }
 }
 
-// 4. Create a testable version of CustomerAddressForm
-// We override the constructor to avoid the "Too few arguments" error
+// 5. Create a testable version of CustomerAddressForm
+// We use setters to populate protected properties since we bypass the constructor
 class TestCustomerAddressForm extends CustomerAddressForm {
     public function __construct() {
         // Bypass parent constructor to avoid needing 5 dependencies
+    }
+
+    public function setLanguage($lang) {
+        $this->language = $lang;
+    }
+
+    public function setTranslator($trans) {
+        $this->translator = $trans;
+    }
+
+    public function setFields($fields) {
+        $this->formFields = $fields;
     }
 
     public function validate() { 
@@ -53,28 +72,26 @@ class TestCustomerAddressForm extends CustomerAddressForm {
     protected function getPersister() {
         return new MockPersister();
     }
-
-    public function setFields($fields) {
-        $this->formFields = $fields;
-    }
 }
 
 try {
     // Initialize the form
     $form = new TestCustomerAddressForm();
     
-    // Set required properties for submit()
-    $form->language = new Language(1);
-    $form->translator = Context::getContext()->translator;
+    // Set required properties via setters to avoid "Cannot access protected property"
+    $form->setLanguage(new Language(1));
+    $form->setTranslator(new MockTranslator());
     
     // Set a dummy id_address in Tools to avoid nulls in Address constructor
-    Tools::setValue('id_address', 1);
+    Tools::setValue('id_address', 0);
 
     // Inject fields that do NOT exist in the Address class definition.
-    // These will trigger the dynamic property deprecation in PHP 8.3.
+    // 'token' and 'back' will trigger the dynamic property deprecation in PHP 8.3.
+    // 'alias' is added to prevent the code from calling the translator for a default value.
     $form->setFields([
         new MockFormField('token', 'some_token_value'),
-        new MockFormField('back', 'some_back_value')
+        new MockFormField('back', 'some_back_value'),
+        new MockFormField('alias', 'My Test Address')
     ]);
 
     // Call the method containing the bug

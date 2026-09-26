@@ -6,9 +6,9 @@ Régénéré par `python3 bench/loop_stats.py`.
 
 | Mode | Validés | Échecs | Erreurs | Taux |
 |---|---|---|---|---|
-| ui | 0 | 4 | 0 | 0% |
+| ui | 0 | 5 | 0 | 0% |
 | explore | 0 | 4 | 0 | 0% |
-| php | 14 | 13 | 0 | 52% |
+| php | 14 | 14 | 0 | 50% |
 
 Oracles validés : #36123, #36807, #36875, #36905, #37191, #37589, #37747, #37877, #37955, #37970, #37996, #38168, #38341, #38417
 
@@ -18,6 +18,7 @@ Oracles validés : #36123, #36807, #36875, #36905, #37191, #37589, #37747, #3787
 |---|---|---|
 | #36123 | 20260926-222343-O | oui |
 | #36807 | 20260926-220642-O | non |
+| #36875 | 20260926-224923-O | oui |
 | #36905 | 20260926-223141-O | oui |
 | #37191 | 20260926-221333-O | non |
 | #37589 | 20260926-212516-O | oui |
@@ -32,7 +33,7 @@ Oracles validés : #36123, #36807, #36875, #36905, #37191, #37589, #37747, #3787
 
 ## Étape 3 — chemins acceptés (`trajectories/self_paths.py`)
 
-`4 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 1, 'non_resolu': 6, 'hors_fonctions_officielles': 1, 'ok': 4, 'trop_long': 1}`
+`5 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 1, 'non_resolu': 6, 'hors_fonctions_officielles': 1, 'ok': 5, 'trop_long': 1}`
 
 Garde-fous : verdict réévalué, éditions limitées aux fichiers du correctif officiel (anti-contournement),
 blocs SEARCH/REPLACE reproduisant exactement le patch, < 8 000 tokens, aucun bug TEST.
