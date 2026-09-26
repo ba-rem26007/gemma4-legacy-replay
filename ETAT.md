@@ -36,7 +36,7 @@ Mis à jour : 2026-09-25. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 - [x] **Taxonomie des échecs** (`docs/ECHECS.md`) : 35 % mauvais fichier, 14 % aucune édition, 12 % correctif faux, 0 régression → la localisation est le premier levier (condition C).
 - [~] **B\* / condition O** (borne haute : oracle comme retour, 2 corrections) sur 33 bugs — en cours (`runs/test_O1.log`).
 - [~] **Condition C** (glossaire automatique provisoire `glossaire/glossaire_auto.csv`, 51 entrées + 4 graines, 16/33 tickets TEST concernés) — en file après O (`runs/test_C1.log`). Relecture de Rémi attendue pour la version définitive.
-- [~] **Modèle 26B-A4B** en condition A (comparaison avec 31B) — en cours (`runs/test_A26_1.log`).
+- [x] **Modèle 26B-A4B** (condition A) : **5/33 (15 %)** contre 39 % pour le 31B, à localisation égale → un modèle local plus petit sera bien en dessous ; le fine-tuning a de la marge.
 0. [ ] **PRIORITÉ (jalon 20 oct.) : condition B sur TEST** = tests de rejeu générés par la chaîne (phase 4) → démontrer Q1. Sans ça, pas de thèse.
 1. [ ] Fin des runs A/R → `bench/reeval.py` → tableau final (docs/DEMO.md ou docs/RESULTATS.md).
 2. [ ] Tests TRAIN à grande échelle : Gemma écrit le test depuis ticket + correctif, validé pre/post automatiquement (proposé, en attente de GO).

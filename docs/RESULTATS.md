@@ -71,3 +71,11 @@ Agent en condition B sur ces 10 bugs : le test de reproduction + l'anti-régress
 | **B** · + test de reproduction généré, 2 corrections (2 essais) | 4 · 3 → **3,5** |
 
 **Conclusion** : des tests inventés à partir du texte du ticket (fidèles 1 fois sur 10) **n'aident pas** l'agent et peuvent l'égarer (39 corrections déclenchées sur 20 bug-essais, souvent sur un faux signal). Pour tester la thèse (Q1), les tests doivent être **capturés sur la vraie boutique** (chaîne de rejeu, phase 4 du kit).
+
+## Taille du modèle — condition A
+| Modèle | Résolus | Bon fichier |
+|---|---|---|
+| gemma-4-31b-it (4 essais) | 12,8 / 33 (39 %) | ≈ 20 / 33 |
+| gemma-4-26b-a4b-it (MoE, 1 essai) | 5 / 33 (15 %) | 21 / 33 |
+
+À localisation égale, le 26B-A4B écrit beaucoup moins de correctifs justes. Conséquence : un modèle local plus petit (PC 12 Go : e4b / 12B) sera nettement en dessous du 31B → c'est là que le fine-tuning (condition D) a le plus à apporter.
