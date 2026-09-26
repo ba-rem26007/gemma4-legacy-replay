@@ -33,6 +33,7 @@ Mis à jour : 2026-09-25. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 - Coût : **0 €** (Gemma gratuit sur l'API ; quota 16 000 tokens/min).
 
 ## TODO (ordre)
+- [x] **Taxonomie des échecs** (`docs/ECHECS.md`) : 35 % mauvais fichier, 14 % aucune édition, 12 % correctif faux, 0 régression → la localisation est le premier levier (condition C).
 - [~] **B\* / condition O** (borne haute : oracle comme retour, 2 corrections) sur 33 bugs — en cours (`runs/test_O1.log`).
 - [~] **Modèle 26B-A4B** en condition A (comparaison avec 31B) — en cours (`runs/test_A26_1.log`).
 0. [ ] **PRIORITÉ (jalon 20 oct.) : condition B sur TEST** = tests de rejeu générés par la chaîne (phase 4) → démontrer Q1. Sans ça, pas de thèse.
