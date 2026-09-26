@@ -46,7 +46,7 @@ Agentic code-repair benchmarks are dominated by Python projects with rich unit t
 ⟦Tableau définitif depuis `docs/RESULTATS.md` : 4 essais A/R, pass@4, IC bootstrap apparié⟧
 - R vs A: ⟦−0.8 pt, 95 % CI −10.6/+8.3⟧ → no measurable effect.
 - B: tests written from the ticket reproduce 10/33 bugs, only 1 faithfully; on those 10, ⟦B 3.5 vs A 4.5⟧.
-- O: first attempt ⟦13/33⟧ (≈ A ⟦12.8⟧), ⟦16/33⟧ after oracle feedback (+3 bugs) → a perfect verifier adds ≈ ⟦+9 pts⟧; it is the ceiling of any replay chain on this flow.
+- O: first attempt ⟦13/33⟧ (≈ A ⟦12.8⟧), ⟦16/33⟧ after oracle feedback (+3 bugs) → a perfect verifier adds ⟦+9.8 pts, paired 95 % CI +0.8/+20.5⟧; it is the ceiling of any replay chain on this flow.
 - Model size: 26B-A4B ⟦15 %⟧ vs 31B ⟦39 %⟧ at similar localisation.
 - C (automatic glossary, 1 trial): ⟦13/33⟧ vs A ⟦12.8⟧; on the 16 tickets where it fires, right file ⟦6⟧ vs A ⟦7.75⟧ → an automatically mined glossary does not help localisation (negative result).
 
@@ -67,7 +67,7 @@ See `RELATED.md` (SWE-bench, Multi-SWE-bench — no PHP —, SWE-agent, Agentles
 
 ## Resources
 - Code: https://github.com/ba-rem26007/gemma4-legacy-replay (public at submission)
-- Kaggle notebook replaying the evaluation: ⟦à créer⟧
+- Kaggle notebook recomputing all tables from `eval/results.csv`: `notebook/resultats.ipynb` ⟦à publier⟧
 
 ## Auto-évaluation (5 critères, à remplir en phase 9)
 | Critère | Note /5 | Point faible |
