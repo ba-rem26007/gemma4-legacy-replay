@@ -2,15 +2,17 @@
 // Oracle écrit par Gemma (gemma-4-31b-it) pour PR #37819, validé pre/post automatiquement
 require 'config/config.inc.php';
 
+use PrestaShop\PrestaShop\Core\CommandBus\CommandBusInterface;
 use PrestaShop\PrestaShop\Core\Form\IdentifiableObject\DataHandler\CarrierFormDataHandler;
-use PrestaShop\PrestaShop\Core\Command\EditCarrierCommand;
+use PrestaShop\PrestaShop\Core\Domain\Carrier\Command\EditCarrierCommand;
 
 /**
- * Mock of the CommandBus to trigger the exception when the command is invalid.
- * The bug is that the handler allows a command to be created with both 'isFree' 
- * and 'additionalHandlingFee' set to true, which the actual CommandHandler rejects.
+ * Mock of the CommandBus implementing the required interface.
+ * This simulates the behavior of the CommandHandler that throws the exception
+ * when a carrier is configured as both free and having handling fees.
  */
-class MockCommandBus {
+class MockCommandBus implements CommandBusInterface
+{
     public function handle($command)
     {
         if ($command instanceof EditCarrierCommand) {
@@ -46,10 +48,11 @@ if (!Validate::isLoadedObject($carrier)) {
 }
 
 // Data that triggers the bug: is_free = true AND has_additional_handling_fee = true
+// Note: localized_delay must be an array and shipping_method must be 1 or 2
 $data = [
     'general_settings' => [
         'name' => 'My carrier',
-        'localized_delay' => '2-3 days',
+        'localized_delay' => [1 => '2-3 days'],
         'grade' => 1,
         'active' => 1,
         'tracking_url' => '',
@@ -60,7 +63,7 @@ $data = [
     'shipping_settings' => [
         'has_additional_handling_fee' => true,
         'is_free' => true,
-        'shipping_method' => 0,
+        'shipping_method' => 1,
         'range_behavior' => 0,
         'zones' => [],
     ],
@@ -73,7 +76,7 @@ $data = [
 ];
 
 try {
-    // Instantiate the handler with our mock bus
+    // Instantiate the handler with our mock bus implementing CommandBusInterface
     $handler = new CarrierFormDataHandler(new MockCommandBus());
     
     echo "Attempting to update carrier with is_free=true and has_additional_handling_fee=true...\n";
@@ -87,6 +90,6 @@ try {
         echo "Bug reproduced: Exception thrown as expected before fix.\n";
         exit(1);
     }
-    echo "An unexpected exception occurred.\n";
+    echo "An unexpected exception occurred: " . $e->getMessage() . "\n";
     exit(1);
 }

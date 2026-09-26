@@ -39,6 +39,7 @@ try {
     $parentTab->enabled = 1;
     $parentTab->id_parent = 0;
     $parentTab->position = 1;
+    $parentTab->name = [1 => 'Parent Tab']; // Required for validation
     $parentTab->add();
 
     // Create a child tab that is ACTIVE
@@ -48,6 +49,7 @@ try {
     $childTab->enabled = 1;
     $childTab->id_parent = $parentTab->id;
     $childTab->position = 1;
+    $childTab->name = [1 => 'Child Tab']; // Required for validation
     $childTab->add();
 
     // Get viewable tabs for SuperAdmin (profile 1)
@@ -60,6 +62,8 @@ try {
     echo "Child Tab ID: " . $childTab->id . "\n";
     echo "Child Tab Active: " . $childTab->active . "\n";
 
+    // Before fix: Inactive parent is shown if it has active children.
+    // After fix: Inactive parent is NEVER shown (unless it's AdminDashboard).
     if (isset($viewableTabs[$parentTab->id])) {
         echo "BUG: Inactive parent tab is still viewable because it has active children.\n";
         exit(1);
