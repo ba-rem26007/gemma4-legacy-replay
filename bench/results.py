@@ -21,6 +21,7 @@ O_DIRS = ["20260926-052040-O", "20260926-065152-O"]
 SINGLE = {
     "A-26B · ticket seul, Gemma 4 26B-A4B": ["20260926-052040-A", "20260926-065152-A"],
     "C · + glossaire automatique (provisoire)": ["20260926-103202-C"],
+    "C+pages · + glossaire auto + index des pages BO": ["20260926-134839-C"],
 }
 
 

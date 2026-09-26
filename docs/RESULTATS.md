@@ -81,3 +81,4 @@ Gagné = résolu ici mais jamais par A (0/4) ; perdu = raté ici mais toujours r
 | A · moyenne des 4 essais | 33 | 12.8 | 19.8 | — | — |
 | A-26B · ticket seul, Gemma 4 26B-A4B | 33 | 5 | 21 | 0 | 5 |
 | C · + glossaire automatique (provisoire) | 33 | 13 | 18 | 2 (#41530, #41923) | 1 |
+| C+pages · + glossaire auto + index des pages BO | 33 | 11 | 18 | 0 | 1 |
