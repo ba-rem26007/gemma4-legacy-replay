@@ -15,6 +15,8 @@ TRIALS = {
     "R": [["20260925-092934-R", "20260925-101441-R"], ["20260925-114712-R"], ["20260925-143833-R"], ["20260925-171642-R"]],
 }
 LABEL = {"A": "A · ticket seul", "R": "R · ticket + 2 corrections TRAIN similaires"}
+# condition O (borne haute B*) : 1 essai, oracle comme retour (2 corrections) ; union de deux dossiers (run repris)
+O_DIRS = ["20260926-052040-O", "20260926-065152-O"]
 
 
 def load(dirs, bugs):
@@ -80,8 +82,32 @@ def main():
               "## Détail par bug (nombre d'essais résolus sur 4)", "", "| Bug | Ticket | A | R |", "|---|---|---|---|"]
     for b in sorted(bugs, key=lambda b: -(per_bug[b]["A"] + per_bug[b]["R"])):
         lines.append(f"| [#{b}](https://github.com/PrestaShop/PrestaShop/pull/{b}) | {title[b][:70]} | {per_bug[b]['A']} | {per_bug[b]['R']} |")
+    lines += o_section(bugs, per_bug, solved)
     (ROOT / "docs" / "RESULTATS.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines[:20]))
+
+
+def o_section(bugs, per_bug, solved):
+    """Borne haute O : 1re tentative (≈ condition A), puis après retour de l'oracle, puis verdict final réévalué."""
+    o = load(O_DIRS, bugs)
+    if not o:
+        return []
+    ok = lambda f: bool(f.get("fixed") and not f.get("regression"))
+    first = [b for b in bugs if b in o and o[b].get("feedbacks") and ok(o[b]["feedbacks"][0])]
+    after = [b for b in bugs if b in o and b not in first and any(ok(f) for f in o[b].get("feedbacks", []))]
+    final = sum(solved(o.get(b)) for b in bugs)
+    a_mean = statistics.mean(per_bug[b]["A"] for b in bugs) * len(bugs) / 4
+    out = ["", "## Borne haute : l'oracle comme retour (condition O, 1 essai)", "",
+           "L'agent reçoit le résultat de l'**oracle caché** après chaque tentative (fuite volontaire) et peut corriger 2 fois.",
+           "C'est le meilleur retour qu'un vérificateur puisse donner : il borne l'apport de toute chaîne de tests.", "",
+           "| | Bugs résolus |", "|---|---|",
+           f"| A, moyenne des 4 essais | {a_mean:.1f}/{len(bugs)} |",
+           f"| O, 1re tentative (même consigne que A) | {len(first)}/{len(bugs)} |",
+           f"| O, après retour de l'oracle | **{len(first) + len(after)}/{len(bugs)}** (+{len(after)} : " + ", ".join(f"#{b}" for b in after) + ") |",
+           f"| O, verdict final réévalué (dernier patch) | {final}/{len(bugs)} |", "",
+           "Lecture : même un vérificateur parfait n'ajoute que quelques bugs ; les échecs restants ne trouvent pas le bon fichier "
+           "ou ne savent pas corriger malgré le signal (voir `docs/ECHECS.md`)."]
+    return out
 
 
 if __name__ == "__main__":
