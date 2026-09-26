@@ -159,6 +159,8 @@ def main():
     a = ap.parse_args()
     with open(B / "gentest.jsonl", "a") as out:
         for pr in a.prs:
+            if (B / "replay" / f"g{pr}" / "STATUS").exists():  # déjà traité (valide ou exclu) : on ne refait pas
+                continue
             try:
                 r = process(pr, a.model, a.tries)
             except Exception as e:

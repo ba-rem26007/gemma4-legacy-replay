@@ -1,0 +1,2 @@
+exclu:gemma_3_essais
+Le test PASSE déjà sur le code AVANT correctif : il ne détecte pas le bug. Rends l'assertion plus précise.
