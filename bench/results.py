@@ -89,6 +89,7 @@ def main():
         lines.append(f"| [#{b}](https://github.com/PrestaShop/PrestaShop/pull/{b}) | {title[b][:70]} | {per_bug[b]['A']} | {per_bug[b]['R']} |")
     lines += o_section(bugs, per_bug, solved)
     lines += single_section(bugs, data, per_bug, solved)
+    export_csv(bugs, solved)
     (ROOT / "docs" / "RESULTATS.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines[:20]))
 
@@ -133,6 +134,24 @@ def single_section(bugs, data, per_bug, solved):
         out.append(f"| {name} | {len(d)} | {sum(solved(r) for r in d.values())} | {sum(bool(r.get('loc_hit')) for r in d.values())} | "
                    f"{len(won)}{' (' + ', '.join('#' + b for b in won) + ')' if won else ''} | {len(lost)} |")
     return out
+
+
+def export_csv(bugs, solved):
+    """eval/results.csv (kit phase 8) : une ligne par (condition, essai, bug) ; base du notebook Kaggle."""
+    runs = [(c, i + 1, t) for c in TRIALS for i, t in enumerate(TRIALS[c])] + [("O", 1, O_DIRS)] + \
+           [(name.split(" ·")[0], 1, dirs) for name, dirs in SINGLE.items()]
+    out = ROOT / "eval" / "results.csv"
+    out.parent.mkdir(exist_ok=True)
+    with open(out, "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["condition", "essai", "pr", "resolu", "bon_fichier", "patch_applique", "regression", "reevalue", "dossiers"])
+        for c, i, dirs in runs:
+            d = load(dirs, bugs)
+            for b in bugs:
+                if b in d:
+                    r = d[b]
+                    w.writerow([c, i, b, int(solved(r)), int(bool(r.get("loc_hit"))), int(bool(r.get("applied"))),
+                                int(bool(r.get("regression"))), int(bool(r.get("reeval"))), "+".join(dirs)])
 
 
 if __name__ == "__main__":
