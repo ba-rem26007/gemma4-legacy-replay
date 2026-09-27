@@ -4,6 +4,7 @@ require 'config/config.inc.php';
 
 use PrestaShopBundle\Form\Admin\Improve\Shipping\Carrier\GeneralSettings;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Validator\Constraints\File;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use PrestaShop\PrestaShop\Core\Form\ChoiceProvider\GroupByIdChoiceProvider;
@@ -27,51 +28,46 @@ class MockTranslator implements TranslatorInterface
 }
 
 /**
- * Dummy ChoiceProvider to satisfy GeneralSettings dependency
- */
-class MockChoiceProvider extends GroupByIdChoiceProvider
-{
-    public function __construct()
-    {
-        // No-op to avoid dependency issues in CLI
-    }
-}
-
-/**
- * Mock FormBuilder to capture field configurations
+ * Mock FormBuilder to capture field configurations.
+ * Signature updated to be compatible with Symfony\Component\Form\FormBuilderInterface.
  */
 class MockFormBuilder implements FormBuilderInterface
 {
     public $fields = [];
 
-    public function add($name, $type = null, array $options = [])
+    public function add(FormBuilderInterface|string $child, ?string $type = null, array $options = []): static
     {
-        $this->fields[$name] = [
+        $this->fields[$child] = [
             'type' => $type,
             'options' => $options
         ];
+        return $this;
     }
 
-    public function remove($name) {}
-    public function getForm() { return null; }
-    public function createView() { return null; }
-    public function getName() { return 'test'; }
+    public function remove(string $name): void {}
+    public function getForm(): FormInterface { throw new \Exception("Not implemented"); }
+    public function getName(): string { return 'test'; }
     public function getData() { return []; }
-    public function setData($data) {}
-    public function getOptions() { return []; }
-    public function setOptions(array $options) {}
-    public function getParent() { return null; }
-    public function setParent(FormBuilderInterface $parent) {}
-    public function getChildren() { return []; }
-    public function getExtraData() { return []; }
-    public function setExtraData($data) {}
+    public function setData($data): void {}
+    public function getOptions(): array { return []; }
+    public function setOptions(array $options): void {}
+    public function getParent(): ?FormBuilderInterface { return null; }
+    public function setParent(FormBuilderInterface $parent): void {}
+    public function getChildren(): array { return []; }
+    public function getExtraData(): array { return []; }
+    public function setExtraData($data): void {}
 }
 
 try {
     // 1. Setup dependencies
     $translator = new MockTranslator();
     $locales = ['fr' => 'fr'];
-    $choiceProvider = new MockChoiceProvider();
+    
+    // GroupByIdChoiceProvider is a final class. 
+    // We instantiate it without calling the constructor to avoid dependency issues in CLI.
+    $reflection = new ReflectionClass(GroupByIdChoiceProvider::class);
+    $choiceProvider = $reflection->newInstanceWithoutConstructor();
+    
     $builder = new MockFormBuilder();
 
     // 2. Instantiate the form type
@@ -109,6 +105,8 @@ try {
     }
 
     // The fix defines MAX_IMAGE_SIZE_IN_BYTES = 8 * 1000000
+    // $maximumFileSize = (int) str_replace('M', '', strval(self::MAX_IMAGE_SIZE_IN_BYTES));
+    // Result is 8000000
     $expectedMaxSize = 8000000;
     $observedMaxSize = $fileConstraint->maxSize;
 
