@@ -7,7 +7,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 
 /**
  * Mock of FormBuilderInterface to capture the options passed to the 'add' method.
- * Signature must match exactly the Symfony FormBuilderInterface.
+ * Signatures are strictly matched to the Symfony FormBuilderInterface as required by the environment.
  */
 class MockFormBuilder implements FormBuilderInterface
 {
@@ -21,9 +21,13 @@ class MockFormBuilder implements FormBuilderInterface
         return $this;
     }
 
-    public function remove($name): void {}
-    public function get($name) { return null; }
-    public function set($name, $value): void {}
+    public function get(string $name): FormBuilderInterface
+    {
+        return $this;
+    }
+
+    public function remove(string $name): void {}
+    public function set(string $name, $value): void {}
     public function getName(): string { return 'test_form'; }
     public function getOptions(): array { return []; }
     public function setOptions(array $options): void {}

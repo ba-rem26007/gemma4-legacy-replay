@@ -21,27 +21,29 @@ if (!Validate::isLoadedObject($employee)) {
 }
 $context->employee = $employee;
 
-// Create a Tab that will trigger the RouteNotFoundException.
-// The bug occurs when a Tab has a 'route_name' that is not found in the Symfony router.
-$tab = new Tab();
-$tab->class_name = 'AdminModules';
-$tab->module = '';
-$tab->id_parent = 0;
-$tab->id_shop = 1;
-$tab->id_profile = 1;
-$tab->route_name = 'non_existent_route_trigger_bug_12345';
-$tab->add();
+// Use Db::getInstance()->insert to bypass protected properties of the Tab ObjectModel
+// We create a Tab that points to a non-existent Symfony route to trigger the bug.
+Db::getInstance()->insert('tab', [
+    'class_name' => 'AdminModules',
+    'module' => '',
+    'id_parent' => 0,
+    'id_shop' => 1,
+    'id_profile' => 1,
+    'route_name' => 'non_existent_route_trigger_bug_12345',
+]);
 
-// Instantiate AdminController. 
-// We provide a controller name so that the internal logic (token, etc.) doesn't fail.
+// Instantiate AdminController.
 $controller = new AdminController('AdminModules');
 
 try {
     /**
      * initHeader() calls getTabs(), which iterates through the tabs in the database.
      * For each tab, it calls $this->context->link->getTabLink($tab).
-     * If route_name is set but the route doesn't exist in the Symfony cache, 
+     * If route_name is set but the route doesn't exist in the Symfony router, 
      * getTabLink throws a RouteNotFoundException.
+     * 
+     * Before the fix: This exception is uncaught and crashes the page.
+     * After the fix: This exception is caught, the tab is removed, and the process continues.
      */
     $controller->initHeader();
     
