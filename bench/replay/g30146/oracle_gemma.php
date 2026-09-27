@@ -4,26 +4,29 @@ require 'config/config.inc.php';
 
 /**
  * Test for Ticket: The override directory is deleted when overrides are uninstalled
- * The bug is in Module::removeOverrideDirectory where the loop condition 
- * uses getPathname() instead of getRealPath(), causing it to potentially 
- * bypass the stop condition and delete the root /override directory.
+ * 
+ * The bug is that Module::removeOverrideDirectory uses getPathname() for the loop condition.
+ * getPathname() returns the path as it was passed to the constructor, without resolving 
+ * symlinks or '..' segments. If the path provided to the method contains such segments, 
+ * the string comparison fails even if the directory is the same, causing the loop 
+ * to continue and delete the root /override directory.
  */
 
 // Module is abstract, we need a concrete implementation to instantiate it
 class TestModule extends Module {
     public function __construct() {
-        parent::__construct('testmodule', 'Test Module');
+        parent::__construct('testmodule');
     }
 }
 
 // 1. Setup environment
-$dirOverride = _PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'override';
-$dirClasses = $dirOverride . DIRECTORY_SEPARATOR . 'classes';
-
-// Ensure we have a clean state for the test
-if (!is_dir($dirOverride)) {
-    mkdir($dirOverride, 0777, true);
+$dirOverride = realpath(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'override');
+if (!$dirOverride) {
+    mkdir(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'override', 0777, true);
+    $dirOverride = realpath(_PS_ROOT_DIR_ . DIRECTORY_SEPARATOR . 'override');
 }
+
+$dirClasses = $dirOverride . DIRECTORY_SEPARATOR . 'classes';
 if (!is_dir($dirClasses)) {
     mkdir($dirClasses, 0777, true);
 }
@@ -37,12 +40,13 @@ file_put_contents($indexOverride, '<?php');
 $indexClasses = $dirClasses . DIRECTORY_SEPARATOR . 'index.php';
 file_put_contents($indexClasses, '<?php');
 
-// To trigger the bug, the directory must contain ONLY index.php 
-// (or be empty) so that the Finder doesn't find other files and break the loop.
+// Ensure no other files exist in /override/classes to allow the loop to proceed
 $files = glob($dirClasses . DIRECTORY_SEPARATOR . '*');
-foreach ($files as $file) {
-    if (basename($file) !== 'index.php') {
-        unlink($file);
+if ($files) {
+    foreach ($files as $file) {
+        if (basename($file) !== 'index.php') {
+            unlink($file);
+        }
     }
 }
 
@@ -56,10 +60,29 @@ try {
     $method = $reflection->getMethod('removeOverrideDirectory');
     $method->setAccessible(true);
 
-    echo "Executing removeOverrideDirectory...\n";
-    // We simulate the call: remove the 'classes' subtree but stop at 'override'
-    // We use realpath to ensure the comparison in the loop is tested against a resolved path
-    $method->invoke($module, realpath($dirOverride), realpath($dirClasses));
+    echo "Executing removeOverrideDirectory with non-normalized path...\n";
+    
+    /**
+     * To trigger the bug, we pass a path that is logically the same as $dirOverride 
+     * but string-different. We use a '..' segment.
+     * 
+     * $directoryOverride = /var/www/html/override
+     * $directoryPath = /var/www/html/override/../override/classes
+     * 
+     * In the loop:
+     * 1. $splDir starts at /var/www/html/override/../override/classes
+     * 2. $splDir = $splDir->getPathInfo() -> pathname becomes /var/www/html/override/../override
+     * 3. Comparison: '/var/www/html/override/../override' !== '/var/www/html/override'
+     *    This is TRUE, so the loop continues and deletes /override/index.php.
+     * 
+     * With the fix:
+     * 3. Comparison: $splDir->getRealPath() !== $directoryOverride
+     *    '/var/www/html/override' !== '/var/www/html/override'
+     *    This is FALSE, so the loop stops.
+     */
+    $nonNormalizedPath = $dirOverride . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'override' . DIRECTORY_SEPARATOR . 'classes';
+    
+    $method->invoke($module, $dirOverride, $nonNormalizedPath);
 
 } catch (\Throwable $e) {
     echo "Error during execution: " . $e->getMessage() . "\n";
@@ -73,8 +96,6 @@ $classesExists = is_dir($dirClasses);
 echo "Result - /override/index.php exists: " . ($indexExists ? 'Yes' : 'No') . "\n";
 echo "Result - /override/classes directory exists: " . ($classesExists ? 'Yes' : 'No') . "\n";
 
-// The bug is that /override/index.php is deleted because getPathname() 
-// does not match the realpath of $directoryOverride.
 if ($indexExists) {
     echo "SUCCESS: /override/index.php was preserved.\n";
     exit(0);
