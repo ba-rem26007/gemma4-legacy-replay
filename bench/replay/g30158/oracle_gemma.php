@@ -2,6 +2,16 @@
 // Oracle écrit par Gemma (gemma-4-31b-it) pour PR #30158, validé pre/post automatiquement
 require 'config/config.inc.php';
 
+/**
+ * Helper to access protected properties of PrestaShop controllers
+ */
+function getProtectedProperty($object, $property) {
+    $reflection = new ReflectionClass($object);
+    $prop = $reflection->getProperty($property);
+    $prop->setAccessible(true);
+    return $prop->getValue($object);
+}
+
 try {
     // Setup Context
     $context = Context::getContext();
@@ -10,22 +20,21 @@ try {
     $context->employee = new Employee(1);
 
     // Mock Smarty to avoid crashes when the fix calls $this->context->smarty->assign()
-    // We access the global context directly to avoid "protected property" errors
     $context->smarty = new class {
         public function assign($data) {}
     };
 
     // Disable the Customers Groups feature
-    // Group::isFeatureActive() checks this configuration value
+    // The fix uses Group::isFeatureActive(), which typically checks a Configuration value.
     Configuration::updateValue('PS_CUSTOMERS_GROUPS_FEATURE_ACTIVE', 0);
 
     $controller = new AdminGroupsController();
     $controller->token = Tools::getAdminTokenLite('AdminGroups');
-    $controller->display = ''; // Ensure we are on the list page to trigger the button logic
 
     // 1. Test initPageHeaderToolbar: 'new_group' button should be absent when feature is disabled
     $controller->initPageHeaderToolbar();
-    $hasButton = isset($controller->page_header_toolbar_btn['new_group']);
+    $toolbarBtns = getProtectedProperty($controller, 'page_header_toolbar_btn');
+    $hasButton = isset($toolbarBtns['new_group']);
 
     // 2. Test postProcess: Actions should be blocked when feature is disabled
     // Setup: Ensure customer 1 exists and is inactive
@@ -57,7 +66,8 @@ try {
     $hasWarning = false;
     try {
         $controller->initContent();
-        $hasWarning = !empty($controller->warnings);
+        $warnings = getProtectedProperty($controller, 'warnings');
+        $hasWarning = !empty($warnings);
     } catch (\Throwable $t) {
         // If it crashes, it means parent::initContent() was called -> Fix not applied
         echo "initContent crashed (expected on old code): " . $t->getMessage() . "\n";
