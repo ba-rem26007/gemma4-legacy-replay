@@ -204,6 +204,24 @@ def explore(pr, reply):
     return "PAGES OBSERVÉES (code AVANT correctif)\n" + "\n\n".join(out)
 
 
+def signatures(bug):
+    """Signatures RÉELLES (commit de base) des classes des fichiers touchés : namespace, classe, méthodes.
+    Évite les appels inventés (lot 4 : 8 échecs sur 16 = erreurs PHP dans le test, API 8.0/8.1 méconnue)."""
+    out = []
+    for f in bug["files"]:
+        if not f.endswith(".php"):
+            continue
+        src = flow.show(bug["base_commit"], f)
+        if not src:
+            continue
+        ns = re.search(r"^namespace\s+([\w\\]+);", src, re.M)
+        cls = re.findall(r"^\s*(?:abstract\s+|final\s+)*(?:class|interface|trait)\s+(\w+)[^\n{]*", src, re.M)
+        meths = re.findall(r"^\s*((?:public|protected|private)?\s*(?:static\s+)?function\s+\w+\s*\([^)]*\)(?:\s*:\s*[\w\\?|]+)?)", src, re.M)
+        head = f"// {f}" + (f"\nnamespace {ns.group(1)};" if ns else "") + "".join(f"\nclass {c}" for c in cls[:1])
+        out.append(head + "\n" + "\n".join("  " + " ".join(m.split()) for m in meths[:40]))
+    return "SIGNATURES RÉELLES (code avant correctif) — n'appelle que ces méthodes, avec ces paramètres :\n" + "\n\n".join(out) if out else ""
+
+
 def required_fields(bug):
     """Champs requis ('required' => true) des classes ObjectModel legacy touchées ou citées dans le correctif."""
     diff = (B / "diffs" / f"{bug['pr']}.diff").read_text()
@@ -231,7 +249,7 @@ def process(pr, model, tries, explore_first=False, mode="ui"):
     fmt = FORMAT_PHP if mode == "php" else FORMAT
     if mode == "php":  # oracle PHP en ligne de commande : pas de navigateur, pas de sélecteurs
         explore_first = False
-        intro = f"{ENV_PHP}\n\n{EXAMPLE_PHP}\n\n{context(bug)}\n\n{required_fields(bug)}"
+        intro = f"{ENV_PHP}\n\n{EXAMPLE_PHP}\n\n{context(bug)}\n\n{signatures(bug)}\n\n{required_fields(bug)}"
         role = "Tu écris des tests PHP de non-régression pour PrestaShop (exécutés en ligne de commande)."
     else:
         intro = f"{ENV_NOTES}\n\n{example(kind0)}\n\n{context(bug)}"
