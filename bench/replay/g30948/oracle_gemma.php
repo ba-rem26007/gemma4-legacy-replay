@@ -15,7 +15,10 @@ class TestNonConfigurableModule extends Module
 {
     public function __construct()
     {
-        parent::__construct('test_non_configurable_module', 1, '1.0.0');
+        // Based on the error "Argument #2 ($context) must be of type ?Context", 
+        // we pass the context as the second argument.
+        parent::__construct('test_non_configurable_module', Context::getContext());
+        $this->version = '1.0.0';
     }
     // No getContent() method -> non-configurable
     // No upgrade() method -> non-upgradable
@@ -38,7 +41,7 @@ try {
     // 2. Create and enable the module in the database
     $m = new TestNonConfigurableModule();
     $m->active = 1;
-    $m->add(); // Inserts into ps_module
+    $m->add(); 
     $m->update();
 
     // 3. Instantiate AdminModuleDataProvider
@@ -71,7 +74,7 @@ try {
     echo "Expected action: " . Module::ACTION_DISABLE . "\n";
 
     // The test passes if the first action is 'disable'
-    // Before the fix, it was 'disable_mobile' for enabled non-configurable modules.
+    // Before the fix, for an enabled non-configurable module, the first action was 'disable_mobile'.
     if ($firstAction === Module::ACTION_DISABLE) {
         exit(0);
     } else {
