@@ -15,17 +15,25 @@ $context->language = new Language(1);
 $context->currency = new Currency(1);
 
 $id_lang = 1;
+$id_product = 1;
 
-// We simulate a product row as returned by the database.
-// To trigger the bug, we omit the 'id_manufacturer' key.
-// The old code does: (int) $row['id_manufacturer'] > 0, which triggers a Notice: Undefined index.
-// The fixed code does: !empty($row['id_manufacturer']), which does not trigger a notice.
-$row = [
-    'id_product' => 1,
-    'id_category_default' => 2,
-    'link_rewrite' => 'product-1',
-    'ean13' => '123456789',
-];
+// To avoid "Undefined array key" notices for other fields (like 'out_of_stock'),
+// we fetch a real product row from the database and then specifically remove 'id_manufacturer'.
+$sql = 'SELECT p.*, pl.link_rewrite, pl.name, stock.out_of_stock 
+        FROM ' . _DB_PREFIX_ . 'product p 
+        LEFT JOIN ' . _DB_PREFIX_ . 'product_lang pl ON (p.id_product = pl.id_product AND pl.id_lang = ' . (int)$id_lang . ')
+        LEFT JOIN ' . _DB_PREFIX_ . 'stock stock ON (p.id_product = stock.id_product)
+        WHERE p.id_product = ' . (int)$id_product;
+
+$row = Db::getInstance()->getRow($sql);
+
+if (!$row) {
+    echo "Error: Demo product 1 not found in database.\n";
+    exit(1);
+}
+
+// Trigger the bug: remove the key that the old code accesses without checking existence
+unset($row['id_manufacturer']);
 
 // In debug mode, PHP notices can break JSON responses. 
 // We use a custom error handler to catch the notice and treat it as a failure.
@@ -38,7 +46,7 @@ try {
     Product::getProductProperties($id_lang, $row, $context);
     
     restore_error_handler();
-    echo "Success: No notice triggered. The bug is fixed.\n";
+    echo "Success: No notice triggered for missing id_manufacturer. The bug is fixed.\n";
     exit(0);
 } catch (\Throwable $t) {
     restore_error_handler();
