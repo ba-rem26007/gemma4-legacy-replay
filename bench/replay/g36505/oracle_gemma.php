@@ -2,6 +2,43 @@
 // Oracle écrit par Gemma (gemma-4-31b-it) pour PR #36505, validé pre/post automatiquement
 require 'config/config.inc.php';
 
+/**
+ * Manual definition of RedirectType to avoid file path issues in CLI.
+ * This class only contains constants used for comparison.
+ */
+if (!class_exists('PrestaShop\PrestaShopBundle\Model\Product\RedirectType')) {
+    eval('namespace PrestaShop\PrestaShopBundle\Model\Product { 
+        class RedirectType { 
+            const TYPE_PRODUCT_PERMANENT = 301; 
+            const TYPE_PRODUCT_TEMPORARY = 302; 
+            const TYPE_CATEGORY_PERMANENT = 1; 
+        } 
+    }');
+}
+
+/**
+ * Load AdminModelAdapter.
+ * We try multiple paths to ensure the class is loaded regardless of the environment's CWD.
+ */
+$adapterClass = 'PrestaShop\PrestaShopBundle\Model\Product\AdminModelAdapter';
+if (!class_exists($adapterClass)) {
+    $paths = [
+        'src/PrestaShopBundle/Model/Product/AdminModelAdapter.php',
+        '/var/www/html/src/PrestaShopBundle/Model/Product/AdminModelAdapter.php',
+    ];
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            require_once $path;
+            break;
+        }
+    }
+}
+
+if (!class_exists($adapterClass)) {
+    echo "Critical Error: Class $adapterClass could not be loaded.\n";
+    exit(1);
+}
+
 use PrestaShop\PrestaShopBundle\Model\Product\AdminModelAdapter;
 use PrestaShop\PrestaShopBundle\Model\Product\RedirectType;
 
@@ -11,24 +48,25 @@ $context->shop = new Shop(1);
 $context->language = new Language(1);
 $context->currency = new Currency(1);
 
-// Ensure products exist for the test
-$p1 = new Product(1);
-$p2 = new Product(2);
-
-// We use Reflection to instantiate AdminModelAdapter without its complex constructor
-// as we only need to test the logic inside getModelData.
-$reflection = new ReflectionClass(AdminModelAdapter::class);
-$adapter = $reflection->newInstanceWithoutConstructor();
+// Use Reflection to bypass the complex constructor of AdminModelAdapter
+try {
+    $reflection = new ReflectionClass($adapterClass);
+    $adapter = $reflection->newInstanceWithoutConstructor();
+} catch (\ReflectionException $e) {
+    echo "Reflection Error: " . $e->getMessage() . "\n";
+    exit(1);
+}
 
 // Initialize required properties used in getModelData
 $adapter->translatableKeys = [];
 
-// Prepare form data as it would be sent from the Back Office
-// The bug occurs when id_type_redirected is a simple numeric ID instead of an array ['data' => [id]]
+// Prepare form data that triggers the bug.
+// The bug occurs when 'id_type_redirected' is passed as a numeric ID (as it is in the new product page)
+// but the old code expects an array ['data' => [id]].
 $formData = [
     'id_product' => 1,
     'step1' => [
-        'type_product' => 1, // Standard product
+        'type_product' => 1,
     ],
     'step2' => [],
     'step3' => [],
@@ -36,7 +74,7 @@ $formData = [
     'step5' => [],
     'step6' => [
         'redirect_type' => RedirectType::TYPE_PRODUCT_PERMANENT,
-        'id_type_redirected' => 2, // Redirect to product 2
+        'id_type_redirected' => 2, // Numeric ID of the target product
     ],
 ];
 
@@ -49,13 +87,13 @@ try {
     $observedRedirectType = $result['redirect_type'];
     echo "Observed redirect_type after getModelData: $observedRedirectType\n";
 
-    // The bug: before the fix, it falls back to TYPE_CATEGORY_PERMANENT 
-    // because it expects id_type_redirected to be an array.
+    // Before fix: it falls back to TYPE_CATEGORY_PERMANENT because it checks for ['data'][0]
+    // After fix: it accepts numeric values.
     if ($observedRedirectType === RedirectType::TYPE_PRODUCT_PERMANENT) {
         echo "SUCCESS: Redirect type preserved.\n";
         exit(0);
     } else {
-        echo "FAILURE: Redirect type was changed to " . $observedRedirectType . "\n";
+        echo "FAILURE: Redirect type was incorrectly changed to " . $observedRedirectType . "\n";
         exit(1);
     }
 } catch (\Throwable $t) {
