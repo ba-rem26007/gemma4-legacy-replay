@@ -17,30 +17,28 @@ try {
     // 1. Setup Data
     // Create a product with a reference
     $p = new Product();
-    $p->reference = 'TEST_REF_123';
+    $p->reference = 'IMPORT_TEST_REF';
     $p->price = 10.0;
     $p->id_category_default = 2;
     $p->active = 1;
     $p->add();
 
-    // Associate product with multiple categories (2, 3, 4)
-    $p->updateCategory(2);
-    $p->updateCategory(3);
-    $p->updateCategory(4);
+    // Ensure it starts with only the default category
+    Db::getInstance()->delete('category_product', 'id_product = ' . (int)$p->id);
+    Db::getInstance()->insert('category_product', ['id_category' => 2, 'id_product' => (int)$p->id]);
 
-    echo "Product created with reference: {$p->reference}\n";
+    echo "Product created: ID {$p->id}, Ref {$p->reference}\n";
     echo "Initial categories: " . implode(', ', $p->getCategories()) . "\n";
 
     // 2. Prepare Import Simulation
     $controller = new TestImportController();
     $controller->separator = ',';
 
-    // We simulate a CSV row that updates the product via reference
-    // and adds/updates categories. 
-    // The bug occurs when categories are provided in the import.
+    // The bug: if multiple categories are provided in the CSV, 
+    // the old code skips all but the first one because it sees $product->category is already an array.
     $info = [
-        'reference' => 'TEST_REF_123',
-        'categories' => '2,5', // We want to keep 2 and add 5
+        'reference' => 'IMPORT_TEST_REF',
+        'categories' => '2,3,4', // We want to import these 3 categories
     ];
 
     $accessories = [];
@@ -50,9 +48,9 @@ try {
     $regenerate = 0;
     $shop_active = 1;
     $shop_ids = [1];
-    $match_ref = 1; // Important: match by reference
+    $match_ref = 1; // Match by reference
 
-    // 3. Execute the code touched by the fix
+    // 3. Execute the import logic
     $controller->publicProductImportOne(
         $info,
         $default_lang,
@@ -71,20 +69,18 @@ try {
     $p_updated = new Product($p->id);
     $final_categories = $p_updated->getCategories();
     
-    echo "Final categories: " . implode(', ', $final_categories) . "\n";
+    echo "Final categories after import: " . implode(', ', $final_categories) . "\n";
 
-    // The bug: if the product already had categories, the old code would 'continue' 
-    // and not add the new ones from the CSV. 
-    // If the import process clears existing associations, we end up only with the default.
-    // The fix ensures that categories from the CSV are actually appended/added.
-    
-    $has_category_5 = in_array(5, $final_categories);
-    
-    if ($has_category_5) {
-        echo "SUCCESS: Category 5 was correctly imported.\n";
+    // Expected: categories 2, 3, and 4 should be present.
+    // Bugged behavior: Only category 2 (the first one in the list) is processed.
+    $expected = [2, 3, 4];
+    $missing = array_diff($expected, $final_categories);
+
+    if (empty($missing)) {
+        echo "SUCCESS: All categories (2,3,4) were correctly imported.\n";
         exit(0);
     } else {
-        echo "FAILURE: Category 5 was not imported. Bug still present.\n";
+        echo "FAILURE: Missing categories: " . implode(', ', $missing) . ". Bug still present.\n";
         exit(1);
     }
 

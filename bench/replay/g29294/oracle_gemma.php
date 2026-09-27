@@ -39,19 +39,20 @@ try {
     $context->cart = $cart;
 
     // 2. Setup Theme
-    // Provide required keys to avoid "Undefined array key" warnings in Theme class
+    // We must provide the attributes in the exact structure expected by Theme::getLayoutNameForPage
+    // which uses both $this->get('dot.notation') and $this->attributes['array']['key']
     $themeAttributes = [
         'name' => 'classic',
         'directory' => 'classic',
         'theme_settings' => [
             'default_layout' => 'layout-full-width',
-            'layouts' => []
-        ]
+            'layouts' => [
+                'layouttest' => 'layout-left-column',
+            ],
+        ],
     ];
-    $theme = new Theme($themeAttributes);
     
-    // Set a specific layout for the 'layouttest' page.
-    $theme->setPageLayouts(['layouttest' => 'layout-left-column']);
+    $theme = new Theme($themeAttributes);
     
     // Link the theme to the shop in the context
     $context->shop->theme = $theme;
