@@ -8,7 +8,7 @@ $context->shop = new Shop(1);
 $context->language = new Language(1);
 $context->currency = new Currency(1);
 
-// AdminController requires a logged-in employee to avoid fatal errors in constructor/init
+// AdminController and Link require a logged-in employee
 $employee = new Employee(1);
 if (!Validate::isLoadedObject($employee)) {
     $employee = new Employee();
@@ -31,10 +31,8 @@ if (!Validate::isLoadedObject($product)) {
     $product->add();
 }
 
-// We instantiate the controller to ensure the environment is correct, 
-// but we avoid accessing protected properties.
-require_once 'controllers/admin/AdminSearchController.php';
-$controller = new AdminSearchController();
+// In CLI, the Link object is not automatically instantiated in the Context
+$context->link = new Link();
 
 // Simulate the inputs that trigger the bug:
 // bo_search_type = 1 (Catalog)
@@ -47,15 +45,23 @@ echo "Testing search for product ID: $query with search type: $searchType\n";
 if ($searchType == 1 && Validate::isUnsignedInt($query)) {
     $p = new Product($query);
     if (Validate::isLoadedObject($p)) {
-        // The fix replaces a manual string concatenation with a call to getAdminLink
-        // with the 'updateproduct' => '1' parameter.
-        // We use Context::getContext() instead of $controller->context to avoid protected property access.
-        $url = Context::getContext()->link->getAdminLink('AdminProducts', true, [
+        // The fix replaces:
+        // Tools::redirectAdmin('index.php?tab=AdminProducts&id_product=' . (int) ($product->id) . '&token=' . Tools::getAdminTokenLite('AdminProducts'));
+        // With:
+        // Tools::redirectAdmin($this->context->link->getAdminLink('AdminProducts', true, ['id_product' => (int) $product->id, 'updateproduct' => '1']));
+        
+        // We call the method exactly as the fix does
+        $url = $context->link->getAdminLink('AdminProducts', true, [
             'id_product' => (int) $p->id, 
             'updateproduct' => '1'
         ]);
         
         echo "Generated URL: $url\n";
+
+        if (empty($url)) {
+            echo "FAILURE: Generated URL is empty. Link object might not be fully initialized for CLI.\n";
+            exit(1);
+        }
 
         // The bug was that the redirect triggered a CSV download because 'updateproduct=1' was missing.
         // The fix is verified if the URL contains both the product ID and the 'updateproduct=1' flag.
@@ -67,6 +73,7 @@ if ($searchType == 1 && Validate::isUnsignedInt($query)) {
             exit(0);
         } else {
             echo "FAILURE: URL is missing required parameters for product page redirect\n";
+            echo "URL observed: $url\n";
             exit(1);
         }
     } else {
