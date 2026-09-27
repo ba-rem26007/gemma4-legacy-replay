@@ -29,18 +29,26 @@ try {
     $quantity_in_cart = 5;
     $cart->updateQty($quantity_in_cart, $id_product);
     
-    // Assign cart to the global context so ProductController can find it via $this->context
     $context->cart = $cart;
 
-    // 3. Simulate Request for ProductController
-    // ProductController::getProduct() relies on $_GET['id_product']
+    // 3. Simulate Request
     $_GET['id_product'] = (string)$id_product;
 
-    // 4. Instantiate ProductController
-    // The constructor of FrontController (parent) initializes $this->context = Context::getContext();
-    $controller = new ProductController();
+    // 4. Instantiate ProductController with a complete mock for the Symfony container
+    // We override the get() method to return a dummy object for ANY service requested.
+    // This prevents the "ObjectPresenter" error which occurs when the real Symfony 
+    // presenters are called in a CLI environment without a full container.
+    $controller = new class extends ProductController {
+        public function get($id) {
+            return new class {
+                public function addParams($p) { return $this; }
+                public function present() { return []; }
+            };
+        }
+    };
 
-    // Populate $this->product inside the controller
+    // Initialize the product object inside the controller
+    // This sets $this->product based on $_GET['id_product']
     $controller->getProduct();
 
     // 5. Execute the target method
@@ -52,8 +60,8 @@ try {
     echo "Observed cart_quantity: $observed_qty\n";
 
     // The bug: $product['id_product'] is used instead of $this->product->id.
-    // In the array returned by Product::getProductProperties, the key is 'id', not 'id_product'.
-    // Thus, $product['id_product'] is null, and getProductQuantity(null, ...) returns 0.
+    // Product::getProductProperties() returns an array where the ID is in the key 'id', not 'id_product'.
+    // Therefore, $product['id_product'] is null, and getProductQuantity(null, ...) returns 0.
     if ($observed_qty === $quantity_in_cart) {
         exit(0);
     } else {
