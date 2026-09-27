@@ -10,36 +10,31 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 /**
  * We create an anonymous class extending ProductController to mock the Symfony container
  * and the methods called within the catch block.
+ * We must strictly follow the signatures of the parent classes (AbstractController and FrameworkBundleAdminController).
  */
 $controller = new class extends ProductController {
-    // Mock the container's get() method to trigger the exception
-    public function get($id)
+    // Mock the Symfony AbstractController::get() helper
+    public function get(string $id)
     {
         // To trigger the catch block in editAction, we throw the exception 
         // as soon as the controller tries to fetch a dependency.
         throw new ProductNotFoundException();
     }
 
-    // Mock Symfony controller methods with EXACT signatures to avoid Fatal Errors
-    public function addFlash($type, $message) {
+    // Mock Symfony AbstractController::addFlash
+    public function addFlash(string $type, string $message) {
         echo "Flash message added: $type - $message\n";
     }
 
-    public function redirectToRoute($route, array $parameters = []) {
+    // Mock Symfony AbstractController::redirectToRoute
+    public function redirectToRoute(string $route, array $parameters = [], int $status = 302): RedirectResponse {
         echo "Redirecting to route: $route\n";
         return new RedirectResponse('/');
     }
 
+    // Mock PrestaShop FrameworkBundleAdminController::trans
     public function trans($key, $domain, array $parameters = []) {
         return "Translated string for $key";
-    }
-
-    public function getErrorMessageForException(\Throwable $e, array $messages) {
-        return "Mocked error message";
-    }
-
-    public function getErrorMessages(\Throwable $e) {
-        return ['error' => 'Mocked error'];
     }
 };
 
@@ -66,7 +61,7 @@ try {
     echo "FAIL: ProductNotFoundException bubbled up to the test script (not caught by controller).\n";
     exit(1);
 } catch (\Throwable $t) {
-    // Any other error indicates a setup problem
+    // Any other error indicates a setup problem (e.g. signature mismatch)
     echo "Unexpected error: " . get_class($t) . " - " . $t->getMessage() . "\n";
     exit(1);
 }
