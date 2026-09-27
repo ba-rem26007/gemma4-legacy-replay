@@ -5,6 +5,7 @@ require 'config/config.inc.php';
 use PrestaShop\PrestaShop\Adapter\Meta\HtaccessFileGenerator;
 use PrestaShop\PrestaShop\Adapter\Translator\Translator as AdapterTranslator;
 use PrestaShop\PrestaShop\Adapter\Feature\MultistoreFeature;
+use PrestaShop\PrestaShop\Adapter\Shop\Context as AdapterShopContext;
 use PrestaShop\PrestaShop\Adapter\Meta\SetUpUrlsDataConfiguration;
 
 try {
@@ -17,11 +18,14 @@ try {
     }
 
     // 2. Instantiate dependencies
-    // The constructor of SetUpUrlsDataConfiguration expects:
-    // Configuration (legacy), Context (legacy), FeatureInterface, HtaccessFileGenerator, TranslatorInterface
+    // SetUpUrlsDataConfiguration expects:
+    // Configuration (legacy), Context (Adapter), FeatureInterface (Adapter), HtaccessFileGenerator, TranslatorInterface
     $configuration = new Configuration(); 
-    $shopContext = Context::getContext();
-    $multistoreFeature = new MultistoreFeature();
+    $shopContext = new AdapterShopContext();
+    
+    // MultistoreFeature requires the Adapter Shop Context in its constructor
+    $multistoreFeature = new MultistoreFeature($shopContext);
+    
     $htaccessFileGenerator = new HtaccessFileGenerator();
     $translator = new AdapterTranslator();
 

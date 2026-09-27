@@ -6,33 +6,33 @@ use PrestaShopBundle\Routing\LegacyRouterChecker;
 use PrestaShopBundle\Routing\LegacyControllerConstants;
 use Symfony\Component\HttpFoundation\Request;
 use PrestaShopBundle\Entity\Repository\TabRepository;
-use PrestaShop\Core\Hook\HookDispatcherInterface;
+use PrestaShop\PrestaShop\Core\Hook\HookDispatcherInterface;
 use PrestaShopBundle\Routing\Converter\LegacyParametersConverter;
 
 /**
  * The bug is in LegacyRouterChecker::check().
- * When stripping the 'Controller' suffix from a module controller name,
- * the code used substr($controllerName, strrpos($controllerName, 'Controller')),
- * which returns the string starting FROM 'Controller' (i.e., it returns 'Controller'),
- * instead of removing it.
+ * Before the fix:
+ * 1. str_ends_with('Controller', $controllerName) had arguments swapped.
+ * 2. substr($controllerName, strrpos($controllerName, 'Controller')) returned 'Controller' 
+ *    instead of removing it.
  */
 
 // 1. Setup a dummy module directory to satisfy Dispatcher::getControllers()
-// Dispatcher::getControllers scans the filesystem for .php files in the admin controller folder.
 $moduleName = 'test_module';
 $controllerName = 'AdminTestController';
 $path = _PS_MODULE_DIR_ . $moduleName . '/controllers/admin/';
 if (!is_dir($path)) {
     mkdir($path, 0777, true);
 }
+// Dispatcher::getControllers looks for files and returns an array with lowercase keys
 touch($path . $controllerName . '.php');
 
 // 2. Mock dependencies
-// We extend the classes and override constructors to avoid needing a full Symfony Container/EntityManager
+// We use anonymous classes to avoid needing the full Symfony Container/EntityManager
 $tabRepository = new class extends TabRepository {
     public function __construct() {}
     public function findOneByClassName($name) {
-        // Return a dummy Tab object that indicates this controller belongs to a module
+        // Return a dummy object that mimics the Tab entity
         return new class {
             public function getModule() { return 'test_module'; }
         };
@@ -40,8 +40,12 @@ $tabRepository = new class extends TabRepository {
 };
 
 $hookDispatcher = new class implements HookDispatcherInterface {
-    public function dispatchWithParameters($hook, $params) {}
-    public function dispatch($hook, $params) {}
+    public function dispatchWithParameters($hookName, array $hookParameters = []) {
+        return null;
+    }
+    public function dispatch(object $event, ?string $eventName = null): object {
+        return $event;
+    }
 };
 
 $legacyParametersConverter = new class extends LegacyParametersConverter {
@@ -52,6 +56,7 @@ try {
     $checker = new LegacyRouterChecker($tabRepository, $hookDispatcher, $legacyParametersConverter);
     
     // Simulate a request for the module controller
+    // The 'controller' parameter is what triggers the logic in LegacyRouterChecker::check
     $request = new Request(['controller' => $controllerName]);
     
     // Execute the check logic
@@ -68,7 +73,8 @@ try {
      * 
      * Buggy behavior:
      * Input: 'AdminTestController'
-     * Result: 'Controller'
+     * Result: 'AdminTestController' (because str_ends_with was swapped, the if block was skipped)
+     * or 'Controller' (if the if block was entered but substr was buggy)
      */
     if ($observed === 'AdminTest') {
         exit(0);
