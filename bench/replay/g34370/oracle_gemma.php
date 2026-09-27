@@ -3,6 +3,23 @@
 require 'config/config.inc.php';
 
 /**
+ * Mock Smarty to intercept the rendering process.
+ * We throw an exception in fetch() to stop execution before the 'exit' call 
+ * inside displayMaintenancePage(), allowing us to inspect the controller state.
+ */
+class MockSmarty {
+    public function assign($params, $name = null) {
+        return true;
+    }
+    public function fetch($template) {
+        throw new Exception('StopBeforeExit');
+    }
+    public function getTemplateDir() {
+        return '';
+    }
+}
+
+/**
  * Test controller to expose the protected displayMaintenancePage method.
  */
 class TestFrontController extends FrontController {
@@ -10,9 +27,10 @@ class TestFrontController extends FrontController {
         $this->displayMaintenancePage();
     }
 
-    // Override to prevent any automatic redirections or exits during init/constructor
+    // Prevent automatic redirections or exits during construction/init
     public function canonicalRedirection($url = '') {}
     public function geolocationManagement($defaultCountry) {}
+    public function init() {} 
 }
 
 // Setup Context
@@ -21,41 +39,47 @@ $context->shop = new Shop(1);
 $context->language = new Language(1);
 $context->currency = new Currency(1);
 
-// Ensure shop is in maintenance mode (though we call the method directly)
+// Replace Smarty with our mock to prevent the script from exiting
+$context->smarty = new MockSmarty();
+
+// Ensure shop is in maintenance mode
 Configuration::updateValue('PS_MAINTENANCE', 1);
 
 $controller = new TestFrontController();
 
-// We use output buffering to capture the HTML output of displayMaintenancePage
-// and prevent it from polluting the CLI output.
-ob_start();
 try {
-    // This call executes:
-    // 1. $this->setMedia() (The fix: registers theme core CSS)
-    // 2. $this->registerStylesheet('theme-error', ...) (Registers error CSS)
-    // 3. Smarty fetch and echo
+    // This call executes the real displayMaintenancePage()
+    // It will call setMedia() (if fixed), then registerStylesheet('theme-error'),
+    // then smarty->fetch() which throws our exception.
     $controller->triggerMaintenance();
-} catch (\Throwable $t) {
-    // We catch exceptions (e.g. missing template) because the stylesheets 
-    // are registered BEFORE the template is fetched.
+} catch (Exception $e) {
+    if ($e->getMessage() !== 'StopBeforeExit') {
+        echo "Unexpected exception: " . $e->getMessage() . "\n";
+        exit(1);
+    }
 }
-ob_end_clean();
 
 $stylesheets = $controller->getStylesheets();
-$count = count($stylesheets);
 
-echo "Number of registered stylesheets: $count\n";
-foreach ($stylesheets as $id => $data) {
+// PrestaShop often has 'external' and 'inline' keys in the stylesheets array
+// to categorize assets. We remove them to count only the actual registered files.
+unset($stylesheets['external'], $stylesheets['inline']);
+
+$filteredStyles = array_keys($stylesheets);
+$count = count($filteredStyles);
+
+echo "Registered stylesheets (excluding external/inline): $count\n";
+foreach ($filteredStyles as $id) {
     echo " - $id\n";
 }
 
 /**
  * DIAGNOSTIC:
  * Before fix: displayMaintenancePage() only calls registerStylesheet('theme-error', ...).
- *             The stylesheets array contains only 1 element.
+ *             The filtered list contains only ['theme-error']. Count = 1.
  * After fix: displayMaintenancePage() calls setMedia() first.
- *            setMedia() registers the theme's main CSS files (e.g., theme.css, custom.css).
+ *            setMedia() registers the theme's core CSS (e.g., 'theme-css' or similar).
  *            Then 'theme-error' is added.
- *            The stylesheets array contains > 1 element.
+ *            The filtered list contains 'theme-error' AND at least one theme asset. Count > 1.
  */
 exit($count > 1 ? 0 : 1);
