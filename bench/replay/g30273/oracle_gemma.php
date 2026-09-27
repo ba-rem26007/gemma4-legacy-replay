@@ -17,32 +17,35 @@ $context->currency = new Currency(1);
 $id_lang = 1;
 $id_product = 1;
 
-// To avoid "Undefined array key" notices for other fields (like 'out_of_stock'),
-// we fetch a real product row from the database and then specifically remove 'id_manufacturer'.
-$sql = 'SELECT p.*, pl.link_rewrite, pl.name, stock.out_of_stock 
-        FROM ' . _DB_PREFIX_ . 'product p 
-        LEFT JOIN ' . _DB_PREFIX_ . 'product_lang pl ON (p.id_product = pl.id_product AND pl.id_lang = ' . (int)$id_lang . ')
-        LEFT JOIN ' . _DB_PREFIX_ . 'stock stock ON (p.id_product = stock.id_product)
-        WHERE p.id_product = ' . (int)$id_product;
-
-$row = Db::getInstance()->getRow($sql);
+// We fetch a real product to get most of the required fields.
+$row = Db::getInstance()->getRow('SELECT * FROM ' . _DB_PREFIX_ . 'product WHERE id_product = ' . (int)$id_product);
 
 if (!$row) {
     echo "Error: Demo product 1 not found in database.\n";
     exit(1);
 }
 
-// Trigger the bug: remove the key that the old code accesses without checking existence
+// Manually fill keys that are typically provided by the query in Product::getProducts 
+// but are missing from a simple SELECT * FROM ps_product.
+$row['link_rewrite'] = 'product-1';
+$row['out_of_stock'] = 2; 
+$row['id_category_default'] = 2;
+
+// Trigger the bug: remove the key that the old code accesses without checking existence.
 unset($row['id_manufacturer']);
 
-// In debug mode, PHP notices can break JSON responses. 
-// We use a custom error handler to catch the notice and treat it as a failure.
+// We use a custom error handler to catch ONLY the notice related to 'id_manufacturer'.
+// Other notices (like the ProductSettings constant) are ignored to avoid false positives.
 set_error_handler(function($errno, $errstr) {
-    throw new Exception($errstr);
+    if (strpos($errstr, 'id_manufacturer') !== false) {
+        throw new Exception($errstr);
+    }
+    return false; // Let other errors be handled normally or ignored
 });
 
 try {
-    // Call the method touched by the fix
+    // Call the method touched by the fix.
+    // The fix changes the check to !empty($row['id_manufacturer']), which is safe.
     Product::getProductProperties($id_lang, $row, $context);
     
     restore_error_handler();
