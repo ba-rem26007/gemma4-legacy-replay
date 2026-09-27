@@ -16,6 +16,7 @@ Oracles validés : #31223, #31514, #35587, #36082, #36123, #36662, #36807, #3687
 
 | Bug | Run | Résolu (oracle) |
 |---|---|---|
+| #31223 | 20260927-043441-O | oui |
 | #31514 | 20260927-020217-O | non |
 | #35587 | 20260927-011259-O | oui |
 | #36082 | 20260927-003701-O | oui |
@@ -37,7 +38,7 @@ Oracles validés : #31223, #31514, #35587, #36082, #36123, #36662, #36807, #3687
 
 ## Étape 3 — chemins acceptés (`trajectories/self_paths.py`)
 
-`9 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 1, 'non_resolu': 7, 'hors_fonctions_officielles': 1, 'ok': 9}`
+`10 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 1, 'non_resolu': 7, 'hors_fonctions_officielles': 1, 'ok': 10}`
 
 Garde-fous : verdict réévalué, éditions limitées aux fichiers du correctif officiel (anti-contournement),
 blocs SEARCH/REPLACE reproduisant exactement le patch, < 8 000 tokens, aucun bug TEST.
