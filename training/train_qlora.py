@@ -67,9 +67,14 @@ def main():
     ap.add_argument("--grad-accum", type=int, default=8)
     ap.add_argument("--save-steps", type=int, default=25)
     ap.add_argument("--max-per-bug", type=int, default=2, help="kit : 2 chemins max par bug")
+    ap.add_argument("--min-sim", type=float, default=0.4,
+                    help="chemins Gemma (source=gemma_self) : similarité minimale au correctif officiel (0 = tous)")
     a = ap.parse_args()
 
     rows = [json.loads(l) for p in a.data.split(",") if Path(p).exists() for l in open(p)]
+    n0 = len(rows)
+    rows = [r for r in rows if r.get("source") != "gemma_self" or (r.get("similarite") or 0) >= a.min_sim]
+    print(f"seuil de similarité {a.min_sim} : {n0 - len(rows)} chemins Gemma écartés")
     print("exemples :", {src: sum(r.get("source") == src for r in rows) for src in {r.get("source") for r in rows}})
     per = {}
     random.seed(0); random.shuffle(rows)

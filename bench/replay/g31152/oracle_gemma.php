@@ -4,8 +4,9 @@ require 'config/config.inc.php';
 
 try {
     // 1. Setup: Create two countries with different zip code formats
-    // France: 5 digits (NNNNN)
+    // id_zone is required for Country ObjectModel
     $countryFR = new Country();
+    $countryFR->id_zone = 1; 
     $countryFR->iso_code = 'FR';
     $countryFR->zip_code_format = 'NNNNN';
     $countryFR->active = 1;
@@ -15,8 +16,8 @@ try {
     $countryFR->name = array(1 => 'France');
     $countryFR->add();
 
-    // Switzerland: 4 digits (NNNN)
     $countryCH = new Country();
+    $countryCH->id_zone = 1;
     $countryCH->iso_code = 'CH';
     $countryCH->zip_code_format = 'NNNN';
     $countryCH->active = 1;
@@ -31,30 +32,36 @@ try {
     Configuration::updateValue('PS_COUNTRY_DEFAULT', (int)$countryFR->id);
 
     $language = new Language(1);
-    $translator = new Translator();
     
-    // The formatter is initialized. We simulate the "Shop A" context where 
-    // the default country is Switzerland.
-    $formatter = new CustomerAddressFormatter($language);
-    $formatter->setCountry($countryCH);
+    // Mock the Translator
+    $translator = new class {
+        public function trans($id, $params, $domain) {
+            return $id;
+        }
+    };
+    
+    // Instantiate the formatter. 
+    // Based on the error, the constructor is: __construct(Country $country, Language $language)
+    $formatter = new CustomerAddressFormatter($countryCH, $language);
 
     // Instantiate the form. 
-    // Based on PrestaShop 1.7/8 structure, the constructor typically takes:
-    // (Translator, Smarty, Formatter, Language, Persister)
+    // Constructor: __construct($smarty, $translator, $formatter, $language, $persister)
     $form = new CustomerAddressForm(
+        null,           // smarty
         $translator, 
-        null, 
         $formatter, 
         $language, 
-        null
+        null            // persister
     );
 
     // 3. Trigger the bug:
     // The user is adding an address for Switzerland.
     // The 'id_country' in params matches the current formatter country (Switzerland).
-    // BEFORE FIX: The code skips the first 'if', goes to 'else', and resets the 
-    // formatter country to PS_COUNTRY_DEFAULT (France).
-    // AFTER FIX: The code enters the 'if' and keeps Switzerland.
+    // BEFORE FIX: The condition (int) $params['id_country'] !== (int) $this->formatter->getCountry()->id 
+    // is FALSE. The code skips the first block and falls into the 'else', 
+    // resetting the country to PS_COUNTRY_DEFAULT (France).
+    // AFTER FIX: The code correctly handles the case where id_country is provided, 
+    // even if it matches the current formatter country.
     $params = [
         'id_country' => (int)$countryCH->id,
         'postcode' => '1234', // Valid Swiss postcode (4 digits), invalid French (5 digits)
@@ -71,6 +78,7 @@ try {
     echo "Formatter Country Format: " . $formatter->getCountry()->zip_code_format . "\n";
     echo "Postcode value: " . $params['postcode'] . "\n";
 
+    // The validate() method uses the country currently set in the formatter to check the zip code.
     $isValid = $form->validate();
     echo "Form is valid: " . ($isValid ? 'YES' : 'NO') . "\n";
 
