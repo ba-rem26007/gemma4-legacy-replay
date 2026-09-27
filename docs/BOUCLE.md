@@ -36,6 +36,7 @@ Oracles validés : #27758, #27947, #28711, #29079, #29135, #29515, #29571, #2974
 | #31223 | 20260927-043441-O | oui |
 | #31241 | 20260927-055648-O | non |
 | #31514 | 20260927-020217-O | non |
+| #33700 | 20260927-200152-O | oui |
 | #34695 | 20260927-185001-O | non |
 | #34698 | 20260927-171602-O | non |
 | #34721 | 20260927-185627-O | non |
@@ -69,7 +70,7 @@ Oracles validés : #27758, #27947, #28711, #29079, #29135, #29515, #29571, #2974
 
 ## Étape 3 — chemins acceptés (`trajectories/self_paths.py`)
 
-`11 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 3, 'non_resolu': 32, 'hors_fonctions_officielles': 3, 'ok': 11, 'fichier_absent_recherche': 1}`
+`12 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 3, 'non_resolu': 32, 'hors_fonctions_officielles': 3, 'ok': 12, 'fichier_absent_recherche': 1}`
 
 Garde-fous : verdict réévalué, éditions limitées aux fichiers du correctif officiel (anti-contournement),
 blocs SEARCH/REPLACE reproduisant exactement le patch, < 8 000 tokens, aucun bug TEST.
