@@ -24,29 +24,23 @@ try {
     $tag->setProducts([$id_product]);
     echo "Tag '$tagName' created and associated with product $id_product\n";
 
-    // 3. Manually populate the search index to simulate the state after Search::indexation()
-    // We use Db::getInstance() because Search::indexation() is too heavy/unreliable for CLI tests
-    // and the bug is specifically about the CLEANUP of these tables.
-    Db::getInstance()->insert(_DB_PREFIX_ . 'search_word', [
-        'word' => pSQL(strtolower($tagName)),
-        'id_lang' => 1
-    ]);
+    // 3. Manually populate the search index using raw SQL to avoid any automatic 
+    // prefixing issues in the Db::insert method (avoiding ps_ps_ errors).
+    $word_lower = strtolower($tagName);
+    Db::getInstance()->execute('INSERT INTO ' . _DB_PREFIX_ . 'search_word (`word`, `id_lang`) VALUES ("' . pSQL($word_lower) . '", 1)');
     
     $id_word = (int)Db::getInstance()->getValue('
         SELECT id_word 
         FROM ' . _DB_PREFIX_ . 'search_word 
-        WHERE word = "' . pSQL(strtolower($tagName)) . '"'
+        WHERE word = "' . pSQL($word_lower) . '"'
     );
 
     if ($id_word === 0) {
-        echo "Failed to create search_word entry\n";
+        echo "Failed to retrieve search_word ID\n";
         exit(1);
     }
 
-    Db::getInstance()->insert(_DB_PREFIX_ . 'search_index', [
-        'id_word' => $id_word,
-        'id_product' => (int)$id_product
-    ]);
+    Db::getInstance()->execute('INSERT INTO ' . _DB_PREFIX_ . 'search_index (`id_word`, `id_product`) VALUES (' . (int)$id_word . ', ' . (int)$id_product . ')');
     
     echo "Search index manually populated for word ID $id_word and product $id_product\n";
 
@@ -60,7 +54,7 @@ try {
     $still_indexed = (int)Db::getInstance()->getValue('
         SELECT COUNT(*) 
         FROM ' . _DB_PREFIX_ . 'search_index 
-        WHERE id_word = ' . $id_word . ' AND id_product = ' . (int)$id_product
+        WHERE id_word = ' . (int)$id_word . ' AND id_product = ' . (int)$id_product
     );
 
     echo "Products still in search index for deleted tag: $still_indexed\n";

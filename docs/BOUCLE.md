@@ -8,9 +8,9 @@ Régénéré par `python3 bench/loop_stats.py`.
 |---|---|---|---|---|
 | ui | 0 | 11 | 0 | 0% |
 | explore | 0 | 4 | 0 | 0% |
-| php | 54 | 95 | 0 | 36% |
+| php | 55 | 97 | 0 | 36% |
 
-Oracles validés : #27758, #27947, #28711, #29079, #29135, #29515, #29530, #29571, #29741, #29756, #30146, #30252, #30258, #30314, #30342, #30465, #30737, #30834, #30996, #31223, #31241, #31514, #33700, #34060, #34695, #34698, #34721, #34873, #34917, #35321, #35384, #35418, #35587, #36082, #36123, #36454, #36521, #36662, #36807, #36875, #36905, #37191, #37220, #37589, #37747, #37877, #37955, #37970, #37996, #38100, #38157, #38168, #38341, #38417
+Oracles validés : #27758, #27947, #28711, #29079, #29135, #29515, #29530, #29548, #29571, #29741, #29756, #30146, #30252, #30258, #30314, #30342, #30465, #30737, #30834, #30996, #31223, #31241, #31514, #33700, #34060, #34695, #34698, #34721, #34873, #34917, #35321, #35384, #35418, #35587, #36082, #36123, #36454, #36521, #36662, #36807, #36875, #36905, #37191, #37220, #37589, #37747, #37877, #37955, #37970, #37996, #38100, #38157, #38168, #38341, #38417
 
 ## Étape 2 — agent Gemma avec l'oracle comme retour (condition O, TRAIN)
 
@@ -23,6 +23,7 @@ Oracles validés : #27758, #27947, #28711, #29079, #29135, #29515, #29530, #2957
 | #29135 | 20260927-182538-O | oui |
 | #29515 | 20260927-195645-O | non |
 | #29530 | 20260927-211908-O | non |
+| #29548 | 20260927-222215-O | oui |
 | #29571 | 20260927-154406-O | oui |
 | #29741 | 20260927-183837-O | non |
 | #29756 | 20260927-184304-O | non |
@@ -73,7 +74,7 @@ Oracles validés : #27758, #27947, #28711, #29079, #29135, #29515, #29530, #2957
 
 ## Étape 3 — chemins acceptés (`trajectories/self_paths.py`)
 
-`12 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 3, 'non_resolu': 34, 'hors_fonctions_officielles': 4, 'ok': 12, 'fichier_absent_recherche': 1}`
+`13 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 3, 'non_resolu': 34, 'hors_fonctions_officielles': 4, 'ok': 13, 'fichier_absent_recherche': 1}`
 
 Garde-fous : verdict réévalué, éditions limitées aux fichiers du correctif officiel (anti-contournement),
 blocs SEARCH/REPLACE reproduisant exactement le patch, < 8 000 tokens, aucun bug TEST.
