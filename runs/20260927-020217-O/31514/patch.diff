@@ -1,0 +1,11 @@
+--- a/src/PrestaShopBundle/Controller/Admin/Sell/Catalog/AttributeController.php
++++ b/src/PrestaShopBundle/Controller/Admin/Sell/Catalog/AttributeController.php
+@@ -103,7 +103,7 @@
+ 
+         try {
+             $positionUpdate = $positionUpdateFactory->buildPositionUpdate($positionsData, $positionDefinition);
+-            $updater = $this->get('prestashop.core.grid.position.doctrine_grid_position_updater');
++            $updater = $this->get('prestashop.core.grid.position.legacy_grid_position_updater');
+             $updater->update($positionUpdate);
+             $this->addFlash('success', $this->trans('Successful update', 'Admin.Notifications.Success'));
+         } catch (TranslatableCoreException $e) {
