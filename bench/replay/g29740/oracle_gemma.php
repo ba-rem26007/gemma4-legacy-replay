@@ -8,15 +8,34 @@ $context->shop = new Shop(1);
 $context->language = new Language(1);
 $context->employee = new Employee(1);
 
+/**
+ * We create a Mock class to bypass the AdminController constructor 
+ * (which triggers template loading and Symfony container dependencies)
+ * and to mock the trans() method which depends on the Symfony translator.
+ */
+class MockTaxRulesGroupController extends AdminTaxRulesGroupController
+{
+    public function __construct()
+    {
+        // Do nothing to avoid the parent constructor's side effects in CLI
+    }
+
+    public function trans($id, array $parameters = [], $domain = null)
+    {
+        // Simply return the translation ID to avoid calling the Symfony translator
+        return $id;
+    }
+}
+
 try {
-    // Use Reflection to instantiate the controller without calling the constructor.
-    // This avoids triggering the full AdminController lifecycle (like renderForm or template loading)
-    // which often fails in a CLI environment.
-    $reflection = new ReflectionClass('AdminTaxRulesGroupController');
-    $controller = $reflection->newInstanceWithoutConstructor();
+    $controller = new MockTaxRulesGroupController();
     
-    // Manually inject the context needed for translations and data fetching
-    $controller->context = $context;
+    // Set the context property. Since it might be protected in some versions, 
+    // we use Reflection to ensure it's set.
+    $reflection = new ReflectionClass('AdminTaxRulesGroupController');
+    $contextProp = $reflection->getProperty('context');
+    $contextProp->setAccessible(true);
+    $contextProp->setValue($controller, $context);
 
     // Call the method that defines the form fields
     $controller->initRuleForm();

@@ -2,9 +2,21 @@
 // Oracle écrit par Gemma (gemma-4-31b-it) pour PR #34351, validé pre/post automatiquement
 require 'config/config.inc.php';
 
-// Setup context
+// Setup context for the main process
+$employee = new Employee(1);
+if (!Validate::isLoadedObject($employee)) {
+    $employee = new Employee();
+    $employee->firstname = 'Admin';
+    $employee->lastname = 'Admin';
+    $employee->email = 'admin@example.com';
+    $employee->passwd = 'password';
+    $employee->add();
+}
+
+Context::getContext()->employee = $employee;
 Context::getContext()->shop = new Shop(1);
 Context::getContext()->language = new Language(1);
+Context::getContext()->currency = new Currency(1);
 
 // Ensure product 1 exists
 $product = new Product(1);
@@ -17,78 +29,103 @@ if (!Validate::isLoadedObject($product)) {
     $product->add();
 }
 
-// Create a dummy image file to upload
+// Clean up previous test images for product 1 to avoid false positives
+Db::getInstance()->execute('DELETE FROM ' . _DB_PREFIX_ . 'image WHERE id_product = 1');
+
+// Create a valid image file
 $tmpFile = tempnam(sys_get_temp_dir(), 'ps_img');
-$imgContent = imagecreatetruecolor(100, 100);
-imagejpeg($imgContent, $tmpFile);
-imagedestroy($imgContent);
+$img = imagecreatetruecolor(200, 200);
+imagejpeg($img, $tmpFile);
+imagedestroy($img);
+chmod($tmpFile, 0644);
 
-// Mock $_FILES for HelperImageUploader
-$_FILES['file'] = [
-    'name' => 'test_image.jpg',
-    'type' => 'image/jpeg',
-    'tmp_name' => $tmpFile,
-    'error' => 0,
-    'size' => filesize($tmpFile),
+// The controller method ajaxProcessaddProductImage calls die(json_encode(...)).
+// To verify the results (thumbnails) after the call, we must execute the call
+// in a separate process.
+$runnerFile = tempnam(sys_get_temp_dir(), 'ps_runner');
+$configPath = __DIR__ . '/config/config.inc.php';
+
+$runnerCode = '<?php
+require ' . var_export($configPath, true) . ';
+
+$employee = new Employee(1);
+if (!Validate::isLoadedObject($employee)) {
+    $employee = new Employee();
+    $employee->firstname = "Admin";
+    $employee->lastname = "Admin";
+    $employee->email = "admin@example.com";
+    $employee->passwd = "password";
+    $employee->add();
+}
+
+Context::getContext()->employee = $employee;
+Context::getContext()->shop = new Shop(1);
+Context::getContext()->language = new Language(1);
+Context::getContext()->currency = new Currency(1);
+
+$_FILES["file"] = [
+    "name" => "test_image.jpg",
+    "type" => "image/jpeg",
+    "tmp_name" => ' . var_export($tmpFile, true) . ',
+    "error" => 0,
+    "size" => ' . filesize($tmpFile) . ',
 ];
-
-// Mock Tools::getValue for legends
-$_POST['legend'] = ['1' => 'Test Legend'];
+$_POST["legend"] = ["1" => "Test Legend"];
 
 try {
     $controller = new AdminProductsController();
-    
-    // We call the method that is the subject of the fix
-    // In the "Before" state, $this->get(ImageFormatConfiguration::class) fails in CLI/Legacy context
-    $controller->ajaxProcessaddProductImage(1, 'file');
+    $controller->ajaxProcessaddProductImage(1, "file");
+} catch (\Throwable $t) {
+    echo "FATAL: " . $t->getMessage();
+    exit(1);
+}
+';
+file_put_contents($runnerFile, $runnerCode);
 
-    // Get the ID of the image just created
-    $idImage = (int) Db::getInstance()->getValue('SELECT MAX(id_image) FROM ' . _DB_PREFIX_ . 'image');
-    
+try {
+    // Execute the controller call in a separate process to handle the die()
+    $output = shell_exec('php ' . escapeshellarg($runnerFile));
+    echo "Controller output: $output\n";
+
+    // Check if the image was created in the database
+    $idImage = (int) Db::getInstance()->getValue('SELECT MAX(id_image) FROM ' . _DB_PREFIX_ . 'image WHERE id_product = 1');
     if ($idImage <= 0) {
-        echo "Error: No image was created in the database.\n";
+        echo "Error: No image was created in the database. Uploader might have failed.\n";
         exit(1);
     }
 
-    // Determine the path to the image
-    // PrestaShop stores images in img/p/1/2/3/123.jpg
-    $path = 'img/p/';
+    // Determine the path to the image (PrestaShop standard: img/p/1/2/3/123.jpg)
     $idStr = (string)$idImage;
+    $path = 'img/p/';
     for ($i = 0; $i < strlen($idStr) - 1; $i++) {
         $path .= $idStr[$i] . '/';
     }
     $path .= $idStr;
 
     echo "Original image path: $path.jpg\n";
-    
-    // Check if the original image exists
     if (!file_exists($path . '.jpg')) {
         echo "Original image file not found on disk.\n";
         exit(1);
     }
 
-    // Check for thumbnails. 
-    // If the fix is working, files like product_1_1-small_default.jpg (or similar) should exist.
-    // We look for any file in that directory containing a hyphen (which denotes the size suffix).
+    // Check for thumbnails.
+    // If the bug is present, the script crashes/fails before generating thumbnails.
+    // If fixed, thumbnails (files with suffixes like -small_default.jpg) are created.
     $files = glob($path . '-*.jpg');
     $thumbnailCount = count($files);
-    
     echo "Thumbnails found: $thumbnailCount\n";
 
-    // If thumbnails are created, the bug is fixed.
     if ($thumbnailCount > 0) {
-        exit(0);
+        exit(0); // Fixed
     } else {
         echo "No thumbnails were generated. Bug is still present.\n";
-        exit(1);
+        exit(1); // Bug present
     }
 
 } catch (\Throwable $t) {
     echo "Exception caught: " . $t->getMessage() . "\n";
-    echo $t->getTraceAsString() . "\n";
     exit(1);
 } finally {
-    if (file_exists($tmpFile)) {
-        unlink($tmpFile);
-    }
+    if (file_exists($tmpFile)) unlink($tmpFile);
+    if (file_exists($runnerFile)) unlink($runnerFile);
 }
