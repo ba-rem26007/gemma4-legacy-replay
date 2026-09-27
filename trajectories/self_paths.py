@@ -93,7 +93,9 @@ def build(bug, d):
     kws, chosen = trace_choices(d)
     hits = flow.grep(base, kws)
     edited = list(hs)
-    files = (edited + [f for f in chosen if f not in edited and f in hits])[:flow.MAX_FILES_READ]
+    # chemin CONDENSÉ : on ne garde à l'étape LIRE que les fichiers réellement édités (les fichiers lus pour rien sont
+    # retirés) ; si le chemin reste trop long, c'est le signe d'un contexte trop large et il est écarté ensuite.
+    files = edited[:flow.MAX_FILES_READ]
     if any(f not in hits for f in edited):
         return None, "fichier_absent_recherche"
     blocks, contents = [], {}

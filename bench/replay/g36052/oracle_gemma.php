@@ -10,54 +10,39 @@ Context::getContext()->shop = new Shop(1);
 Context::getContext()->language = new Language(1);
 
 try {
-    // Create demo CartRules since they are not explicitly provided in the demo data list
-    $cr1 = new CartRule();
-    $cr1->name = [1 => 'Test Rule 1'];
-    $cr1->code = 'RULE1' . uniqid();
-    $cr1->quantity = 100;
-    $cr1->id_currency = 1;
-    $cr1->id_shop = 1;
-    $cr1->active = 1;
-    $cr1->add();
-
-    $cr2 = new CartRule();
-    $cr2->name = [1 => 'Test Rule 2'];
-    $cr2->code = 'RULE2' . uniqid();
-    $cr2->quantity = 100;
-    $cr2->id_currency = 1;
-    $cr2->id_shop = 1;
-    $cr2->active = 1;
-    $cr2->add();
-
-    $id1 = new CartRuleId((int)$cr1->id);
-    $id2 = new CartRuleId((int)$cr2->id);
+    // We use arbitrary IDs to trigger the DELETE queries. 
+    // We don't need to create full CartRule objects in the DB because 
+    // the repository methods perform DELETEs which don't require the ID to exist.
+    $id1 = new CartRuleId(1);
 
     // Instantiate the repository directly
-    // PrestaShop\PrestaShop\Adapter\Entity\Db::getConnection() returns the Doctrine DBAL Connection
     $connection = \PrestaShop\PrestaShop\Adapter\Entity\Db::getConnection();
     $repository = new CartRuleRepository($connection);
 
-    echo "Testing restrictCartRules (triggers removeRestrictedCartRules)...\n";
-    // This method calls removeRestrictedCartRules which uses DELETE with an alias 'crc' in the buggy version
-    $repository->restrictCartRules($id1, [$id2]);
-    echo "restrictCartRules executed successfully.\n";
+    // The methods containing the bug are private. We use Reflection to call them directly
+    // and ensure we trigger the exact SQL statements mentioned in the ticket.
+    $ref = new ReflectionClass($repository);
 
-    // To be thorough, we try to trigger removeRestrictionsByName if setRestrictionsByName is available
-    // Based on the diff, setRestrictionsByName calls removeRestrictionsByName
-    if (method_exists($repository, 'setRestrictionsByName')) {
-        echo "Testing setRestrictionsByName (triggers removeRestrictionsByName)...\n";
-        // Use a dummy entity name like 'carrier' and a dummy ID
-        $repository->setRestrictionsByName($id1, [1], 'carrier');
-        echo "setRestrictionsByName executed successfully.\n";
-    }
+    echo "Testing removeRestrictedCartRules...\n";
+    $method1 = $ref->getMethod('removeRestrictedCartRules');
+    $method1->setAccessible(true);
+    $method1->invoke($repository, $id1);
+    echo "removeRestrictedCartRules executed successfully.\n";
+
+    echo "Testing removeRestrictionsByName...\n";
+    $method2 = $ref->getMethod('removeRestrictionsByName');
+    $method2->setAccessible(true);
+    // 'carrier' is a common entity name used in cart rule restrictions
+    $method2->invoke($repository, $id1, 'carrier');
+    echo "removeRestrictionsByName executed successfully.\n";
 
     echo "No SQL syntax errors detected. The fix is working.\n";
     exit(0);
 
 } catch (\Throwable $t) {
     echo "Caught exception: " . $t->getMessage() . "\n";
-    // If the error is a syntax error related to the alias in DELETE, it's the bug
-    if (strpos($t->getMessage(), 'syntax error') !== false || strpos($t->getMessage(), '1064') !== false) {
+    // MariaDB error 1064 is the specific syntax error for aliases in DELETE
+    if (strpos($t->getMessage(), '1064') !== false || strpos($t->getMessage(), 'syntax error') !== false) {
         echo "Bug reproduced: MariaDB does not support aliases in DELETE statements.\n";
     }
     exit(1);

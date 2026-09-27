@@ -67,6 +67,8 @@ try {
     $cf = new CustomizationField();
     $cf->id_product = $product->id;
     $cf->type = 1; // text
+    $cf->required = 0;
+    $cf->name = [1 => 'Customization Name']; // Multilang field
     $cf->add();
 
     $cust = new Customization();

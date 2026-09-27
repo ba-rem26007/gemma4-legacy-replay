@@ -34,7 +34,7 @@ Oracles validés : #36123, #36662, #36807, #36875, #36905, #37191, #37589, #3774
 
 ## Étape 3 — chemins acceptés (`trajectories/self_paths.py`)
 
-`5 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 1, 'non_resolu': 6, 'hors_fonctions_officielles': 1, 'ok': 5, 'trop_long': 2}`
+`7 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 1, 'non_resolu': 6, 'hors_fonctions_officielles': 1, 'ok': 7}`
 
 Garde-fous : verdict réévalué, éditions limitées aux fichiers du correctif officiel (anti-contournement),
 blocs SEARCH/REPLACE reproduisant exactement le patch, < 8 000 tokens, aucun bug TEST.
