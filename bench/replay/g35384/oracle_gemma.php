@@ -32,13 +32,16 @@ class TestStockController extends StockController
 }
 
 /**
- * Mock for QueryStockParamsCollection to avoid dependency hell
+ * Mock for the service that processes request parameters.
+ * It must return an instance of QueryParamsCollection or null to satisfy the type hint in jsonResponse.
  */
 class MockQueryParams
 {
     public function fromRequest($request)
     {
-        return new \stdClass();
+        // Returning null is the safest way to satisfy ?QueryParamsCollection 
+        // without triggering constructor dependencies of the real class.
+        return null;
     }
 }
 
