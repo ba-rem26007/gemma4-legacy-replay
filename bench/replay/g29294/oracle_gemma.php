@@ -32,33 +32,34 @@ try {
     $context->currency = new Currency(1);
     $context->customer = new Customer(1);
     
-    // Cart is required by assignGeneralPurposeVariables() called inside getTemplateVarPage()
+    // Cart is required by some FrontController methods
     $cart = new Cart();
     $cart->id_currency = 1;
     $cart->id_lang = 1;
     $context->cart = $cart;
 
     // 2. Setup Theme
-    // We must provide the attributes in the exact structure expected by Theme::getLayoutNameForPage
-    // which uses both $this->get('dot.notation') and $this->attributes['array']['key']
+    // The Theme class uses an internal attributes system. 
+    // We provide the basic required keys to avoid warnings.
     $themeAttributes = [
         'name' => 'classic',
         'directory' => 'classic',
         'theme_settings' => [
             'default_layout' => 'layout-full-width',
-            'layouts' => [
-                'layouttest' => 'layout-left-column',
-            ],
+            'layouts' => [],
         ],
     ];
     
     $theme = new Theme($themeAttributes);
     
+    // Use the public method to set the layout for our specific page.
+    // This ensures the internal attribute storage is updated correctly.
+    $theme->setPageLayouts(['layouttest' => 'layout-left-column']);
+    
     // Link the theme to the shop in the context
     $context->shop->theme = $theme;
 
     // 3. Instantiate the Controller
-    // The FrontController constructor automatically assigns Context::getContext() to $this->context
     $controller = new MockModuleFrontController();
     
     // Simulate a module controller: php_self is empty, identification relies on getPageName()
@@ -68,10 +69,14 @@ try {
     $pageVars = $controller->testGetTemplateVarPage();
 
     echo "Layouts found in page variables:\n";
-    foreach ($pageVars as $key => $value) {
-        if (strpos($key, 'layout-') === 0) {
-            echo "- $key: " . var_export($value, true) . "\n";
+    if (is_array($pageVars)) {
+        foreach ($pageVars as $key => $value) {
+            if (strpos($key, 'layout-') === 0) {
+                echo "- $key: " . var_export($value, true) . "\n";
+            }
         }
+    } else {
+        echo "pageVars is not an array\n";
     }
 
     // The bug: Before the fix, getTemplateVarPage used $this->php_self (empty), 
