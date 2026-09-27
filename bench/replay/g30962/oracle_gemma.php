@@ -21,18 +21,19 @@ if (!Validate::isLoadedObject($employee)) {
 }
 $context->employee = $employee;
 
-// Use Db::getInstance()->insert to bypass protected properties of the Tab ObjectModel
 // We create a Tab that points to a non-existent Symfony route to trigger the bug.
+// We use Db::getInstance()->insert to avoid issues with protected properties in the Tab ObjectModel.
+// We only include columns that are standard in the ps_tab table.
 Db::getInstance()->insert('tab', [
     'class_name' => 'AdminModules',
     'module' => '',
     'id_parent' => 0,
-    'id_shop' => 1,
     'id_profile' => 1,
     'route_name' => 'non_existent_route_trigger_bug_12345',
 ]);
 
 // Instantiate AdminController.
+// We pass a controller name to ensure the internal logic (token, etc.) doesn't fail.
 $controller = new AdminController('AdminModules');
 
 try {
