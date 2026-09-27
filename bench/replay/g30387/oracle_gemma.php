@@ -3,6 +3,36 @@
 require 'config/config.inc.php';
 
 /**
+ * Subclass of HelperList to access protected properties and bypass template loading
+ */
+class TestHelperList extends HelperList
+{
+    public function setList($list)
+    {
+        $this->_list = $list;
+    }
+
+    public function setFields($fields)
+    {
+        $this->fields_list = $fields;
+    }
+
+    public function getList()
+    {
+        return $this->_list;
+    }
+
+    // Override createTemplate to prevent "Unable to load template" errors in CLI
+    public function createTemplate($tpl)
+    {
+        return new class {
+            public function assign($params) { return $this; }
+            public function fetch() { return ''; }
+        };
+    }
+}
+
+/**
  * Dummy class to handle the HelperList callback
  */
 class HelperListCallbackHandler
@@ -14,11 +44,12 @@ class HelperListCallbackHandler
 }
 
 // Setup context
-Context::getContext()->shop = new Shop(1);
-Context::getContext()->language = new Language(1);
+$context = Context::getContext();
+$context->shop = new Shop(1);
+$context->language = new Language(1);
+$context->controller = new stdClass();
 
 // 1. Prepare data: a list where one column value is explicitly NULL
-// This is the condition that triggers the bug (isset(null) is false)
 $list = [
     [
         'id' => 1,
@@ -31,7 +62,6 @@ $list = [
 ];
 
 // 2. Define fields for HelperList
-// We define a callback for 'test_column'
 $callbackHandler = new HelperListCallbackHandler();
 $fields_display = [
     'id' => [
@@ -47,14 +77,23 @@ $fields_display = [
 ];
 
 try {
-    $helper = new HelperList();
-    
-    // generateList calls displayListContent(), which processes the callbacks
-    $helper->generateList($list, $fields_display);
+    $helper = new TestHelperList();
+    $helper->setList($list);
+    $helper->setFields($fields_display);
+    $helper->context = $context;
 
-    // The processed values are stored in the public property _list
-    $observedValueNull = $helper->_list[0]['test_column'];
-    $observedValueNotNull = $helper->_list[1]['test_column'];
+    // Set required properties to avoid "Missing parameter" exceptions when generating links
+    $helper->currentIndex = 'index.php';
+    $helper->token = 'test_token';
+    $helper->identifier = 'test_id';
+
+    // displayListContent() is the method that iterates over the list 
+    // and applies the callbacks, modifying $this->_list in place.
+    $helper->displayListContent();
+
+    $resultList = $helper->getList();
+    $observedValueNull = $resultList[0]['test_column'];
+    $observedValueNotNull = $resultList[1]['test_column'];
 
     echo "Value for NULL entry: " . var_export($observedValueNull, true) . "\n";
     echo "Value for non-NULL entry: " . var_export($observedValueNotNull, true) . "\n";
