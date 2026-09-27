@@ -14,7 +14,7 @@ Context::getContext()->shop = new Shop(1);
 Context::getContext()->language = new Language(1);
 Context::getContext()->currency = new Currency(1);
 
-// We use a product that exists in demo data
+// Use a product from demo data
 $idProduct = 1;
 $product = new Product($idProduct);
 
@@ -33,18 +33,26 @@ $_GET['group'] = '999999';
 
 // Instantiate the controller
 $controller = new ProductController();
-$controller->product = $product;
+
+// The 'product' property is protected in ProductController, we must use Reflection to set it
+try {
+    $refProp = new ReflectionProperty('ProductController', 'product');
+    $refProp->setAccessible(true);
+    $refProp->setValue($controller, $product);
+} catch (\Throwable $e) {
+    echo "Failed to set protected property 'product': " . $e->getMessage() . "\n";
+    exit(1);
+}
 
 echo "Testing Product ID: $idProduct with invalid group 999999\n";
 
 try {
     // Use Reflection to access the private method getIdProductAttributeByGroup
-    $reflection = new ReflectionClass('ProductController');
-    $method = $reflection->getMethod('getIdProductAttributeByGroup');
-    $method->setAccessible(true);
+    $refMethod = new ReflectionMethod('ProductController', 'getIdProductAttributeByGroup');
+    $refMethod->setAccessible(true);
 
     echo "Calling getIdProductAttributeByGroup()...\n";
-    $result = $method->invoke($controller);
+    $result = $refMethod->invoke($controller);
     
     echo "Result observed: " . var_export($result, true) . "\n";
 
@@ -58,7 +66,7 @@ try {
     }
 
 } catch (\Throwable $t) {
-    echo "Caught expected exception (Bug present): " . $t->getMessage() . "\n";
+    echo "Caught exception (Bug present): " . get_class($t) . " - " . $t->getMessage() . "\n";
     // If we are here, the exception was NOT caught by the controller, meaning the bug is still there.
     exit(1);
 }

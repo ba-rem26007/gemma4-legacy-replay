@@ -44,19 +44,25 @@ try {
     Product::resetStaticCache();
 
     // 4. Execute price calculation for the target currency (CZK)
-    // Parameters: id_shop, id_product, id_product_attribute, id_country, id_state, zipcode, id_currency, id_group, quantity, usetax, decimals
+    // Signature: priceCalculation($id_shop, $id_product, $id_product_attribute, $id_country, $id_state, $zipcode, $id_currency, $id_group, $quantity, $usetax, $decimals, $id_customer = null, $id_cart = null, $id_address = null, &$specific_price = null, $use_tax_excl = true)
+    $specific_price_out = null;
     $calculatedPrice = Product::priceCalculation(
-        1, 
-        1, 
-        0, 
-        1, 
-        0, 
-        '00000', 
-        $id_currency_czk, 
-        1, 
-        1, 
-        false, 
-        2
+        1,              // id_shop
+        1,              // id_product
+        0,              // id_product_attribute
+        1,              // id_country
+        0,              // id_state
+        '00000',        // zipcode
+        $id_currency_czk, // id_currency
+        1,              // id_group
+        1,              // quantity
+        false,          // usetax
+        2,              // decimals
+        0,              // id_customer
+        0,              // id_cart
+        0,              // id_address
+        $specific_price_out, // &$specific_price
+        true            // use_tax_excl
     );
 
     echo "Base Price: 10.0 EUR\n";
@@ -64,17 +70,8 @@ try {
     echo "Specific Price set for CZK: 200.0\n";
     echo "Calculated Price: $calculatedPrice\n";
 
-    /**
-     * BUG ANALYSIS:
-     * Before fix: The code sees the specific price is for currency 2, but because 
-     * $id_currency !== $specific_price['id_currency'] is FALSE, it enters the 
-     * Tools::convertPrice block.
-     * It converts 200.0 (the specific price) using the rate 25.0 -> 5000.0.
-     * 
-     * After fix: It recognizes that the specific price is already in the target 
-     * currency and does NOT call Tools::convertPrice.
-     * Result: 200.0.
-     */
+    // Before fix: The code converts the specific price (200 * 25 = 5000)
+    // After fix: The code detects the currency match and keeps 200.0
     if (abs($calculatedPrice - 200.0) < 0.0001) {
         exit(0);
     } else {
