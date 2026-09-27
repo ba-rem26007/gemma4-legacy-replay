@@ -6,11 +6,11 @@ Régénéré par `python3 bench/loop_stats.py`.
 
 | Mode | Validés | Échecs | Erreurs | Taux |
 |---|---|---|---|---|
-| ui | 0 | 8 | 0 | 0% |
+| ui | 0 | 10 | 0 | 0% |
 | explore | 0 | 4 | 0 | 0% |
-| php | 37 | 71 | 0 | 34% |
+| php | 40 | 71 | 0 | 36% |
 
-Oracles validés : #27947, #28711, #29571, #30258, #30314, #30342, #30465, #30737, #30834, #30996, #31223, #31241, #31514, #34917, #35384, #35587, #36082, #36123, #36454, #36521, #36662, #36807, #36875, #36905, #37191, #37220, #37589, #37747, #37877, #37955, #37970, #37996, #38100, #38157, #38168, #38341, #38417
+Oracles validés : #27947, #28711, #29571, #30252, #30258, #30314, #30342, #30465, #30737, #30834, #30996, #31223, #31241, #31514, #34917, #35321, #35384, #35418, #35587, #36082, #36123, #36454, #36521, #36662, #36807, #36875, #36905, #37191, #37220, #37589, #37747, #37877, #37955, #37970, #37996, #38100, #38157, #38168, #38341, #38417
 
 ## Étape 2 — agent Gemma avec l'oracle comme retour (condition O, TRAIN)
 
@@ -19,6 +19,8 @@ Oracles validés : #27947, #28711, #29571, #30258, #30314, #30342, #30465, #3073
 | #27947 | 20260927-095639-O | non |
 | #28711 | 20260927-143102-O | oui |
 | #29571 | 20260927-154406-O | oui |
+| #30252 | 20260927-161016-O | non |
+| #30258 | 20260927-155521-O | non |
 | #30314 | 20260927-150533-O | non |
 | #30342 | 20260927-144650-O | non |
 | #30465 | 20260927-133050-O | oui |
@@ -55,7 +57,7 @@ Oracles validés : #27947, #28711, #29571, #30258, #30314, #30342, #30465, #3073
 
 ## Étape 3 — chemins acceptés (`trajectories/self_paths.py`)
 
-`11 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 3, 'non_resolu': 20, 'hors_fonctions_officielles': 2, 'ok': 11}`
+`11 chemins → trajectories/self.jsonl  {'hors_fichiers_officiels': 3, 'non_resolu': 22, 'hors_fonctions_officielles': 2, 'ok': 11}`
 
 Garde-fous : verdict réévalué, éditions limitées aux fichiers du correctif officiel (anti-contournement),
 blocs SEARCH/REPLACE reproduisant exactement le patch, < 8 000 tokens, aucun bug TEST.
