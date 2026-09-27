@@ -7,7 +7,6 @@ try {
     Configuration::updateValue('PS_MULTISHOP_ACTIVE', 1);
 
     // 2. Créer une deuxième boutique (Shop 2)
-    // Le Shop nécessite id_category pour être valide
     $shop2 = new Shop();
     $shop2->id_shop_group = 1;
     $shop2->name = 'Shop 2';
@@ -16,16 +15,21 @@ try {
     $shop2->add();
     $id_shop2 = (int)$shop2->id;
 
-    // 3. Créer un client pour le panier
-    $customer = new Customer();
-    $customer->firstname = 'Test';
-    $customer->lastname = 'Test';
-    $customer->email = 'test@test.com';
-    $customer->passwd = '123456';
-    $customer->add();
+    // 3. Utiliser un client existant ou en créer un
+    $customer = new Customer(1);
+    if (!Validate::isLoadedObject($customer)) {
+        $customer = new Customer();
+        $customer->firstname = 'Test';
+        $customer->lastname = 'Test';
+        $customer->email = 'test@test.com';
+        $customer->passwd = Tools::encrypt('123456');
+        $customer->add();
+    }
     $id_customer = (int)$customer->id;
 
     // 4. Créer un produit associé EXCLUSIVEMENT à la boutique 2
+    // En définissant le shop dans le contexte avant l'ajout, PrestaShop 
+    // crée l'entrée correspondante dans ps_product_shop.
     Context::getContext()->shop = $shop2;
     $p = new Product();
     $p->price = 10.00;
@@ -33,10 +37,9 @@ try {
     $p->link_rewrite = [1 => 'produit-shop-2'];
     $p->active = 1;
     $p->add();
-    $p->associateToShop($id_shop2);
     $id_product = (int)$p->id;
 
-    // 5. Créer un panier dans la boutique 2 avec ce produit et ce client
+    // 5. Créer un panier dans la boutique 2 avec ce produit
     $cart = new Cart();
     $cart->id_currency = 1;
     $cart->id_lang = 1;
@@ -46,9 +49,9 @@ try {
     $cart->updateQty(1, $id_product);
     $id_cart = (int)$cart->id;
 
-    // 6. Simuler le contexte "All shops" (on se place sur Shop 1)
-    // C'est ici que le bug se produit : le code tente de calculer le total d'un panier 
-    // appartenant au Shop 2 alors que le contexte global est le Shop 1.
+    // 6. Simuler le contexte "All shops" en se plaçant sur Shop 1
+    // Le bug survient car AdminCartsController::getOrderTotalUsingTaxCalculationMethod
+    // ne changeait pas le shop du contexte pour correspondre à celui du panier.
     Context::getContext()->shop = new Shop(1);
 
     require_once 'controllers/admin/AdminCartsController.php';
@@ -61,11 +64,11 @@ try {
     echo "Total observé : $total\n";
 
     // Si le correctif est appliqué, le total doit être > 0 car le contexte shop 
-    // est correctement basculé sur celui du panier à l'intérieur de la méthode.
+    // est correctement basculé sur Shop 2 à l'intérieur de la méthode.
     if ($total > 0) {
         exit(0);
     } else {
-        echo "Le total est 0 : le produit n'a pas été trouvé car le contexte shop n'a pas été mis à jour.\n";
+        echo "Le total est 0 : le produit n'a pas été trouvé car le contexte shop est resté sur Shop 1.\n";
         exit(1);
     }
 
