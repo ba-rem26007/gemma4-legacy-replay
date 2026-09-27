@@ -10,9 +10,25 @@ export PS_PORT="${PS_PORT:-$((8080 + PSB))}"
 DC="docker compose -p $PROJ -f $ENV/docker-compose.yml"
 
 read -r BASE MERGE FILES BRANCH < <(python3 -c "
-import json,sys
-b=next(b for b in map(json.loads,open('$B/catalog.jsonl')) if b['pr']==$PR)
-print(b['base_commit'],b['merge_commit'],','.join(b['files']),b.get('branch',''))")
+import json, glob
+pr = int($PR)
+b = None
+for f in ['$B/catalog.jsonl'] + glob.glob('$B/catalogs/*/*.jsonl'):
+    try:
+        for line in open(f):
+            if line.strip():
+                item = json.loads(line)
+                if item.get('pr') == pr:
+                    b = item
+                    break
+        if b:
+            break
+    except Exception:
+        pass
+if not b:
+    raise ValueError(f'PR {pr} introuvable dans les catalogues')
+print(b['base_commit'], b['merge_commit'], ','.join(b.get('files', [])), b.get('branch', ''))")
+
 # Release la plus proche AVANT le commit de base (8.x/9.x, sans rc/beta) ; à défaut, première release APRÈS
 REL="$(git -C "$PS" describe --tags --abbrev=0 --match '[89].[0-9].[0-9]' --match '1.[67].[0-9]*.[0-9]*' --exclude '*-*' --exclude '*RC*' --exclude '*rc*' "$BASE" 2>/dev/null || true)"
 case "$REL" in 9.*) ;; *) [ "$(git -C "$PS" merge-base --is-ancestor 9.0.0 "$BASE" && echo y)" = y ] && REL="" ;; esac
