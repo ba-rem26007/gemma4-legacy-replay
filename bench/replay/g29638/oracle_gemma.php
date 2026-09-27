@@ -2,53 +2,58 @@
 // Oracle écrit par Gemma (gemma-4-31b-it) pour PR #29638, validé pre/post automatiquement
 require 'config/config.inc.php';
 
-use WebserviceRequest;
-use WebserviceSpecificManagementAttachments;
-use Attachment;
-
 try {
-    // 1. Setup: Create an existing attachment to update
+    // 1. Setup: Create an existing attachment
+    // We must ensure all required fields are set to avoid "property is empty" exceptions
     $attachment = new Attachment();
     $attachment->file = 'old_file.txt';
     $attachment->file_name = 'old_file.txt';
     $attachment->mime = 'text/plain';
-    $attachment->add();
-    $id = $attachment->id;
-
-    // Set an initial name to test the name-preservation fix
+    $attachment->file_size = 100;
+    
     $defaultLangId = (int)Configuration::get('PS_LANG_DEFAULT');
+    $attachment->name = [];
     $attachment->name[$defaultLangId] = 'Original Name';
-    $attachment->update();
-
-    echo "Attachment created with ID: $id, File: {$attachment->file}, Name: {$attachment->name[$defaultLangId]}\n";
+    
+    if (!$attachment->add()) {
+        echo "FAIL: Could not create attachment\n";
+        exit(1);
+    }
+    $id = $attachment->id;
+    echo "Attachment created with ID: $id, Name: {$attachment->name[$defaultLangId]}\n";
 
     // 2. Simulate a PATCH request to update the file
-    // We simulate the environment that the Webservice would have
+    // To avoid the Fatal Error regarding the signature of setWsObject(), 
+    // we instantiate the Core class and use Reflection to inject the dependency.
+    $request = new WebserviceRequest();
+    $request->method = 'PATCH';
+    $request->urlSegment = ['file', $id];
+
+    // We use the Core class directly
+    $manager = new WebserviceSpecificManagementAttachmentsCore();
+    
+    $reflector = new ReflectionClass($manager);
+    $property = $reflector->getProperty('wsObject');
+    $property->setAccessible(true);
+    $property->setValue($manager, $request);
+
+    // Simulate the environment for executeFileAddAndEdit()
     $_SERVER['REQUEST_METHOD'] = 'PATCH';
     $_POST['name'] = 'New Name (should not overwrite)';
     
     $tmpFile = tempnam(sys_get_temp_dir(), 'ps_test');
-    file_put_contents($tmpFile, 'new content for the file');
+    file_put_contents($tmpFile, 'new content');
     
     $_FILES['file'] = [
         'name' => 'new_file.txt',
         'type' => 'text/plain',
         'tmp_name' => $tmpFile,
         'error' => 0,
-        'size' => strlen('new content for the file'),
+        'size' => strlen('new content'),
     ];
 
-    // Instantiate the request object
-    $request = new WebserviceRequest();
-    $request->method = 'PATCH';
-    // urlSegment[0] = 'file' triggers executeFileAddAndEdit()
-    $request->urlSegment = ['file', $id];
-
-    // Instantiate the manager
-    $manager = new WebserviceSpecificManagementAttachments();
-    $manager->setWsObject($request);
-
     // Execute the logic
+    // manage() calls manageAttachments() which now handles 'PATCH'
     $manager->manage();
 
     // 3. Verification
@@ -57,7 +62,9 @@ try {
     echo "Updated File: " . $updatedAttachment->file . "\n";
     echo "Updated Name: " . $updatedAttachment->name[$defaultLangId] . "\n";
 
+    // The file should be updated (the internal filename changes)
     $fileUpdated = ($updatedAttachment->file !== 'old_file.txt');
+    // The name should be preserved because it was already set (the fix: if ($attachment->name[...] === null))
     $namePreserved = ($updatedAttachment->name[$defaultLangId] === 'Original Name');
 
     if (!$fileUpdated) {
@@ -66,7 +73,7 @@ try {
     }
 
     if (!$namePreserved) {
-        echo "FAIL: The attachment name was overwritten, but it should have been preserved if already set.\n";
+        echo "FAIL: The attachment name was overwritten, but it should have been preserved.\n";
         exit(1);
     }
 
