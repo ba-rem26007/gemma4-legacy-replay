@@ -6,13 +6,29 @@
 # - Longueur max : 4096 tokens (évite les OOM sur 12 Go)
 # - Découpage gradient strict : max_grad_norm = 0.1 (stabilité QK-RMSNorm)
 # - Taux d'apprentissage : 5e-5 (bfloat16)
-# - Reprise automatique sur le dernier checkpoint en cas d'arrêt
+# - Mode simulation rapide : --simulate ou --dry-run (15 pas pour valider la VRAM)
 # =============================================================================
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+SIMULATE=0
+MODEL="google/gemma-4-e4b-it"
+
+for arg in "$@"; do
+  case "$arg" in
+    --simulate|--dry-run|-s)
+      SIMULATE=1
+      ;;
+    *)
+      if [[ ! "$arg" =~ ^- ]]; then
+        MODEL="$arg"
+      fi
+      ;;
+  esac
+done
 
 echo "=== VÉRIFICATION DE L'ENVIRONNEMENT GPU (RTX 4070 Ti) ==="
 python3 -c "
@@ -28,10 +44,15 @@ else:
     print('ATTENTION : Aucun GPU CUDA détecté.')
 "
 
-# Modèle par défaut pour 12 Go : gemma-4-e4b-it
-MODEL="${1:-google/gemma-4-e4b-it}"
 OUT_DIR="$ROOT/training/lora_4070ti"
 DATA_FILES="$ROOT/trajectories/train.jsonl,$ROOT/trajectories/self.jsonl"
+
+EXTRA_ARGS=()
+if [ "$SIMULATE" -eq 1 ]; then
+  echo ""
+  echo "🚀 MODE SIMULATION ACTIVÉ (--dry-run) : 15 pas sur 20 trajectoires pour tester la VRAM et les gradients."
+  EXTRA_ARGS+=("--dry-run")
+fi
 
 echo ""
 echo "=== DÉMARRAGE DU FINE-TUNING ==="
@@ -51,8 +72,14 @@ python3 training/train_agentic_debugger.py \
   --rank 32 \
   --alpha 64 \
   --grad-accum 8 \
-  --batch-size 1
+  --batch-size 1 \
+  ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}
 
 echo ""
-echo "=== ENTRAÎNEMENT TERMINÉ AVEC SUCCÈS ==="
-echo "Adaptateur sauvegardé dans : $OUT_DIR/final"
+if [ "$SIMULATE" -eq 1 ]; then
+  echo "=== SIMULATION TERMINÉE AVEC SUCCÈS ==="
+  echo "Votre RTX 4070 Ti est parfaitement configurée et prête pour le fine-tuning complet."
+else
+  echo "=== ENTRAÎNEMENT TERMINÉ AVEC SUCCÈS ==="
+  echo "Adaptateur sauvegardé dans : $OUT_DIR/final"
+fi

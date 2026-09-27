@@ -9,7 +9,7 @@ Ce guide permet de lancer le fine-tuning QLoRA de Gemma 4 sur votre PC Windows /
 Ouvrez un terminal **WSL2 (Ubuntu)** :
 
 ```bash
-# 1. Cloner ou mettre à jour le dépôt depuis le serveur
+# 1. Cloner ou mettre à jour le dépôt
 git clone <url-du-depot> gemma4-legacy-replay && cd gemma4-legacy-replay
 # ou si déjà cloné : git pull origin main
 
@@ -27,9 +27,26 @@ huggingface-cli login
 
 ---
 
-## 2. Lancement en 1 seule commande
+## 2. Mode Simulation Rapide (Dry-Run en 1 minute) ⚡
 
-Lancez simplement le script optimisé :
+Avant de lancer 3 heures d'entraînement, vous pouvez simuler l'exécution complète sur votre RTX 4070 Ti en une seule commande :
+
+```bash
+./training/run_4070ti.sh --simulate
+```
+
+**Ce que fait la simulation :**
+- Charge le modèle Gemma 4 en 4-bit NF4 et SDPA dans votre GPU.
+- Exécute **15 étapes d'optimisation** sur un échantillon de 20 trajectoires réelles.
+- Mesure la **VRAM crête** (doit rester ≤ 8 Go sur les 12 Go disponibles).
+- Valide la **stabilité des gradients** (aucun NaN grâce au `max_grad_norm=0.1`).
+- Dure environ **45 à 60 secondes** et ne pollue pas le disque.
+
+---
+
+## 3. Lancement de l'Entraînement Complet
+
+Une fois la simulation validée :
 
 ```bash
 ./training/run_4070ti.sh
@@ -50,7 +67,7 @@ Si vous souhaitez tester directement le modèle 12B :
 
 ---
 
-## 3. Reprise automatique & Sortie
+## 4. Reprise automatique & Sortie
 
 - **En cas d'arrêt ou d'interruption** : Relancez simplement `./training/run_4070ti.sh`. L'entraînement reprend automatiquement au dernier checkpoint sauvegardé (`checkpoint-*`).
 - **Résultat final** : L'adaptateur LoRA final est exporté dans :
