@@ -23,9 +23,16 @@ $p->save();
 echo "Product 1 set to disabled with empty name for language 1.\n";
 
 try {
-    // We instantiate the ProductController. 
-    // Since it's a Symfony controller, we don't need the container just to call a private method via reflection.
-    $controller = new \PrestaShopBundle\Controller\Admin\ProductController();
+    /**
+     * We instantiate an anonymous class extending ProductController.
+     * This allows us to override the 'trans' method, which normally relies on the 
+     * Symfony container (not available in CLI), preventing "Call to a member function get() on null".
+     */
+    $controller = new class extends \PrestaShopBundle\Controller\Admin\ProductController {
+        public function trans($id, $domain = 'Admin.Notifications.Error', $locale = null) {
+            return $id;
+        }
+    };
 
     // getErrorMessages is a private method, we use Reflection to access it.
     $reflection = new \ReflectionClass(\PrestaShopBundle\Controller\Admin\ProductController::class);
@@ -54,5 +61,6 @@ try {
 
 } catch (\Throwable $t) {
     echo "An unexpected error occurred: " . $t->getMessage() . "\n";
+    echo "File: " . $t->getFile() . " Line: " . $t->getLine() . "\n";
     exit(1);
 }
