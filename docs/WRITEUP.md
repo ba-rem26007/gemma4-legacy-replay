@@ -15,10 +15,13 @@ Agentic code-repair benchmarks are dominated by Python projects with rich unit t
 
 ## 1. Introduction
 - Legacy code is where developers need help most and where verification is weakest (no tests, UI-driven behaviour, database state).
+- **Privacy-by-Design & Edge-First**: enterprise legacy codebases cannot be uploaded to third-party cloud APIs. Autonomous debugging must operate locally (Gemma 4 on consumer GPUs) with zero connectivity leaks.
+- **Hybrid Non-Hallucinatory Design**: raw LLM code generation is prone to hallucination; combining open weights with deterministic execution sandboxes and browser oracles provides grounding and verifiability.
 - Question Q1: can **replay tests** (recorded front-office / back-office interactions) turn a legacy bug into a verifiable task for an open model?
 - Question Q2: which kind of help matters — examples, tests, vocabulary, or a perfect verifier?
 - Question Q3: can we build a leak-proof self-training loop without distilling a proprietary model?
 - Contributions: (1) benchmark + environment, (2) controlled conditions A/B/C/R/O with repeated trials and paired CIs, (3) failure taxonomy, (4) negative results reported as is, (5) data factory for fine-tuning.
+
 
 ## 2. Benchmark and environment
 - Bug selection: merged bug-fix PRs with a linked issue, security fixes excluded, temporal split on the model cutoff (provisional 2025-06-01; see `data/ETANCHEITE.md`).

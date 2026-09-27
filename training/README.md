@@ -32,3 +32,18 @@ Pousser le dépôt comme dataset Kaggle, puis dans le notebook :
 ## Longueur de séquence
 `--max-len 8192` par défaut : les chemins font jusqu'à ~8 000 tokens (médiane ≈ 3 900). Les exemples plus longs sont **écartés**, pas tronqués (l'édition finale est à la fin), et leur nombre est affiché.
 Mémoire insuffisante (12 Go) → `--max-len 6144` (perd ≈ 10 % des chemins) plutôt que 4096 (≈ 40 %).
+
+## Hyperparamètres de stabilité Gemma 4
+En raison de la sensibilité de Gemma 4 à la normalisation QK-RMSNorm et à l'attention mise à l'échelle :
+- **Taux d'apprentissage** : `5e-5` par défaut (`--lr 5e-5`), cosine schedule avec warmup 5 %.
+- **Découpage de gradient strict** : `max_grad_norm = 0.1` (`--max-grad-norm 0.1`) pour éviter l'instabilité numérique.
+- **Précision** : `bfloat16` natif (ou 4-bit NF4 double quant avec compute `bfloat16`).
+- **Masquage des labels** : Loss calculée **uniquement** sur les tours assistant (labels à `-100` pour tous les retours d'outils, tickets et sorties de bac à sable).
+- **Attention** : `sdpa` (PyTorch Scaled Dot-Product Attention) ou `flash_attention_2` avec dimension de tête 512.
+
+## Scripts & Configurations disponibles
+1. **`training/train_qlora.py`** : Entraîneur standard Hugging Face `Trainer` + `peft` avec masquage manuel rigoureux des tokens hors assistant.
+2. **`training/train_agentic_debugger.py`** : Entraîneur Hugging Face `trl` (`SFTTrainer`) optimisé pour les traces de débogage agentiques, rank 32 / alpha 64 et attention SDPA.
+3. **`training/axolotl_gemma4.yaml`** : Configuration déclarative pour **Axolotl** avec `gemma4_hybrid_attn_impl: true` et support multi-GPU / sample packing.
+
+

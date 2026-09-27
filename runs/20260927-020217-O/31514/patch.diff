@@ -1,11 +1,11 @@
---- a/src/PrestaShopBundle/Controller/Admin/Sell/Catalog/AttributeController.php
-+++ b/src/PrestaShopBundle/Controller/Admin/Sell/Catalog/AttributeController.php
-@@ -103,7 +103,7 @@
- 
-         try {
-             $positionUpdate = $positionUpdateFactory->buildPositionUpdate($positionsData, $positionDefinition);
--            $updater = $this->get('prestashop.core.grid.position.doctrine_grid_position_updater');
-+            $updater = $this->get('prestashop.core.grid.position.legacy_grid_position_updater');
-             $updater->update($positionUpdate);
-             $this->addFlash('success', $this->trans('Successful update', 'Admin.Notifications.Success'));
-         } catch (TranslatableCoreException $e) {
+--- a/controllers/admin/AdminAttributesGroupsController.php
++++ b/controllers/admin/AdminAttributesGroupsController.php
+@@ -106,7 +106,7 @@
+     {
+         if (($id = (int) Tools::getValue('id_attribute_group'))) {
+             $this->table = 'attribute';
+-            $this->className = 'ProductAttribute';
++            $this->className = 'Attribute';
+             $this->identifier = 'id_attribute';
+             $this->position_identifier = 'id_attribute';
+             $this->position_group_identifier = 'id_attribute_group';

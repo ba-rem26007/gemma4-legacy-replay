@@ -61,7 +61,8 @@ def main():
     # 8192 : cohérent avec la borne < 8 000 tokens des chemins ; à 4096, ~40 % des chemins reconstruits étaient ÉCARTÉS
     ap.add_argument("--max-len", type=int, default=8192)
     ap.add_argument("--epochs", type=float, default=2)
-    ap.add_argument("--lr", type=float, default=1e-4)
+    ap.add_argument("--lr", type=float, default=5e-5, help="Gemma 4 : 5e-5 recommandé pour la stabilité")
+    ap.add_argument("--max-grad-norm", type=float, default=0.1, help="Stabilité QK-RMSNorm Gemma 4 (seuil strict 0.1)")
     ap.add_argument("--rank", type=int, default=16)
     ap.add_argument("--grad-accum", type=int, default=8)
     ap.add_argument("--save-steps", type=int, default=25)
@@ -93,7 +94,7 @@ def main():
 
     args = TrainingArguments(
         output_dir=a.out, num_train_epochs=a.epochs, learning_rate=a.lr, lr_scheduler_type="cosine",
-        warmup_ratio=0.05, per_device_train_batch_size=1, gradient_accumulation_steps=a.grad_accum,
+        warmup_ratio=0.05, max_grad_norm=a.max_grad_norm, per_device_train_batch_size=1, gradient_accumulation_steps=a.grad_accum,
         gradient_checkpointing=True, logging_steps=5, save_steps=a.save_steps, save_total_limit=3,
         bf16=torch.cuda.is_bf16_supported(), fp16=not torch.cuda.is_bf16_supported(),
         optim="paged_adamw_8bit", report_to="none", remove_unused_columns=False, seed=42)

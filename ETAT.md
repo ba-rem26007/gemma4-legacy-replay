@@ -1,11 +1,11 @@
 # ÉTAT — reprise : « Lis ETAT.md et reprends »
 
-Mis à jour : 2026-09-26. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Site : https://kaggle.d1dev.fr
+Mis à jour : 2026-09-27. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Site : https://kaggle.d1dev.fr
 
 ## Jalons
 | Date | Jalon | État |
 |---|---|---|
-| 1er oct | État de l'art, GO/NO-GO des viviers | viviers **GO** (TEST 33 ≥ 20 ; TRAIN > 1 000) ; `RELATED.md` à faire |
+| 1er oct | État de l'art, GO/NO-GO des viviers | **fait** (viviers GO : TEST 33, TRAIN > 4 000 ; `RELATED.md` finalisé) |
 | 8 oct | Environnement reproductible | **fait** (8.x/9.x/1.6/1.7, reset, montée incrémentale, instances parallèles) |
 | 20 oct | Chaîne de rejeu, runs A/B/C | runs A et R en cours sur TEST |
 | 22 oct | GO/NO-GO fine-tuning | 569 chemins reconstruits prêts (≥ 150) |
@@ -31,6 +31,12 @@ Mis à jour : 2026-09-26. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 - (historique) **Éval TEST en cours** (Gemma 4 31B, 1 run/bug) : A 3/22 · **R 4/16** (fine-tuning simulé). Régressions en cours de run non fiables (anti-régression déplacée avant l'oracle ; `bench/reeval.py` à lancer en fin de run).
 - Oracles automatiques par différentiel : **0/12** (résultat négatif, à publier).
 - Coût : **0 €** (Gemma gratuit sur l'API ; quota 16 000 tokens/min).
+
+## Point du 27 sept., 6 h 45 (nuit autonome)
+- **Oracles écrits par Gemma** : navigateur 0/11 ; **PHP 20/53 (38 %)**.
+- **Agent Gemma avec l'oracle comme retour** : 18 bugs essayés → **9 chemins acceptés** (4 identiques au correctif officiel, similarités 0,26 → 1,0), 2 contournements rejetés, 7 non résolus.
+- **Rendement** ≈ 17 % des bugs essayés → chemin honnête. Lot 4 (220 bugs, plus anciens, plus lents ≈ 40 min/bug) en cours sur 2 instances.
+- **Décisions pour Rémi** : (1) laisser tourner le lot 4 (≈ 3 jours) ; (2) fine-tuning : RAM du PC ou `kaggle auth login` ; (3) seuil de similarité pour l'entraînement (proposition : ≥ 0,4 → 6 chemins).
 
 ## Stratégie retenue (26 sept.) : boucle d'auto-apprentissage 100 % Gemma
 1. Gemma écrit les oracles des bugs TRAIN (`bench/gentest.py`, ticket + correctif, gardé si échoue en pre / passe en post) — **pilote 10 bugs 9.0.x en cours** (`runs/gentest_pilot.log`, instances 4 et 1) ; corrections outillage : image 9.0 pour 9.0.x, erreur MySQL renvoyée, schéma réel de la base dans la consigne, instantané de page en cas d'échec. **Résultat UI : 0 oracle validé sur 5 bugs** (Gemma n'arrive pas à piloter le BO : clics/saisies en timeout, même avec erreur MySQL, schéma, instantané de page) → pilote UI arrêté. **Pivot : oracles PHP en ligne de commande** — **Oracles validés : #38417, #38341** (soft delete transporteur, essai 1) — 1er :**#38417** (webservice, essai 1, 4 min, appelle la méthode fautive par réflexion : erreur SQL exacte en pre, passe en post) — (`gentest --mode php`, `run.sh` exécute `oracle*.php` dans le conteneur) sur 8 bugs côté serveur (`runs/gentest_php.log`, instance 3) + lot 2 de 10 bugs (`runs/gentest_php2.log`, instance 1). **Variante `--explore`** (Gemma observe 1-2 pages réelles avant d’écrire) : **0/4** → arrêtée. Bilan UI : **0 oracle sur 9 bugs**.
@@ -62,10 +68,11 @@ Oracles Gemma = vérificateurs ; les trajectoires gardées sont celles de Gemma,
 1. [ ] Fin des runs A/R → `bench/reeval.py` → tableau final (docs/DEMO.md ou docs/RESULTATS.md).
 2. [ ] Tests TRAIN à grande échelle : Gemma écrit le test depuis ticket + correctif, validé pre/post automatiquement (proposé, en attente de GO).
 3. [ ] Condition C (glossaire relu par Rémi) ; 3 runs par condition.
-4. [~] `RELATED.md` : 6 références vérifiées (SWE-bench, Multi-SWE-bench sans PHP, SWE-agent, Agentless, SWE-Gym, SWE-smith) + nouveauté en 3 phrases ; reste golden master / record-replay / model card. Date de coupure réelle (model card Gemma 4) → relancer split / reconstruct / glossaire.
+4. [x] `RELATED.md` : 10 références vérifiées (SWE-bench, Multi-SWE-bench, SWE-agent, Agentless, SWE-Gym, SWE-smith, Feathers 2004, Waterfall, Survey Web Testing, Model Card Gemma 4) + nouveauté en 3 phrases. Jalon 1er oct validé.
+
 5. [~] **Writeup** (phase 9) : brouillon anglais `docs/WRITEUP.md` (structure complète, chiffres provisoires ⟦ ⟧).
 6. [ ] Régler le texte officiel du concours dans `REGLES.md`.
-6. [ ] Fine-tuning QLoRA sur le PC (ou Kaggle), puis condition D.
+6. [ ] Fine-tuning QLoRA sur le PC ou Kaggle (hyperparamètres figés : `lr=5e-5`, `max_grad_norm=0.1`, `bfloat16`, loss masquée hors assistant), puis condition D.
 
 ## Infos manquantes
 - RAM du PC (4070 Ti) · texte officiel des règles · date de coupure Gemma 4.

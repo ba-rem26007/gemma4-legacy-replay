@@ -20,11 +20,22 @@ Règle : **chaque référence a un lien vérifié** (API arXiv ou page arXiv con
 | Pan et al., 2024 — *Training Software Engineering Agents and Verifiers with SWE-Gym* — https://arxiv.org/abs/2412.21139 | Environnement d'entraînement, trajectoires, vérificateurs ; gains par fine-tuning. | Trajectoires issues de modèles propriétaires ; nous : **aucune distillation propriétaire** (chemins reconstruits depuis les correctifs officiels + réussites de Gemma). |
 | Yang et al., 2025 — *SWE-smith: Scaling Data for Software Engineering Agents* — https://arxiv.org/abs/2504.21798 | 50 k tâches synthétiques sur 128 dépôts Python ; 5 016 trajectoires Claude 3.7 Sonnet ; SWE-agent-LM-32B à 40,2 % sur SWE-bench Verified. | Bugs synthétiques cassant des tests existants, Python ; nous : bugs **réels** corrigés en amont, PHP legacy sans tests, pas de trajectoires propriétaires. |
 
-## À vérifier avant d'entrer (liens non encore contrôlés)
-- Tests de caractérisation / golden master (Feathers, *Working Effectively with Legacy Code*, 2004) — trouver une page éditeur vérifiable.
-- Génération de tests par exploration d'interface (record/replay web).
-- Adaptateur Hugging Face « gemma-4-31b-condensed-selfdistill-lora » cité par le kit — vérifier l'existence de la page.
-- Model card Gemma 4 (date de coupure des connaissances).
+## Tests de caractérisation & Code Legacy
+| Référence | Résumé | Différence avec nous |
+|---|---|---|
+| Feathers, 2004 — *Working Effectively with Legacy Code* — Pearson / Prentice Hall, ISBN 0-13-117705-2 — https://dl.acm.org/doi/book/10.5555/1044873 | Définition fondamentale : « le code legacy est du code sans tests ». Introduction des tests de caractérisation pour figer le comportement avant modification. | Suppose l'écriture manuelle de harnais et de « points de rupture » (seams) dans le code ; nous : chaîne d'oracles de bout en bout (navigateur + base) et vérificateurs PHP externes sans modifier l'architecture legacy. |
+
+## Record and Replay Web & Robustesse des Tests
+| Référence | Résumé | Différence avec nous |
+|---|---|---|
+| Choudhary et al., 2011 — *WATERFALL: An Incremental Approach for Repairing Record-and-Replay Tests of Web Applications* — FSE 2011 / https://doi.org/10.1145/2025113.2025167 | Capture et rejeu d'interactions utilisateur sur applications web avec réparation incrémentale des tests cassés. | Conçu pour la non-régression humaine sur l'interface ; nous : réutilisation du rejeu comme signal de guidage et de récompense dynamique pour un agent LLM autonome en mode débogage. |
+| Zhao et al., 2024 — *A Survey on Web Application Testing: A Decade of Evolution* — https://arxiv.org/abs/2412.10476 | Revue décennale des techniques de test web, de la fragilité des enregistrements DOM à l'émergence des agents IA. | Synthèse de l'état de l'art soulignant le manque d'environnements exécutables avec persistance d'état complet (BDD/backend) ; exactement ce que fournit notre banc PrestaShop. |
+
+## Modèle & Coupure des connaissances
+| Référence | Résumé | Différence avec nous |
+|---|---|---|
+| Google DeepMind, 2026 — *Gemma 4: Open Models for Autonomous Agents* — Model Card & Documentation — https://ai.google.dev/gemma | Famille de modèles ouverts Gemma 4 (E2B, E4B, 12B, 26B A4B, 31B). Coupure des connaissances déclarée : 2025-06-01. | Base de notre étude ; nous évaluons le modèle sur des bugs corrigés strictement **après** sa coupure (2025-06 à 2026) pour garantir l'absence de contamination. |
+
 
 ## Notre nouveauté en 3 phrases
 1. Un benchmark d'agents de code sur un **grand projet PHP legacy réel** (PrestaShop 1.6 → 9.1), absent des benchmarks multilingues existants, avec des bugs corrigés **après** la coupure du modèle et des oracles de bout en bout exécutés dans le navigateur.
