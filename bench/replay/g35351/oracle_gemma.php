@@ -7,40 +7,41 @@ require 'config/config.inc.php';
  * lors de la sauvegarde de la base de données (PrestaShopBackup).
  */
 
-// S'assurer que la constante _PS_ADMIN_DIR_ est définie pour éviter le crash
+// 1. Configuration de l'environnement de backup
 if (!defined('_PS_ADMIN_DIR_')) {
     define('_PS_ADMIN_DIR_', _PS_ROOT_DIR_ . 'admin/');
 }
 
-// 1. Préparation des données : on utilise le produit 1
-$p = new Product(1);
-$p->reference = 'REGRESSION_BACKUP_TEST';
-$p->isbn = ''; // Champ nullable : doit rester '' et non devenir NULL
-$p->upc = '';  // Champ nullable
-$p->mpn = '';  // Champ nullable
-$p->save();
+// On définit un dossier de backup spécifique et on s'assure qu'il existe
+$backupDirName = 'backup_test_regression/';
+PrestaShopBackup::$backupDir = $backupDirName;
+$fullBackupPath = _PS_ADMIN_DIR_ . $backupDirName;
 
-// 2. Configuration de l'environnement de backup
-// On utilise un dossier temporaire pour éviter les problèmes de permissions sur /admin/
-$tmpBackupDir = '/tmp/ps_backup_test/';
-if (!is_dir($tmpBackupDir)) {
-    mkdir($tmpBackupDir, 0777, true);
+if (!is_dir($fullBackupPath)) {
+    mkdir($fullBackupPath, 0777, true);
 }
 
+// 2. Préparation des données : on utilise le produit 1
+// On force des chaînes vides sur des champs qui sont NULL par défaut en BDD
+$p = new Product(1);
+$p->reference = 'REGRESSION_BACKUP_TEST';
+$p->isbn = ''; 
+$p->upc = '';  
+$p->mpn = '';  
+$p->save();
+
+// 3. Exécution du backup
 $backup = new PrestaShopBackup();
-$backup->id = 'test_regression_nulls';
+$backup->id = 'test_nulls';
 $backup->psBackupAll = true;
 $backup->psBackupDropTable = true;
-$backup->customBackupDir = $tmpBackupDir;
 
 try {
-    // 3. Exécution du backup
-    // La méthode add() génère le fichier SQL et retourne son nom
-    $filename = $backup->add();
-    $filePath = $tmpBackupDir . $filename;
+    // La méthode add() retourne le chemin complet du fichier créé ($backupdir . $filename)
+    $filePath = $backup->add();
 
-    if (!file_exists($filePath)) {
-        echo "Erreur : Le fichier de backup n'a pas été créé : $filePath\n";
+    if (!$filePath || !file_exists($filePath)) {
+        echo "Erreur : Le fichier de backup n'a pas été créé ou chemin invalide : $filePath\n";
         exit(1);
     }
 
@@ -48,44 +49,36 @@ try {
     
     // 4. Analyse du résultat
     $foundLine = false;
-    $hasEmptyString = false;
-    $hasNull = false;
-
     $lines = explode("\n", $content);
     foreach ($lines as $line) {
-        // On cherche la ligne d'insertion du produit de test via sa référence
+        // On cible la ligne d'insertion du produit de test via sa référence
         if (strpos($line, 'INSERT INTO `' . _DB_PREFIX_ . 'product`') !== false && strpos($line, 'REGRESSION_BACKUP_TEST') !== false) {
             $foundLine = true;
             
-            // On vérifie si la ligne contient des chaînes vides '' ou des NULL
-            // Le bug remplace '' par NULL pour les champs nullable (isbn, upc, mpn).
-            if (strpos($line, "''") !== false) {
-                $hasEmptyString = true;
+            // Le bug remplace les '' des champs nullables par NULL.
+            // Si le bug est présent, on trouvera "NULL" et AUCUN "''" pour ces champs.
+            $hasEmptyString = (strpos($line, "''") !== false);
+            $hasNull = (strpos($line, "NULL") !== false);
+            
+            echo "Ligne produit trouvée. Contient '' : " . ($hasEmptyString ? 'OUI' : 'NON') . " | Contient NULL : " . ($hasNull ? 'OUI' : 'NON') . "\n";
+            
+            /**
+             * Assertion :
+             * - Avant correctif : isbn='' devient NULL. La ligne contient NULL et PAS de ''.
+             * - Après correctif : isbn='' reste ''. La ligne contient ''.
+             */
+            if ($hasEmptyString) {
+                echo "Succès : Les chaînes vides sont préservées.\n";
+                exit(0);
+            } else {
+                echo "Échec : Les chaînes vides ont été converties en NULL.\n";
+                exit(1);
             }
-            if (strpos($line, "NULL") !== false) {
-                $hasNull = true;
-            }
-            break;
         }
     }
 
     if (!$foundLine) {
-        echo "Erreur : La ligne d'insertion du produit de test n'a pas été trouvée dans le backup.\n";
-        exit(1);
-    }
-
-    echo "Ligne trouvée : " . ($hasEmptyString ? "Contient ''" : "Ne contient pas ''") . " | " . ($hasNull ? "Contient NULL" : "Ne contient pas NULL") . "\n";
-
-    /**
-     * Diagnostic :
-     * - Si le bug est présent : isbn='' devient NULL. La ligne contiendra NULL et PAS de ''.
-     * - Si le bug est corrigé : isbn='' reste ''. La ligne contiendra ''.
-     */
-    if ($hasEmptyString) {
-        echo "Succès : Les chaînes vides sont préservées.\n";
-        exit(0);
-    } else {
-        echo "Échec : Les chaînes vides ont été converties en NULL (Bug présent).\n";
+        echo "Erreur : La ligne d'insertion du produit de test n'a pas été trouvée dans le fichier SQL.\n";
         exit(1);
     }
 
