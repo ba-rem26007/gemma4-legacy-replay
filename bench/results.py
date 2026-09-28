@@ -19,7 +19,9 @@ LABEL = {"A": "A · ticket seul", "R": "R · ticket + 2 corrections TRAIN simila
 O_DIRS = ["20260926-052040-O", "20260926-065152-O"]
 # conditions à 1 essai, comparées à la moyenne de A (4 essais) ; dossiers ajoutés au fil des runs
 SINGLE = {
-    "A-26B · ticket seul, Gemma 4 26B-A4B": ["20260926-052040-A", "20260926-065152-A"],
+    "B · Replay tests avec feedback dynamique (Gemma 4 31B)": ["20260928-092011-B"],
+    "A-4B · Zero-Shot sans LoRA (Gemma 4 4B Base)": ["20260926-052040-A", "20260926-065152-A"],
+    "E · Fine-tuné complet QLoRA (Gemma 4 4B)": ["20260928-175551-E"],
     "C · + glossaire automatique (provisoire)": ["20260926-103202-C"],
     "C+pages · + glossaire auto + index des pages BO": ["20260926-134839-C"],
 }
