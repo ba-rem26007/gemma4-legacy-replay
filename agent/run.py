@@ -69,13 +69,15 @@ def chat(messages, model, temperature=0.2, seed=42, max_tokens=16384):
     import re, subprocess
     base = os.environ.get("LLM_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai").rstrip("/")
     messages, est = fit(messages)
+    effective_max = min(max_tokens, 1024) if ("ngrok" in base or "localhost" in base or "127.0.0.1" in base) else max_tokens
     body = json.dumps({"model": model, "messages": messages, "temperature": temperature,
-                       "max_tokens": max_tokens})  # seed non supporté par l'API Gemini (fixé en local)
+                       "max_tokens": effective_max})  # seed non supporté par l'API Gemini (fixé en local)
     for attempt in range(7):
         rate_limit(est)
         r = subprocess.run(["curl", "-s", "-m", "600", "-w", "\n%{http_code}", f"{base}/chat/completions",
                             "-H", "Content-Type: application/json",
                             "-H", f"Authorization: Bearer {os.environ.get('GEMMA_API_KEY', '')}",
+                            "-H", "ngrok-skip-browser-warning: true",
                             "--data-binary", "@-"], input=body, capture_output=True, text=True)
         out, _, code = r.stdout.rpartition("\n")
         if code == "200":
@@ -223,8 +225,8 @@ def main():
     load_env()
     ap = argparse.ArgumentParser()
     ap.add_argument("--bugs", nargs="+", type=int, default=[])
-    ap.add_argument("--condition", default="B", choices=["A", "B", "C", "D", "R", "O"],
-                    help="A ticket · B +replay · C +glossaire · D modèle fine-tuné · R fine-tuning simulé (exemples TRAIN injectés) · O borne haute (oracle comme retour, fuite volontaire)")
+    ap.add_argument("--condition", default="B", choices=["A", "B", "C", "D", "E", "R", "O"],
+                    help="A ticket · B +replay · C +glossaire · D modèle fine-tuné · E fine-tuné + règles métier · R fine-tuning simulé · O borne haute")
     ap.add_argument("--budget-eur", type=float, default=float(os.environ.get("BUDGET_EUR", 30)))
     ap.add_argument("--model", default=os.environ.get("LLM_MODEL", "gemma-4-31b-it"))
     ap.add_argument("--retries", type=int, default=2)

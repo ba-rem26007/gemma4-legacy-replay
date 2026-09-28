@@ -4,14 +4,14 @@ Partagé par agent/run.py (évaluation, Gemma génère les tours assistant) et
 trajectories/reconstruct.py (entraînement, tours assistant reconstruits depuis le correctif officiel).
 Le format des messages est donc STRICTEMENT identique en évaluation et en entraînement.
 """
-import csv, json, re, subprocess
+import csv, json, os, re, subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PS = ROOT / "bench" / "ps"
 EXCLUDE = ("tests/", "vendor/", "translations/", "install-dev/", "js/tiny_mce", "admin-dev/themes/default/public", ".github/")
 CODE_EXT = ("php", "tpl", "twig", "js", "ts", "vue")
-MAX_FILES_READ, WINDOW, MAX_LINES_PER_FILE, MAX_GREP_FILES = 3, 30, 260, 25
+MAX_FILES_READ, WINDOW, MAX_LINES_PER_FILE, MAX_GREP_FILES = 3, 20, int(os.environ.get("MAX_LINES_PER_FILE", 120)), 25
 
 SYSTEM = """Tu es un agent qui corrige des bugs dans PrestaShop (PHP, legacy + Symfony).
 Tu suis un déroulé FIXE en étapes. À chaque étape, réfléchis brièvement puis réponds UNIQUEMENT dans le format demandé, sans explication.
@@ -119,12 +119,15 @@ def ticket_text(bug):
 
 def msg_ticket(bug, condition, replay_spec=""):
     s = f"TICKET\n{ticket_text(bug)}\n"
-    if condition in ("B", "C", "D", "R") and replay_spec:
+    if condition in ("B", "C", "D", "E", "R") and replay_spec:
         s += f"\nTEST DE REJEU (doit passer après correction)\n```js\n{replay_spec[:3000]}\n```\n"
-    if condition in ("C", "D", "R"):
+    if condition in ("C", "D", "E", "R"):
         g = glossary_hits(ticket_text(bug))
         if g:
             s += f"\nCONTEXTE PRESTASHOP (vocabulaire métier → code)\n{g}\n"
+    if condition == "E" or os.environ.get("USE_RULES", "0") == "1":
+        import rules_prestashop
+        s += rules_prestashop.get_rules_prompt()
     if condition == "R":  # fine-tuning simulé : exemples de corrections similaires (vivier TRAIN)
         import fewshot
         ex = fewshot.render(bug)
