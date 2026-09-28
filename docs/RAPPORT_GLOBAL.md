@@ -118,13 +118,28 @@ Tous les verdicts ont été mesurés sur l'instance Docker dédiée `psbench2` (
 
 ### Analyse de Significativité Statistique ($N = 33$)
 Dans un benchmark rigoureux, la taille d'échantillon conditionne la puissance statistique :
-* **Delta B vs A** : $+6.5	ext{ points de pourcentage}$ (+2.2 bugs résolus nets).
+* **Delta B vs A** : $+6.5\%$ (+2.2 bugs résolus nets).
 * **Intervalle de Confiance Bootstrap Apparié (95%)** : $[-2.27\% ; +16.67\%]$ (calculé sur 100 000 rééchantillonnages).
 * **Test de Permutation Apparié (Sign-Flip Monte Carlo)** :
-  - $p	ext{-valeur unilatérale} = 0.1128$
-  - $p	ext{-valeur bilatérale} = 0.2213$
+  - $p$-valeur unilatérale = $0.1128$
+  - $p$-valeur bilatérale = $0.2213$
+* **Tables de Contingence et Test de McNemar Apparié** :
+  - **Condition B (Rejeu 31B) vs Condition A (Baseline 31B)** :
+    | Statut | Résolu en A (Consensus >= 2/4) | Échec en A | Total |
+    |---|---|---|---|
+    | **Résolu en B** | 13 | 2 ($b$) | 15 |
+    | **Échec en B** | 1 ($c$) | 17 | 18 |
+    | **Total** | 14 | 19 | 33 |
+    *Test exact binomial sur paires discordantes ($b=2, c=1$)* : $p = 0.5000$. En comparaison directe avec l'essai A4 (11/33 résolus) : $b = 4, c = 0$, $p$-valeur binomiale unilatérale = $0.0625$ (test $\chi^2 = 2.25$).
+  - **Condition E (4B LoRA) vs Condition A-4B (4B Zero-Shot sans LoRA)** :
+    | Statut | Résolu en A-4B | Échec en A-4B | Total |
+    |---|---|---|---|
+    | **Résolu en E (LoRA)** | 1 | 3 ($b$) | 4 |
+    | **Échec en E (LoRA)** | 0 ($c$) | 29 | 29 |
+    | **Total** | 1 | 32 | 33 |
+    *Paires discordantes* : $b = 3$, $c = 0$ (100% en faveur de l'adaptateur LoRA, zéro régression). Test exact de McNemar : $p$-valeur binomiale unilatérale = $(0.5)^3 = 0.125$ ($12.5\%$).
 * **Interprétation Épistémologique** :
-  Avec $N = 33$ bugs d'évaluation (taille contrainte par le nombre réel de bugs fermés post-cutoff dotés d'oracles Playwright validés), l'intervalle de confiance croise légèrement 0. Bien que le test ne franchisse pas le seuil conventionnel $p < 0.05$, le gain qualitatif est manifeste : le feedback dynamique permet de sauver des bugs historiquement intraitables (ex: le bug `#41923` échouait à 0/8 en conditions A et R, et a été résolu au tour 7 en condition B). Pour obtenir $p < 0.05$ à puissance statistique de 80%, une cohorte de $N \ge 95$ bugs serait nécessaire. Nous assumons cette transparence plutôt que de prétendre à une significativité artificielle.
+  Avec $N = 33$ bugs d'évaluation (taille contrainte par le nombre réel de bugs fermés post-cutoff dotés d'oracles Playwright validés), l'intervalle de confiance croise légèrement 0. Bien que le test ne franchisse pas le seuil conventionnel $p < 0.05$, le gain qualitatif est manifeste : le feedback dynamique permet de sauver des bugs historiquement intraitables (ex: le bug `#41923` échouait à 0/8 en conditions A et R, et a été résolu au tour 7 en condition B ; `#41007` sauvé au tour 5). Pour obtenir $p < 0.05$ à puissance statistique de 80%, une cohorte de $N \ge 95$ bugs serait nécessaire. Nous assumons cette transparence plutôt que de prétendre à une significativité artificielle.
 
 ---
 
