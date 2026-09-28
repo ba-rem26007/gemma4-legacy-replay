@@ -1,4 +1,8 @@
-# RAPPORT SCIENTIFIQUE ET TECHNIQUE GLOBAL (ALL-IN-ONE)
+import os
+
+rapport_path = "/home/elrems/kaggle/docs/RAPPORT_GLOBAL.md"
+
+content = """# RAPPORT SCIENTIFIQUE ET TECHNIQUE GLOBAL (ALL-IN-ONE)
 ## Gemma 4 × PrestaShop : Réparation Autonome de Code Legacy par Rejeu Dynamique et QLoRA Frugal
 
 > **Document Maître de Synthèse Intégrale** — Ce fichier regroupe en un seul document copiable-collable l'intégralité du projet : vision métier, architecture, résultats expérimentaux comparés (A/R/B/O/A-4B/D/E), analyse des 4 victoires au caractère près et réfutation de contamination, ablation formelle du LoRA, puissance statistique (bootstrap et permutation), étude de sobriété énergétique métrologique, taxonomie d'interrogation, pyramide des tests, benchmark des modules tiers et Writeup officiel Kaggle en anglais.
@@ -118,11 +122,11 @@ Tous les verdicts ont été mesurés sur l'instance Docker dédiée `psbench2` (
 
 ### Analyse de Significativité Statistique ($N = 33$)
 Dans un benchmark rigoureux, la taille d'échantillon conditionne la puissance statistique :
-* **Delta B vs A** : $+6.5	ext{ points de pourcentage}$ (+2.2 bugs résolus nets).
+* **Delta B vs A** : $+6.5\text{ points de pourcentage}$ (+2.2 bugs résolus nets).
 * **Intervalle de Confiance Bootstrap Apparié (95%)** : $[-2.27\% ; +16.67\%]$ (calculé sur 100 000 rééchantillonnages).
 * **Test de Permutation Apparié (Sign-Flip Monte Carlo)** :
-  - $p	ext{-valeur unilatérale} = 0.1128$
-  - $p	ext{-valeur bilatérale} = 0.2213$
+  - $p\text{-valeur unilatérale} = 0.1128$
+  - $p\text{-valeur bilatérale} = 0.2213$
 * **Interprétation Épistémologique** :
   Avec $N = 33$ bugs d'évaluation (taille contrainte par le nombre réel de bugs fermés post-cutoff dotés d'oracles Playwright validés), l'intervalle de confiance croise légèrement 0. Bien que le test ne franchisse pas le seuil conventionnel $p < 0.05$, le gain qualitatif est manifeste : le feedback dynamique permet de sauver des bugs historiquement intraitables (ex: le bug `#41923` échouait à 0/8 en conditions A et R, et a été résolu au tour 7 en condition B). Pour obtenir $p < 0.05$ à puissance statistique de 80%, une cohorte de $N \ge 95$ bugs serait nécessaire. Nous assumons cette transparence plutôt que de prétendre à une significativité artificielle.
 
@@ -220,16 +224,16 @@ Pour écarter toute estimation arbitraire, la consommation de **1.9 Wh par bug**
   Prise de mesure toutes les **100 millisecondes** pendant l'ensemble des phases d'inférence active.
 
 ### 2. Formule Mathématique et Décomposition du Bilan
-* **Puissance de repos (Idle)** : $P_{\text{idle}} = 12.4\text{ W}$.
-* **Puissance moyenne active en inférence 4-bit** : $P_{\text{active}} = 48.2\text{ W}$ (soit une surconsommation nette $\Delta P = 35.8\text{ W}$).
+* **Puissance de repos (Idle)** : $P_{\\text{idle}} = 12.4\\text{ W}$.
+* **Puissance moyenne active en inférence 4-bit** : $P_{\\text{active}} = 48.2\\text{ W}$ (soit une surconsommation nette $\\Delta P = 35.8\\text{ W}$).
 * **Temps moyen d'inférence active par bug** (moyenne de 3.2 tours agentiques, ~1 200 tokens générés) :
-  $$t_{\text{inf}} = 104\text{ secondes} = \frac{104}{3600}\text{ heures} \approx 0.0289\text{ h}$$
+  $$t_{\\text{inf}} = 104\\text{ secondes} = \\frac{104}{3600}\\text{ heures} \\approx 0.0289\\text{ h}$$
 * **Énergie GPU consommée** :
-  $$E_{\text{GPU}} = P_{\text{active}} \times t_{\text{inf}} = 48.2\text{ W} \times 0.0289\text{ h} = 1.39\text{ Wh}$$
+  $$E_{\\text{GPU}} = P_{\\text{active}} \\times t_{\\text{inf}} = 48.2\\text{ W} \\times 0.0289\\text{ h} = 1.39\\text{ Wh}$$
 * **Énergie CPU et Bac à Sable Docker** (Exécution des tests Playwright headless et MySQL dans le conteneur `psbench2`, ~25 W sur 2 cœurs pendant 60 s cumulées par bug) :
-  $$E_{\text{CPU}} = 25\text{ W} \times \frac{60}{3600}\text{ h} = 0.42\text{ Wh}$$
+  $$E_{\\text{CPU}} = 25\\text{ W} \\times \\frac{60}{3600}\\text{ h} = 0.42\\text{ Wh}$$
 * **Bilan Énergétique Total Système** :
-  $$E_{\text{total}} = E_{\text{GPU}} + E_{\text{CPU}} = 1.39 + 0.42 = \mathbf{1.81\text{ Wh}} \approx \mathbf{1.9\text{ Wh}}$$
+  $$E_{\\text{total}} = E_{\\text{GPU}} + E_{\\text{CPU}} = 1.39 + 0.42 = \\mathbf{1.81\\text{ Wh}} \\approx \\mathbf{1.9\\text{ Wh}}$$
 
 ### 3. Matrice Comparative contre les Grands Modèles Propriétaires
 
@@ -398,3 +402,9 @@ PSB=2 bash runs/run_test_E.sh <URL_SERVEUR_INFERENCE_OU_NGROK>
 python3 bench/results.py
 ```
 Le script lira les résultats dans `runs/` et recalculera instantanément les statistiques consolidées sans jamais rappeler de modèle payant.
+"""
+
+with open(rapport_path, "w", encoding="utf-8") as f:
+    f.write(content)
+
+print(f"Updated {rapport_path} successfully. Length: {len(content)} characters.")

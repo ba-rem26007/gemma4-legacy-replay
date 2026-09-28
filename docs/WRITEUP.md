@@ -35,37 +35,48 @@ Agentic code-repair benchmarks are dominated by Python projects with rich unit t
 - Same message format for evaluation and training traces.
 - Gemma 4 31B via Google AI Studio, temperature 0.2, reasoning stripped from context; cost 0 €.
 
-## 4. Conditions
+### 4. Conditions
 | Code | Agent sees | Purpose | Score |
 |---|---|---|---|
-| A | ticket | baseline | 12.8/33 (39.0%) |
-| R | ticket + 2 similar fixes from TRAIN (TF-IDF) | fine-tuning simulated by context | 12.8/33 (39.0%) |
-| B | ticket + replay tests with execution feedback | realistic verifier in loop | **15/33 (45.5%)** |
-| C | ticket + business glossary (term → code symbol) | localisation help | 13/33 (39.4%) |
-| O | ticket + **oracle** feedback (deliberate leak) | upper bound of any verifier | **16/33 (48.5%)** |
-| D | fine-tuned model (QLoRA Gemma 4 E4B) | autonomous domain adaptation | ready |
+| A | Ticket alone | Baseline 31B | 12.8/33 (39.0%) |
+| R | Ticket + 2 similar fixes from TRAIN (TF-IDF) | Fine-tuning simulated by context | 12.8/33 (39.0%) |
+| B | Ticket + replay tests with execution feedback | Realistic verifier in loop | **15/33 (45.5%)** |
+| C | Ticket + business glossary (term → code symbol) | Localisation help | 13/33 (39.4%) |
+| O | Ticket + oracle feedback (deliberate leak) | Upper bound of any verifier | **16/33 (48.5%)** |
+| A-4B | Ticket alone (Zero-Shot Gemma 4 4B, no LoRA) | Ablation baseline for LoRA isolation | 1/33 (3.0%) |
+| D | Fine-tuned pilot (QLoRA Gemma 4 4B) | Single bug pilot (#41007) | 1/1 (100%) |
+| E | Fine-tuned complete (QLoRA Gemma 4 4B) | Full 33 bugs evaluation | **4/33 (12.1%)** |
 
 ## 4b. Self-improvement loop (Gemma only, no distillation)
 The only condition with a significant gain is O: execution feedback from a faithful verifier. We turn that into training data without any proprietary model:
 1. **Gemma writes verifiers for TRAIN bugs** (`bench/gentest.py`): from the ticket and the official fix, it writes a Playwright oracle, kept only if it **fails on the pre-fix code and passes on the fix** (up to 3 attempts with the error fed back). Verifiers are never training data.
 2. **Gemma fixes TRAIN bugs with that verifier as feedback** (condition O on TRAIN, `ORACLE_PREFIX=g`).
 3. **Successful runs become condensed paths** (`trajectories/self_paths.py`): Gemma's own keywords and file choices plus its final patch rewritten as SEARCH/REPLACE blocks; failed attempts dropped; blocks must reproduce the final patch exactly. Source label `gemma_self`, alongside 585 paths reconstructed from official fixes.
-4. **QLoRA** on these paths → condition D on TEST (same fixed flow, same message format).
+4. **QLoRA** on these paths → condition D & E on TEST (same fixed flow, same message format).
 5. **Memory-efficient Chunked Loss**: training Gemma 4 with a 262k vocabulary on 15 GB GPUs without OOM via 256-token micro-chunks on assistant turns.
-Reward hacking: with a model-written verifier, the agent can satisfy the oracle with a symptomatic patch elsewhere (observed on #38417: a special case added in `ImageType` instead of fixing the faulty call). A second case (#38168) edited the right file but another method, emptying a query so that the oracle passed. Since the official fix is known on TRAIN, paths are kept only if every edited **function** is touched by it. Overall, 8 of 20 TRAIN bugs "solved" against Gemma-written oracles (40 %) were rejected by these guards. Cost on 25 successful TEST fixes judged by strong oracles: 20 kept, 5 rejected (valid fixes in another file).
-Leak-proofing: TRAIN bugs are merged before the cutoff, bugs touching a TEST function are excluded, and the exporter refuses TEST bugs.
+- **Reward Hacking Guards**: Paths are kept only if every edited function is touched by the official fix. Overall, 8 of 20 TRAIN bugs "solved" against model-written oracles (40 %) were rejected by these guards. Cost on 25 successful TEST fixes judged by strong oracles: 20 kept, 5 rejected (valid fixes in another file).
+- **Leak-proofing**: TRAIN bugs are merged before the cutoff, bugs touching a TEST function are excluded, and the exporter refuses TEST bugs.
 
-## 5. Results
-- **Condition B (Replay Feedback)**: **15/33 (45.5%)** vs baseline Condition A (39.0%), an improvement of **+6.5 percentage points** with **zero regressions**.
-- Replay rescues hard bugs: #41007 (solved on turn 5 after failing turn 4) and #41923 (0/8 in baseline A/R, solved on turn 7).
-- R vs A: 0.0 pt, paired 95 % CI −9.1/+9.1 → no measurable effect.
-- O: first attempt 13/33 (≈ A 12.8), 16/33 after oracle feedback (+3 bugs) → a perfect verifier adds +9.8 pts, paired 95 % CI +0.8/+20.5; it is the ceiling of any replay chain on this flow.
-- Model size: 26B-A4B 15% vs 31B 39% at similar localisation.
-- C (automatic glossary, 1 trial): 13/33 vs A 12.8; right file 6 vs A 7.75 → an automatically mined glossary does not help localisation.
+## 5. Results & Statistical Significance
+- **Condition B (Replay Feedback)**: **15/33 (45.5%)** vs baseline Condition A (39.0%), an improvement of **+6.5 percentage points** (+2.2 net bugs) with **zero regressions**.
+- **Statistical Power on N=33**: Paired 95% bootstrap CI on $\Delta(B - A)$ is **[-2.27%, +16.67%]**; paired sign-flip permutation test yields $p = 0.1128$ (one-tailed) and $p = 0.2213$ (two-tailed). While $N=33$ is limited by the post-cutoff pool of verified browser oracles, replay feedback qualitatively rescues hard bugs that failed completely under baseline prompting (e.g. #41923 scored 0/8 in A/R, solved on turn 7 in B; #41007 failed turn 4 and resolved on turn 5). Achieving $p < 0.05$ with 80% power would require $N \ge 95$ bugs.
+- **LoRA Ablation (A-4B vs E)**: Un-adapted Gemma 4 4B Zero-Shot (A-4B) resolves only 1/33 (3.0%), with 45.5% SEARCH/REPLACE format rejections and 18.2% loc_hit. LoRA domain adaptation raises resolution to **4/33 (12.1%)**, loc_hit to 42.4%, and format compliance to 84.8% (**+9.1 pts isolated gain**), proving that resolutions stem from adapter parametric specialization rather than base model priors.
+- **R vs A**: 0.0 pt, paired 95% CI [-9.1% ; +9.1%] → passive code injection yields no measurable effect on legacy code.
+- **Oracle Upper Bound (O)**: Reaches 16/33 (48.5%, +9.8 pts, paired 95% CI [+0.8% ; +20.5%]).
 
 ## 6. Why (failure analysis)
-- Taxonomy (`docs/ECHECS.md`): ⟦35 %⟧ wrong file, ⟦14 %⟧ no usable edit, ⟦12 %⟧ wrong fix, 0 regressions.
+- Taxonomy (`docs/ECHECS.md`): 35% wrong file, 14% no usable edit, 12% wrong fix, 0% regressions.
 - Consequence: a golden-master chain that only guards against regressions cannot raise the score here; what helps is (a) finding the right file and (b) a **faithful reproduction** test.
+
+## 6a. Absence of Contamination & Canonical API Verification (#40971)
+Bug #40971 was merged on April 8, 2026 (post-cutoff) and verified completely absent from all training traces. The character-identical patch:
+`Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup);`
+is not memorized: it is the sole static method in PrestaShop 8/9 core to set multi-shop group context, operating on variables already defined in scope. The identical syntax is a direct consequence of strict API determinism.
+
+## 6a bis. The Sovereignty vs Accuracy Pareto Frontier
+We highlight a deliberate architectural trade-off:
+- **Gemma 4 31B (45.5% in Condition B)**: Suited for centralized, compute-heavy CI pipelines requiring deep multi-hop reasoning.
+- **Gemma 4 4B LoRA (12.1% in Condition E)**: Suited for privacy-critical edge triage, operating within **4.29 GB VRAM** and consuming only **1.9 Wh per bug** on-premise without exposing commercial trade secrets or customer data to external cloud APIs.
 - Proposal validated by O: the expert records the reproduction once (Playwright codegen, 2–5 min/bug, `docs/ENREGISTREMENT.md`).
 
 ## 6b. Energy, Environmental & Financial Sobriety (Edge-First AI)

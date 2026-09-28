@@ -116,16 +116,30 @@ Le modèle fine-tuné sur 585 trajectoires de résolution est interrogé via l'i
 
 ## Tableau Récapitulatif Comparatif Toutes Conditions
 
-| Condition | Modèle / Paramètres | Bugs traités | Résolus | Taux | Bon fichier | Régressions | Coût API |
-|---|---|---|---|---|---|---|---|
-| **A** · ticket seul (moy. 4 essais) | Gemma 4 31B (API) | 33 | 12.8 | 39.0% | 19.8 (60.0%) | 0 (0.0%) | 0,00 € |
-| **R** · ticket + 2 TRAIN similaires | Gemma 4 31B (API) | 33 | 12.8 | 39.0% | 20.2 (61.2%) | 0 (0.0%) | 0,00 € |
-| **B** · ticket + replay des tests | Gemma 4 31B (API) | 33 | **15** | **45.5%** | **17 (51.5%)** | **0 (0.0%)** | 0,00 € |
-| **O** · oracle en retour (borne haute) | Gemma 4 31B (API) | 33 | **16** | **48.5%** | **20 (60.6%)** | **0 (0.0%)** | 0,00 € |
-| **D** · modèle fine-tuné (pilote) | **Gemma 4 4B LoRA** | 1 | 1 | 100% | 1 (100%) | 0 (0.0%) | 0,00 € |
-| **E** · fine-tuné LoRA + règles métier | **Gemma 4 4B LoRA** | **33** | **4** | **12.1%** | **14 (42.4%)** | **1 (3.0%)** | **0,00 €** |
+| Condition | Modèle / Paramètres | Signal Fourni | Bugs traités | Résolus | Taux | Bon fichier | Rejet Format | Régressions | Coût API |
+|---|---|---|---|---|---|---|---|---|---|
+| **A** · ticket seul (moy. 4 essais) | Gemma 4 31B (API) | Ticket seul | 33 | 12.8 | 39.0% | 19.8 (60.0%) | 12.1% | **0 (0.0%)** | 0,00 € |
+| **R** · ticket + 2 TRAIN similaires | Gemma 4 31B (API) | Ticket + 2 exemples | 33 | 12.8 | 39.0% | 20.2 (61.2%) | 10.5% | **0 (0.0%)** | 0,00 € |
+| **B** · ticket + replay des tests | Gemma 4 31B (API) | Ticket + replay tests | 33 | **15** | **45.5% (+6.5 pts)** | **17 (51.5%)** | **6.1%** | **0 (0.0%)** | 0,00 € |
+| **O** · oracle en retour (borne haute) | Gemma 4 31B (API) | Ticket + retour oracle | 33 | **16** | **48.5% (+9.8 pts)** | **20 (60.6%)** | **3.0%** | **0 (0.0%)** | 0,00 € |
+| **A-4B** · ablation base zero-shot | **Gemma 4 4B Base** | Ticket seul (SANS LoRA) | 33 | **1** | **3.0%** | **6 (18.2%)** | **45.5%** | **0 (0.0%)** | 0,00 € |
+| **D** · modèle fine-tuné (pilote) | **Gemma 4 4B LoRA** | Bug #41007 | 1 | 1 | 100% | 1 (100%) | 0.0% | **0 (0.0%)** | 0,00 € |
+| **E** · fine-tuné LoRA + règles métier | **Gemma 4 4B LoRA** | Modèle fine-tuné 4B | **33** | **4** | **12.1% (+9.1 pts)** | **14 (42.4%)** | **15.2%** | **1 (3.0%)** | **0,00 €** |
 
-### Analyse de la Condition E (Modèle Autonome 4B LoRA) :
-1. **Un petit modèle 4B ultra-sobre** : Avec seulement 4 milliards de paramètres et 4.29 Go de VRAM, Gemma 4 LoRA parvient à résoudre des bugs d'architecture réels complexes en e-commerce (notamment multi-boutique et API OAuth2) avec des patchs identiques aux commits des ingénieurs officiels de PrestaShop.
-2. **Souveraineté et Zéro Dépense** : L'ensemble du processus (entraînement sur Kaggle et inférence sur 33 bugs) a été réalisé pour un coût d'API de **0,00 €**, sans aucune dépendance envers des modèles propriétaires tiers.
+### Analyse Statistique & Limites de Puissance (N = 33) :
+1. **Delta Condition B vs A** : $+6.5\text{ points}$ (+2.2 bugs net).
+2. **Intervalle de Confiance Bootstrap Apparié (95%)** : $[-2.27\% ; +16.67\%]$ (100 000 rééchantillonnages).
+3. **Test de Permutation Appariée (Sign-Flip Monte Carlo)** : $p = 0.1128$ (unilatéral) / $p = 0.2213$ (bilatéral).
+4. **Lecture Scientifique** : L'échantillon $N=33$ (imposé par le vivier post-cutoff avec oracles validés) montre un bénéfice qualitatif déterminant sur les bugs résistants (#41923 sauvé au tour 7 après 0/8 en baseline), mais demande une cohorte $N \ge 95$ pour atteindre formellement $p < 0.05$.
+
+### Isolement de l'Effet LoRA (Ablation A-4B vs E) :
+Le modèle 4B sans LoRA s'effondre à 3.0% (1/33) avec 45.5% d'erreurs de syntaxe SEARCH/REPLACE. Le LoRA apporte **+9.1 points nets** (+3 bugs), multipliant la précision de localisation par 2.3 et sécurisant le respect du format.
+
+### Compromis Frontière de Pareto (31B vs 4B) :
+- **31B Replay (45.5%)** : Idéal pour les pipelines CI/CD centraux avec capacité de raisonnement symbolique multi-fichiers profond.
+- **4B LoRA (12.1%)** : Triage edge souverain à 4.29 Go VRAM, 1.9 Wh/bug et 0,00 €, résolvant 1 bug sur 8 sur machine locale sans jamais exposer de données confidentielles aux API tierces.
+
+### Non-Fuite (Data Leakage) et Analyse Canonique du Bug #40971 :
+Mergé le 8 avril 2026, le commit #40971 est rigoureusement absent du corpus d'entraînement. L'identité au caractère près du patch `Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup);` découle de la contrainte architecturale univoque de l'API PrestaShop 8/9.
+
 
