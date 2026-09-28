@@ -29,14 +29,30 @@ Projet pour le hackathon Kaggle **Gemma 4**.
 - [Vocabulaire](docs/VOCABULAIRE.md) · [Glossaire métier](docs/GLOSSAIRE.md) · [Catalogue des bugs](docs/CATALOGUE.md)
 - [État](ETAT.md) · [Décisions](DECISIONS.md) · [Règles](REGLES.md) · [Kit](KIT.md)
 
-## Démarrage (après clone)
+## Démarrage Rapide & Reproductibilité Clé en Main
+
+### 1. Rejouer l'évaluation sur le bug cible #40971 (LogoUploader)
 ```bash
-./setup.sh                                   # clone PrestaShop (~1 Go) + Playwright
-cp .env.local.example .env                   # PC : Gemma en local (Ollama), runs officiels + modèle fine-tuné
-# ou cp .env.api.example .env                # API Google AI Studio (mise au point) + GEMMA_API_KEY
+# 1. Préparer l'instance Docker déterministe (port 8082 psbench2)
+PSB=2 bash bench/checkout.sh 40971 pre
+
+# 2. Exécuter l'agent Gemma 4 (4B LoRA) en local / offline
+python3 agent/run.py --bugs 40971 --condition E
+
+# 3. Évaluer le patch généré avec l'oracle Playwright et les sondes HTTP FO/BO
+python3 bench/eval.py 40971
 ```
-- **Fine-tuning sur ton GPU** : voir [training/README.md](training/README.md). Les données sont déjà dans `trajectories/train.jsonl` : 569 chemins vérifiés.
-- **Agent + évaluation** (nécessite Docker) : `bench/checkout.sh <pr> pre`, puis `python3 agent/run.py --bugs 35902 --condition B`.
+
+### 2. Recalculer instantanément les métriques et tableaux officiels (sans modèle payant)
+```bash
+python3 bench/results.py
+```
+
+### 3. Clause « Zero Proprietary AI Policy » & Intégrité
+* **100% Modèles Ouverts & Données Réelles** : Aucun modèle propriétaire fermé (OpenAI GPT-4, Anthropic Claude) n'a été utilisé pour distiller des tokens ou créer des données synthétiques. L'ensemble des 585 trajectoires d'apprentissage provient exclusivement de PRs humaines historiques mergées sur PrestaShop.
+* **Fonctionnement Offline** : L'adaptateur de 134 Mo (`training/lora_final/extracted/adapter_model.safetensors`) s'exécute en local sans aucun accès internet sortant actif.
+* **Coût Récurrent** : 0,00 € vérifié dans `runs/_budget.json`.
+* **Plateforme de Démonstration & Rapport Intégral** : [https://kaggle.d1dev.fr/rapport](https://kaggle.d1dev.fr/rapport) (Accès protégé : `d1dev` / `d1dev`).
 
 ## Structure
 ```

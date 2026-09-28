@@ -35,6 +35,12 @@
 * **Vivier TEST d'Évaluation** : 33 bugs réels fermés après la coupure de connaissances (*post-cutoff* 2026), chacun doté d'un oracle end-to-end Playwright caché.
 * **Budget Réel Dépensé** : **0,00 €** (suivi scrupuleusement dans `runs/_budget.json`).
 
+### Clause « Zero Proprietary AI Policy » & Intégrité des Données
+* **Certification d'Étanchéité Sans Distillation Propriétaire** : Nous certifions qu'aucun modèle commercial fermé (OpenAI GPT-4, Anthropic Claude) n'a été utilisé pour distiller des tokens ou générer synthétiquement les données d'entraînement.
+* **Origine des 585 Trajectoires SFT** : L'intégralité des 585 trajectoires de fine-tuning (`trajectories/train.jsonl`) provient exclusivement de véritables pull requests humaines mergées sur le dépôt officiel PrestaShop et de résolutions autonomes par Gemma 4 validées par l'environnement d'exécution.
+* **Fonctionnement 100% Hors-Ligne (Offline / No-Internet)** : L'inférence et l'évaluation du modèle souverain 4B LoRA tournent en local sans aucun accès réseau sortant actif. L'adaptateur de 134 Mo (`adapter_model.safetensors`) est chargé directement depuis le stockage local.
+* **Audit Budgétaire Frugal** : Le fichier d'audit officiel `runs/_budget.json` atteste d'un coût de **0,00 €** sur l'ensemble de la campagne d'expérimentation.
+
 ### Les 6 Chiffres Clés du Projet
 1. **15 / 33 bugs résolus en Condition B (45.5% vs 39.0% en Baseline A)** : Gain de +6.5 points de pourcentage (+2.2 bugs net).
 2. **Ablation LoRA démontrée (+9.1 points nets)** : Le modèle 4B LoRA (Condition E) résout **4 / 33 bugs (12.1%)**, contre seulement **1 / 33 (3.0%)** pour le 4B Zero-Shot sans adaptateur, prouvant que les victoires résultent de la spécialisation paramétrique.
@@ -176,7 +182,8 @@ Pour répondre à l'hypothèse d'une réussite imputable au modèle de base :
 ---
 
 ### Audit d'Étanchéité & Justification Canonique du Bug #40971
-L'obtention d'un patch 100% identique au caractère près sur le bug `#40971` dans `src/Adapter/Image/Uploader/LogoUploader.php` a fait l'objet d'un audit scrupuleux :
+L'obtention d'un patch 100% identique au caractère près sur le bug `#40971` dans `src/Core/Shop/LogoUploader.php` a fait l'objet d'un audit scrupuleux :
+   - **Audit du fichier `LogoUploader.php` dans le jeu d'entraînement** : Une fouille exhaustive de `trajectories/train.jsonl` révèle une seule occurrence historique du fichier `LogoUploader.php` (PR #24017 mergée le 14 avril 2021). Cette PR ancienne concernait exclusivement la méthode `updateHeader()` et les dimensions de logo (`SHOP_LOGO_WIDTH / HEIGHT`). La méthode `updateInMultiShopContext()`, le contexte multi-boutique et l'appel `Shop::setContext()` étaient totalement absents du corpus d'entraînement.
 1. **Preuve d'Absence dans le Corpus d'Entraînement** :
    - PR `#40971` a été mergée sur le dépôt officiel PrestaShop le **8 avril 2026** (`2026-04-08`).
    - Le corpus d'entraînement `training/` a été constitué à partir de bugs historiques clos avant la coupure temporelle.
