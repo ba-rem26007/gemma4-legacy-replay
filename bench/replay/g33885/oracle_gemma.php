@@ -7,9 +7,9 @@ require 'config/config.inc.php';
  */
 class TestFrontController extends FrontController
 {
-    public function publicGetAlternativeLangsUrl()
+    public function publicSanitizeUrl(string $url): string
     {
-        return $this->getAlternativeLangsUrl();
+        return $this->sanitizeUrl($url);
     }
 }
 
@@ -19,69 +19,40 @@ $context->shop = new Shop(1);
 $context->language = new Language(1);
 $context->currency = new Currency(1);
 
-// Ensure at least two languages are active for the test
-$languages = Language::getLanguages(true, 1);
-if (count($languages) < 2) {
-    $l2 = new Language();
-    $l2->name = 'English';
-    $l2->iso_code = 'en';
-    $l2->id_parent = 0;
-    $l2->active = 1;
-    $l2->add();
-    // Link to shop 1
-    Db::getInstance()->execute('INSERT INTO '._DB_PREFIX_.'language_shop (id_language, id_shop) VALUES ('.(int)$l2->id.', 1)');
-}
-
-// 2. Enable routes and simulate a request to a routed module page
-Configuration::updateValue('PS_ROUTE_ENABLED', 1);
-
-// Simulate the current request URI and parameters
-$_SERVER['HTTP_HOST'] = 'localhost';
-$_SERVER['REQUEST_URI'] = '/blog/category/15_des-conseils.html';
+// 2. Simulate the bug trigger: 
+// The bug occurs when $_GET contains parameters that are already part of a rewritten URL.
+// Before the fix, sanitizeUrl() iterates over $_GET and appends these parameters to the URL.
 $_GET['slug'] = 'des-conseils';
 $_GET['module'] = 'smartblog';
 $_GET['controller'] = 'category';
 
-// 3. Setup a custom route to simulate the SmartBlog module behavior
-$dispatcher = Dispatcher::getInstance();
-$dispatcher->addRoute(
-    'blog_category', 
-    'blog/category/{id}-{slug}.html', 
-    'category', 
-    1, 
-    ['id' => ['param' => 'id_category', 'required' => true], 'slug' => ['param' => 'slug', 'required' => true]]
-);
+// This is a rewritten URL (no query parameters)
+$rewrittenUrl = 'http://localhost/fr/blog/category/15_des-conseils.html';
 
-// 4. Execute the code
+// 3. Execute the code
 $fc = new TestFrontController();
 $fc->context = $context;
-$fc->context->link = new Link();
 
 try {
-    $altUrls = $fc->publicGetAlternativeLangsUrl();
+    echo "Input URL: $rewrittenUrl\n";
+    echo "Current \$_GET: " . http_build_query($_GET) . "\n";
     
-    if (empty($altUrls)) {
-        echo "No alternative URLs generated. Check language configuration.\n";
-        exit(1);
-    }
-
-    echo "Alternative URLs found: " . count($altUrls) . "\n";
+    $sanitizedUrl = $fc->publicSanitizeUrl($rewrittenUrl);
     
+    echo "Sanitized URL: $sanitizedUrl\n";
+    
+    // The bug is that the parameters from $_GET are appended to the rewritten URL.
+    // After the fix, sanitizeUrl should only process parameters already present in the URL string.
     $bugFound = false;
-    foreach ($altUrls as $iso => $url) {
-        echo "Lang $iso: $url\n";
-        // The URL should be rewritten and NOT contain the redundant query parameters from $_GET
-        // because they are already part of the rewritten path.
-        if (strpos($url, 'slug=des-conseils') !== false || strpos($url, 'module=smartblog') !== false) {
-            $bugFound = true;
-        }
+    if (strpos($sanitizedUrl, 'slug=des-conseils') !== false || strpos($sanitizedUrl, 'module=smartblog') !== false) {
+        $bugFound = true;
     }
 
     if ($bugFound) {
-        echo "BUG: Unwanted parameters from \$_GET found in alternate URLs.\n";
+        echo "BUG: Unwanted parameters from \$_GET were appended to the rewritten URL.\n";
         exit(1);
     } else {
-        echo "SUCCESS: Alternate URLs are clean.\n";
+        echo "SUCCESS: Rewritten URL remained clean.\n";
         exit(0);
     }
 
