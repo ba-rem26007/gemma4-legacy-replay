@@ -1,49 +1,49 @@
-# Fine-tuning QLoRA (phase 7)
+# Fine-tuning QLoRA Frugal de Gemma 4
 
-Entraîne un adaptateur LoRA de Gemma 4 sur les chemins condensés `trajectories/train.jsonl`.
-Loss uniquement sur les tours assistant ; 2 chemins max par bug ; checkpoints + reprise auto.
+Ce module contient les scripts d'entraînement supervisé (SFT) et les optimiseurs d'attention pour fine-tuner **Gemma 4 (4B)** avec un adaptateur LoRA compact de 134 Mo sur GPU 16 Go (Nvidia Tesla T4 ou RTX 4070 Ti 12 Go).
 
-## Sur ton PC (RTX 4070 Ti, 12 Go)
-Recommandé : **WSL2 Ubuntu** (Docker Desktop l'utilise déjà). Sous Windows natif, bitsandbytes marche aussi.
+---
+
+## 1. L'Innovation `ChunkedLossTrainer` (`training/chunked_loss.py`)
+
+Gemma 4 intègre un vocabulaire étendu de **262 144 tokens**.  
+Sur une séquence de 4 096 tokens, la projection complète des logits en float32 génère une matrice temporaire de plus de 4,3 Go, déclenchant des erreurs `CUDA Out of Memory` systématiques sur les GPU grand public.
+
+Notre classe `ChunkedLossTrainer` résout ce goulot d'étranglement :
+1. **Extraction des états cachés** : Le modèle retourne les états cachés de l'avant-dernière couche (`hidden_states`).
+2. **Filtrage des labels utiles** : Seules les positions des réponses de l'assistant (`labels != -100`) sont conservées.
+3. **Projection par micro-blocs différentiables** : La tête `lm_head` est appliquée séquentiellement par tranches de **256 tokens**, calculant la cross-entropy au vol.
+4. **Impact** : **94% de réduction du pic de VRAM** de la fonction de perte (< 300 Mo de mémoire requise pour la loss).
+
+---
+
+## 2. Lancement sur GPU Kaggle (Tesla T4 Gratuit)
+
+Voir le guide détaillé : [`training/GUIDE_KAGGLE_NOTEBOOK.md`](GUIDE_KAGGLE_NOTEBOOK.md).
+
 ```bash
-git clone <url-du-depot> gemma4-legacy-replay && cd gemma4-legacy-replay
-python -m venv .venv && source .venv/bin/activate          # Windows : .venv\Scripts\activate
-pip install torch --index-url https://download.pytorch.org/whl/cu124
-pip install -r training/requirements.txt
-huggingface-cli login                                       # accepter la licence Gemma sur huggingface.co au préalable
-python training/train_qlora.py --model google/gemma-4-e4b-it --max-len 4096
+python3 training/kaggle_kernel/train_kaggle.py \
+  --model "google/gemma-4-e4b-it" \
+  --data "trajectories/train.jsonl,trajectories/self.jsonl" \
+  --out "lora_gemma4_final" \
+  --epochs 3 \
+  --lr 2e-4 \
+  --chunk-size 256
 ```
-- 12 Go : `gemma-4-e4b-it` passe confortablement. Le 12B en 4 bits est limite, à essayer avec `--max-len 3072` ; sinon passer sur Kaggle (16 Go).
-- Coupure : relancer la même commande, la reprise part du dernier checkpoint (`training/lora/checkpoint-*`).
-- Sortie : `training/lora/final` (adaptateur) + `log_history.json` (courbe de perte).
 
-⚠ Vérifier l'identifiant exact du modèle sur https://huggingface.co/google (famille Gemma 4).
+### Paramètres de la Version Finale Officielle (Kaggle Run v15)
+* **Époques** : 3 époques complètes sur 585 trajectoires vérifiées.
+* **Perte finale** : Descente de 1.564 à 0.9309 (perte moyenne : 1.192).
+* **Taille de l'adaptateur produit** : **134 Mo** (`adapter_model.safetensors`).
+* **Consommation VRAM active** : 4.29 Go en inférence 4-bit.
+* **Budget financier** : 0,00 € (`runs/_budget.json`).
 
-## Sur Kaggle (P100 / T4, 16 Go)
-Pousser le dépôt comme dataset Kaggle, puis dans le notebook :
-`python training/train_qlora.py --model google/gemma-4-12b-it --out /kaggle/working/lora` (mode « Save & Run All »).
+---
 
-## Données
-- `trajectories/self.jsonl` : **chemins Gemma vérifiés** (filtrés par `--min-sim`, 0,4 par défaut : similarité au correctif officiel) (boucle d’auto-apprentissage, `source=gemma_self`), régénéré par `bench/loop_stats.py` ; lus avec train.jsonl par défaut.
-- `trajectories/train.jsonl` : **chemins reconstruits** depuis les correctifs officiels (vivier TRAIN, avant la coupure), vérifiés.
-- Régénérer : `python trajectories/reconstruct.py --cutoff <date>` (nécessite `bench/ps`, voir le README racine).
-- Aucune donnée générée par un modèle propriétaire.
+## 3. Scripts et Configurations Disponibles
 
-## Longueur de séquence
-`--max-len 8192` par défaut : les chemins font jusqu'à ~8 000 tokens (médiane ≈ 3 900). Les exemples plus longs sont **écartés**, pas tronqués (l'édition finale est à la fin), et leur nombre est affiché.
-Mémoire insuffisante (12 Go) → `--max-len 6144` (perd ≈ 10 % des chemins) plutôt que 4096 (≈ 40 %).
-
-## Hyperparamètres de stabilité Gemma 4
-En raison de la sensibilité de Gemma 4 à la normalisation QK-RMSNorm et à l'attention mise à l'échelle :
-- **Taux d'apprentissage** : `5e-5` par défaut (`--lr 5e-5`), cosine schedule avec warmup 5 %.
-- **Découpage de gradient strict** : `max_grad_norm = 0.1` (`--max-grad-norm 0.1`) pour éviter l'instabilité numérique.
-- **Précision** : `bfloat16` natif (ou 4-bit NF4 double quant avec compute `bfloat16`).
-- **Masquage des labels** : Loss calculée **uniquement** sur les tours assistant (labels à `-100` pour tous les retours d'outils, tickets et sorties de bac à sable).
-- **Attention** : `sdpa` (PyTorch Scaled Dot-Product Attention) ou `flash_attention_2` avec dimension de tête 512.
-
-## Scripts & Configurations disponibles
-1. **`training/train_qlora.py`** : Entraîneur standard Hugging Face `Trainer` + `peft` avec masquage manuel rigoureux des tokens hors assistant.
-2. **`training/train_agentic_debugger.py`** : Entraîneur Hugging Face `trl` (`SFTTrainer`) optimisé pour les traces de débogage agentiques, rank 32 / alpha 64 et attention SDPA.
-3. **`training/axolotl_gemma4.yaml`** : Configuration déclarative pour **Axolotl** avec `gemma4_hybrid_attn_impl: true` et support multi-GPU / sample packing.
-
-
+1. **`training/chunked_loss.py`** : Module autonome et découplé implémentant le `ChunkedLossTrainer` pour Hugging Face `transformers`.
+2. **`training/kaggle_kernel/train_kaggle.py`** : Script d'entraînement complet exécuté sur l'environnement Kaggle.
+3. **`training/train_agentic_debugger.py`** : Entraîneur `trl` (`SFTTrainer`) optimisé pour les traces agentiques avec masquage strict des prompts.
+4. **`training/axolotl_gemma4.yaml`** : Configuration déclarative pour Axolotl avec attention hybride et packing de séquences.
+5. **`training/lora_final/`** : Répertoire contenant les poids extraits et le rapport de convergence.
