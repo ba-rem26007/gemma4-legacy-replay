@@ -10,14 +10,7 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks: [d1dev_web]
     labels:
-      traefik.enable: "true"
-      traefik.docker.network: d1dev_web
-      traefik.http.routers.kaggle-d1.rule: Host(`kaggle.d1dev.fr`)
-      traefik.http.routers.kaggle-d1.entrypoints: websecure
-      traefik.http.routers.kaggle-d1.tls: "true"
-      traefik.http.routers.kaggle-d1.tls.certresolver: myresolver
-      traefik.http.routers.kaggle-d1.middlewares: auth,noindex
-      traefik.http.services.kaggle-d1.loadbalancer.server.port: "80"
+      traefik.enable: "false"
 networks:
   d1dev_web:
     external: true
