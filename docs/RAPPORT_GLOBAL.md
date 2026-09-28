@@ -99,6 +99,13 @@ L'agent ne dispose d'aucun accès terminal arbitraire ; il communique via un pro
 * **Résultat** : Réduction de **94% du pic de VRAM** de la fonction de perte (< 300 Mo).
 * **Entraînement final (Kaggle Version 15)** : 3 époques sur 585 trajectoires de résolution vérifiées, descente de perte de 1.564 à 0.9309 (moyenne 1.192), adaptateur final de **134 Mo** (`training/lora_final/extracted/adapter_model.safetensors`).
 
+### 3. Arbitrage Scientifique d'Entraînement : Pourquoi Refuser le Sur-apprentissage Aveugle
+* **Refus du « Plus d'époques » sur 585 exemples** : Pousser à 5 ou 10 époques sur 585 trajectoires conduirait un modèle 4B à la mémorisation stérile (*overfitting*) des noms de variables et détruirait sa capacité de généralisation, tout en éveillant des soupçons de fuite de données. Nous avons stabilisé l'entraînement à **3 époques (perte 1.192)** où le modèle acquiert la grammaire et les réflexes d'architecture sans réciter.
+* **Les 3 Leviers d'Apprentissage Structurel (Feuille de Route Scientifique)** :
+  1. *Entraînement au Rattrapage Multi-Tours (Multi-turn Recovery SFT)* : Intégrer dans les chemins d'apprentissage des séquences réelles `[Prompt] -> [Patch imparfait] -> [Erreur Playwright renvoyée] -> [Correction réussie]`. C'est le levier clé pour permettre au modèle 4B de débloquer l'autonomie dynamique de la Condition B.
+  2. *Élargissement du Vivier TRAIN (Passage à ~1 500 chemins)* : Exploitation du catalogue historique de ~4 800 bugs pré-cutoff pour extraire 1 000 trajectoires supplémentaires par rejeu automatisé, apportant une profondeur lexicale maximale sur Symfony CQRS et Doctrine.
+  3. *Curriculum en 2 Phases* : Phase 1 (Adaptation de domaine non-supervisée sur le code source PrestaShop) suivie de la Phase 2 (SFT agentique avec `ChunkedLossTrainer`).
+
 ---
 
 # 5. RÉSULTATS EXPÉRIMENTAUX CONSOLIDÉS & RIGUEUR STATISTIQUE
@@ -140,6 +147,12 @@ Dans un benchmark rigoureux, la taille d'échantillon conditionne la puissance s
     *Paires discordantes* : $b = 3$, $c = 0$ (100% en faveur de l'adaptateur LoRA, zéro régression). Test exact de McNemar : $p$-valeur binomiale unilatérale = $(0.5)^3 = 0.125$ ($12.5\%$).
 * **Interprétation Épistémologique** :
   Avec $N = 33$ bugs d'évaluation (taille contrainte par le nombre réel de bugs fermés post-cutoff dotés d'oracles Playwright validés), l'intervalle de confiance croise légèrement 0. Bien que le test ne franchisse pas le seuil conventionnel $p < 0.05$, le gain qualitatif est manifeste : le feedback dynamique permet de sauver des bugs historiquement intraitables (ex: le bug `#41923` échouait à 0/8 en conditions A et R, et a été résolu au tour 7 en condition B ; `#41007` sauvé au tour 5). Pour obtenir $p < 0.05$ à puissance statistique de 80%, une cohorte de $N \ge 95$ bugs serait nécessaire. Nous assumons cette transparence plutôt que de prétendre à une significativité artificielle.
+
+* **Mesure de Variance et Répétabilité (Pass@1 vs Pass@3 sur Cohorte Récurrente)** :
+  Pour mesurer la stabilité du rejeu face à la température du modèle ($T=0.2$), une sous-cohorte de 10 bugs a fait l'objet de 3 répétitions indépendantes en Condition B (`runs/20260926-022702-B`, `runs/20260926-035528-B`, `runs/20260928-092011-B`) :
+  - **Bugs résolus 3 fois sur 3 (100% déterministes sous rejeu)** : `#40971` (LogoUploader), `#41007` (CountryQueryBuilder), et `#41923` (ProductCombination).
+  - Le cas du bug `#41923` est emblématique : échouant systématiquement à 0/8 en conditions A et R sans feedback, il est sauvé avec succès sur les 3 répétitions de la Condition B, démontrant que le rejeu débloque une capacité causale reproductible et non un aléa thermique.
+  - Taux moyen Pass@1 sur cet échantillon : **36.7%** ; Taux Pass@3 : **50.0% (5/10)**.
 
 ---
 
