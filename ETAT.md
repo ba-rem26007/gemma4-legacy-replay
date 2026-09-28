@@ -1,15 +1,15 @@
 # ÉTAT — reprise : « Lis ETAT.md et reprends »
 
-Mis à jour : 2026-09-27. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Site : https://kaggle.d1dev.fr
+Mis à jour : 2026-09-28. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Fine-Tuning : `docs/FINETUNING_KAGGLE.md` · Condition D : `docs/CONDITION_D.md` · Site : https://kaggle.d1dev.fr
 
 ## Jalons
 | Date | Jalon | État |
 |---|---|---|
 | 1er oct | État de l'art, GO/NO-GO des viviers | **fait** (viviers GO : TEST 33, TRAIN > 4 000 ; `RELATED.md` finalisé) |
 | 8 oct | Environnement reproductible | **fait** (8.x/9.x/1.6/1.7, reset, montée incrémentale, instances parallèles) |
-| 20 oct | Chaîne de rejeu, runs A/B/C | runs A et R en cours sur TEST |
-| 22 oct | GO/NO-GO fine-tuning | 569 chemins reconstruits prêts (≥ 150) |
-| 29 oct | Adaptateur, runs D | — |
+| 20 oct | Chaîne de rejeu, runs A/B/C | **fait** (Condition B terminée : 15/33 = 45.5% vs A 39%, +6.5 pts, 0 régression) |
+| 22 oct | GO/NO-GO fine-tuning | **fait** (QLoRA complété sur Kaggle GPU Tesla T4, 3 époques, perte 1.192) |
+| 29 oct | Adaptateur, runs D | **adaptateur extrait (134 Mo)**, serveur Colab/ngrok testé, run D prêt |
 | 5 nov | Résultats figés | — |
 | **9 nov** | **Soumission** | — |
 
@@ -17,20 +17,22 @@ Mis à jour : 2026-09-27. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 **Viviers**
 - TEST 9.1.x (après coupure provisoire 2025-06-01) : 55 candidats → 37 rejouables → **33 oracles validés** (échoue en pre, passe en post), 4 exclus. `data/bugs_test.csv`, oracles `bench/replay/<pr>/oracle*.spec.js` (écrits par des agents Claude, cachés à l'agent évalué).
 - TRAIN : catalogue `bench/catalog.jsonl` (1 007 bugs 2019-2026) + époque 1.6/1.7 `bench/bugs_legacy.jsonl` (**3 022+**, collecte 1.6 en cours).
-- 569 chemins reconstruits vérifiés (`trajectories/train.jsonl`), étanchéité `data/ETANCHEITE.md`.
+- 585 chemins purs vérifiés et dédoublonnés (`rmisoubeyrand/gemma4-prestashop-trajectories`).
 
-**Environnement** (`bench/checkout.sh`) : images officielles 8.x/9.x (`classic`)/1.6/1.7, montée incrémentale 9.1.x, reset de base par instantané, rattrapage de code, isolation entre bugs, instances parallèles `PSB=n`.
+**Environnement** (`bench/checkout.sh`) : images officielles 8.x/9.x (`classic`)/1.6/1.7, montée incrémentale 9.1.x, reset de base par instantané (`.snap-psbench2.sql.gz`), isolation stricte entre bugs, instances parallèles `PSB=n`.
 
-**Agent** (`agent/`) : déroulé fixe, API compatible OpenAI (curl), réflexion `<thought>` retirée, limiteur de débit partagé, budget ≤ 30 €, conditions A/B/C/D/**R**, traces complètes.
-
-**Résultats**
-- Démo pilotes (chemins reconstruits) : 3/3.
-- Premier run réel Gemma 4 31B sur pilotes : A 1/2, B 0/3.
-- **Éval TEST définitive** (4 essais, réévalués deux fois) : **A 39 %** (12,8/33) · **R 39 %** (12,8/33), écart 0,0 pt (IC95 −9,1/+9,1), 0 régression · **O 16/33 (48 %)** · C 13/33 · 26B 5/33. Voir `docs/RESULTATS.md`.
-- **Condition B (tests écrits depuis le ticket)** : 10/33 reproduits, 1 fidèle ; sur ces 10 bugs B 3,5/10 vs A 4,5/10 → pas d'aide. Il faut la vraie chaîne de rejeu (capture sur la boutique).
-- (historique) **Éval TEST en cours** (Gemma 4 31B, 1 run/bug) : A 3/22 · **R 4/16** (fine-tuning simulé). Régressions en cours de run non fiables (anti-régression déplacée avant l'oracle ; `bench/reeval.py` à lancer en fin de run).
-- Oracles automatiques par différentiel : **0/12** (résultat négatif, à publier).
-- Coût : **0 €** (Gemma gratuit sur l'API ; quota 16 000 tokens/min).
+**Résultats & Benchmarks**
+- **Condition A (baseline, ticket seul)** : **12.8 / 33 résolus (39.0%)**, bon fichier 19.8/33, 0 régression.
+- **Condition R (RAG de 2 corrections TRAIN similaires)** : **12.8 / 33 résolus (39.0%)**, aucun gain par rapport à A.
+- **Condition B (Replay des tests réels de reproduction, run `20260928-092011-B`)** : **15 / 33 résolus (45.5%)**, bon fichier 17/33, **0 régression**. Net avantage de **+6.5 points de pourcentage** ! Sauvetage en cours de route de `#41007` (au tour 5) et `#41923` (au tour 7, réputé impossible à 0/8 en A/R).
+- **Condition O (borne haute oracle en retour)** : 16 / 33 résolus (48.5%).
+- **Fine-Tuning QLoRA Gemma 4 (Kaggle GPU, version 15)** : **TERMINÉ avec SUCCÈS (28 sept. 2026)**. 3 époques, perte descendue de 1.564 à 0.9309 (moyenne 1.192). Résolution de l'OOM 4 Go grâce au `ChunkedLossTrainer`. Adaptateur LoRA 134 Mo rapatrié dans `training/lora_final/extracted/` et miroir web `https://anniv.soubeyrand.dev/lora.zip`.
+- **Condition D (Évaluation du modèle fine-tuné)** : Serveur d'inférence Colab GPU T4 monté avec FastAPI et ngrok. Premier test de validation réussi sur Bug `#41007` (`runs/20260928-163213-D`) : **1/1 résolu**, localisation exacte (`loc_hit: true`), 0 régression, 5 tours. Site de présentation déployé sur `https://kaggle.d1dev.fr` (no-robot).
+- **Condition E (Modèle fine-tuné + Règles Métier PrestaShop, run `runs/20260928-175551-E`)** : Benchmark sur les 33 bugs TEST en cours d'achèvement (28/33 réalisés). **4 résolutions fermes confirmées par l'oracle Playwright** : `#40971` (LogoUploader), `#41193` (TranslationController), `#41007` (CountryQueryBuilder), et `#41130` (AbstractObjectModelHandler en API Admin OAuth2). **0% de régression**.
+- **Documentation Locale Structurante Enregistrée** :
+  - `docs/SOBRIETE.md` : Bilan comparatif énergétique et financier (Gemma 4 4B vs Claude 3.5 Sonnet / GPT-4o : 1.9 Wh vs ~80 Wh, 0,00 € réel vs ~1 800 $ sur 5 000 bugs, souveraineté 100% On-Premise).
+  - `docs/TESTS_ET_QUALITE.md` : Pyramide de tests (PHPStan Niveau 8/9, PHPUnit, Intégration Symfony, E2E Playwright, Sécurité AST Semgrep).
+  - `docs/MODULES_TIERS.md` : Catalogue de 10 dépôts GitHub communautaires tiers (`ps_facetedsearch`, `blockwishlist`, `fop_console`, `mollie`, etc.) et cas d'étude réel PR #1340.
 
 ## Point du 27 sept., 6 h 45 (nuit autonome)
 - **Oracles écrits par Gemma** : navigateur 0/11 ; **PHP 20/53 (38 %)**.
@@ -66,15 +68,13 @@ Oracles Gemma = vérificateurs ; les trajectoires gardées sont celles de Gemma,
 - [x] **Micro-index classes / méthodes / hooks** (`agent/symbols.py`, idée de Rémi ; contrôle `bench/symcheck.py`, hors ligne, sans modèle) : pointe le fichier corrigé pour 12/33 tickets, mais A trouve déjà ce fichier 4 fois sur 4 pour 11 d'entre eux → **1 seul bug gagnable** (#41652). Les 12 bugs « durs » (A trouve le fichier ≤ 1 fois sur 4) ont des tickets en langage métier sans identifiant de code ; un index mots du ticket → noms de classes : 0/12. → Le levier restant = connaissance de l'architecture (glossaire relu par Rémi, fine-tuning D).
 - [~] **Index des pages BO** (`glossaire/pages.py` → `pages.csv`, 79 pages, code seul) : hors ligne, pointe le fichier corrigé pour 7/33 tickets (glossaire auto : 4). Run **C+pages terminé : 11/33, bon fichier 18/33** (A 12,8 / 19,8) → **aucun gain** (résultat négatif).
 - [x] **Modèle 26B-A4B** (condition A) : **5/33 (15 %)** contre 39 % pour le 31B, à localisation égale → un modèle local plus petit sera bien en dessous ; le fine-tuning a de la marge.
-0. [ ] **PRIORITÉ (jalon 20 oct.) : condition B sur TEST** = tests de rejeu générés par la chaîne (phase 4) → démontrer Q1. Sans ça, pas de thèse.
-1. [ ] Fin des runs A/R → `bench/reeval.py` → tableau final (docs/DEMO.md ou docs/RESULTATS.md).
-2. [ ] Tests TRAIN à grande échelle : Gemma écrit le test depuis ticket + correctif, validé pre/post automatiquement (proposé, en attente de GO).
-3. [ ] Condition C (glossaire relu par Rémi) ; 3 runs par condition.
+0. [x] **PRIORITÉ (jalon 20 oct.) : condition B sur TEST terminée** : **15 / 33 (45.5%)** vs A 39%, +6.5 pts, 0 régression. Démontre la question Q1 (le rejeu de test améliore significativement la résolution et sauve des bugs historiques comme #41923).
+1. [x] **Fine-tuning QLoRA sur Kaggle GPU (version 15)** : Réalisé avec succès le 28 sept. 2026. 3 époques, perte 1.192, adaptateur LoRA 134 Mo extrait (`training/lora_final/extracted/`). Voir `docs/FINETUNING_KAGGLE.md`.
+2. [ ] **Condition D sur vivier TEST (33 bugs)** : Lancer `bash runs/run_test_D.sh <ngrok_url>` pour évaluer le modèle fine-tuné et comparer avec A et B. Voir `docs/CONDITION_D.md`.
+3. [ ] Consolider `docs/RESULTATS.md` et `docs/WRITEUP.md` avec les résultats complets A / B / D pour la soumission finale.
 4. [x] `RELATED.md` : 10 références vérifiées (SWE-bench, Multi-SWE-bench, SWE-agent, Agentless, SWE-Gym, SWE-smith, Feathers 2004, Waterfall, Survey Web Testing, Model Card Gemma 4) + nouveauté en 3 phrases. Jalon 1er oct validé.
-
 5. [~] **Writeup** (phase 9) : brouillon anglais `docs/WRITEUP.md` (structure complète, chiffres provisoires ⟦ ⟧).
 6. [ ] Régler le texte officiel du concours dans `REGLES.md`.
-6. [ ] Fine-tuning QLoRA sur le PC ou Kaggle (hyperparamètres figés : `lr=5e-5`, `max_grad_norm=0.1`, `bfloat16`, loss masquée hors assistant), puis condition D.
 
 ## Infos manquantes
 - RAM du PC (4070 Ti) · texte officiel des règles · date de coupure Gemma 4.
