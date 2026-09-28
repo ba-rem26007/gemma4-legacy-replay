@@ -27,12 +27,18 @@ Mis à jour : 2026-09-28. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 - **Condition B (Replay des tests réels de reproduction, run `20260928-092011-B`)** : **15 / 33 résolus (45.5%)**, bon fichier 17/33, **0 régression**. Net avantage de **+6.5 points de pourcentage** ! Sauvetage en cours de route de `#41007` (au tour 5) et `#41923` (au tour 7, réputé impossible à 0/8 en A/R).
 - **Condition O (borne haute oracle en retour)** : 16 / 33 résolus (48.5%).
 - **Fine-Tuning QLoRA Gemma 4 (Kaggle GPU, version 15)** : **TERMINÉ avec SUCCÈS (28 sept. 2026)**. 3 époques, perte descendue de 1.564 à 0.9309 (moyenne 1.192). Résolution de l'OOM 4 Go grâce au `ChunkedLossTrainer`. Adaptateur LoRA 134 Mo rapatrié dans `training/lora_final/extracted/` et miroir web `https://anniv.soubeyrand.dev/lora.zip`.
-- **Condition D (Évaluation du modèle fine-tuné)** : Serveur d'inférence Colab GPU T4 monté avec FastAPI et ngrok. Premier test de validation réussi sur Bug `#41007` (`runs/20260928-163213-D`) : **1/1 résolu**, localisation exacte (`loc_hit: true`), 0 régression, 5 tours. Site de présentation déployé sur `https://kaggle.d1dev.fr` (no-robot).
-- **Condition E (Modèle fine-tuné + Règles Métier PrestaShop, run `runs/20260928-175551-E`)** : Benchmark sur les 33 bugs TEST en cours d'achèvement (28/33 réalisés). **4 résolutions fermes confirmées par l'oracle Playwright** : `#40971` (LogoUploader), `#41193` (TranslationController), `#41007` (CountryQueryBuilder), et `#41130` (AbstractObjectModelHandler en API Admin OAuth2). **0% de régression**.
-- **Documentation Locale Structurante Enregistrée** :
-  - `docs/SOBRIETE.md` : Bilan comparatif énergétique et financier (Gemma 4 4B vs Claude 3.5 Sonnet / GPT-4o : 1.9 Wh vs ~80 Wh, 0,00 € réel vs ~1 800 $ sur 5 000 bugs, souveraineté 100% On-Premise).
-  - `docs/TESTS_ET_QUALITE.md` : Pyramide de tests (PHPStan Niveau 8/9, PHPUnit, Intégration Symfony, E2E Playwright, Sécurité AST Semgrep).
-  - `docs/MODULES_TIERS.md` : Catalogue de 10 dépôts GitHub communautaires tiers (`ps_facetedsearch`, `blockwishlist`, `fop_console`, `mollie`, etc.) et cas d'étude réel PR #1340.
+- **Condition D (Évaluation du modèle fine-tuné)** : Serveur d'inférence Colab GPU T4 monté avec FastAPI et ngrok. Premier test de validation réussi sur Bug `#41007` (`runs/20260928-163213-D`) : **1/1 résolu**, localisation exacte (`loc_hit: true`), 0 régression, 5 tours. Site de présentation déployé sur `https://kaggle.d1dev.fr` (accès protégé `d1dev` / `d1dev`).
+- **Condition E (Modèle fine-tuné 4B LoRA + Règles Métier, run `runs/20260928-175551-E`)** : Benchmark complet sur les **33 / 33 bugs TEST achevé (100%)**. **4 résolutions fermes confirmées par l'oracle Playwright avec 0% de régression sur ces 4 bugs** : `#40971` (LogoUploader, 100% identique au caractère près), `#41193` (TranslationController), `#41007` (CountryQueryBuilder), et `#41130` (AbstractObjectModelHandler en API Admin OAuth2).
+  - Taux de résolution : **4/33 (12.1%)**, localisation exacte : **14/33 (42.4%)**, patchs appliqués : **18/33 (54.5%)**, non-régression globale : **97.0%** (32/33).
+  - **Ablation 4B Base (`Condition A-4B`)** : 4B Base Zero-Shot sans LoRA ne résout que **1/33 (3.0%)** avec 45.5% d'erreurs de syntaxe SEARCH/REPLACE. L'apport isolé du QLoRA est de **+9.1 points (+3 bugs nets)**.
+  - **Rigueur Statistique ($N=33$)** : Gain Replay B vs A = +6.5 pts, IC 95% bootstrap $[-2.3\%, +16.7\%]$, permutation $p=0.11$.
+  - **Compromis Frontière de Pareto** : 45.5% (31B Cloud) vs 12.1% (4B Edge Souverain 4.29 Go VRAM, 1.9 Wh/bug).
+  - **Non-Fuite Certifiée #40971** : Post-cutoff 08/04/2026, absent du corpus d'entraînement, signature canonique d'API univoque.
+- **Documentation Scientifique Complète & Site Live** :
+  - `docs/RAPPORT_GLOBAL.md` & `https://kaggle.d1dev.fr/rapport` : Synthèse complète en 11 sections avec bouton 1-clic pour tout récupérer.
+  - `docs/SOBRIETE.md` : Protocole métrologique 100 ms `nvidia-smi` (1.39 Wh GPU + 0.42 Wh CPU = 1.81 Wh ≈ 1.9 Wh/bug).
+  - `docs/TESTS_ET_QUALITE.md` : Pyramide de tests (PHPStan 8/9, PHPUnit, Intégration Symfony, E2E Playwright, AST Semgrep).
+  - `docs/MODULES_TIERS.md` : Benchmark de 10 dépôts tiers et cas réel `ps_facetedsearch` PR #1340.
 
 ## Point du 27 sept., 6 h 45 (nuit autonome)
 - **Oracles écrits par Gemma** : navigateur 0/11 ; **PHP 20/53 (38 %)**.
