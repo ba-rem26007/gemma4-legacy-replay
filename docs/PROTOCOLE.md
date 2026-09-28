@@ -50,3 +50,9 @@ Paramètres figés : température, seed, budget de tours et de tokens, timeout. 
 - D'après l'analyse ARC Prize 2025, un domaine devient automatisable quand le modèle **connaît assez le domaine** et que la tâche fournit **un signal de retour vérifiable**. Rassembler cette connaissance métier et construire les vérificateurs demande un travail coûteux et spécialisé.
 - Chez nous : **la chaîne de replay est le vérificateur**, **l'outil contexte PrestaShop apporte la connaissance métier**.
 - Matériel grand public valorisé : le 3e prix papier d'ARC 2025 tournait sur une seule RTX 4070.
+
+---
+
+## Cahier de Recette Détaillé (42 Tests & Grille d'Audit)
+L'exécution formelle du banc d'évaluation consolidé à **42 tests déterministes** (33 Cœur + 9 Modules Tiers) et l'audit de conformité Kaggle en 5 piliers sont consignés dans :
+👉 **[`docs/PLAN_DE_TESTS.md`](PLAN_DE_TESTS.md)**.

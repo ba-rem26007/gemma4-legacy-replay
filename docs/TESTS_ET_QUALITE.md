@@ -96,4 +96,11 @@ Avant toute validation définitive d'un patch, deux sondes d'anti-régression ma
 
 L'association de l'**Analyse Statique (PHPStan)** pour un retour ultra-rapide et de l'**Oracle E2E (Playwright)** pour le verdict final constitue la chaîne d'évaluation la plus rigoureuse possible :
 * Elle garantit que le modèle ne produit pas de code "halluciné" qui semblerait syntaxiquement correct mais planterait à l'exécution.
-* Elle permet d'atteindre un taux de régression de **0.0%** mesuré sur l'ensemble de nos 33 bugs testés.
+* Elle permet d'atteindre un taux de régression de **0.0%** mesuré sur l'ensemble de nos 33 bugs testés en Condition B et 97.0% en Condition E.
+
+---
+
+## 5. Cahier de Recette Détaillé des 42 Tests & Grille d'Audit en 5 Piliers
+
+L'inventaire complet des 42 tests certifiés (33 Cœur + 9 Modules Tiers) et la grille d'audit de conformité Kaggle en 5 piliers sont documentés dans le cahier de recette dédié :
+👉 **Voir [`docs/PLAN_DE_TESTS.md`](PLAN_DE_TESTS.md)** pour le tableau des 42 cas d'évaluation, les métriques par condition et les commandes de reproduction en 1 ligne.
