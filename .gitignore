@@ -25,3 +25,7 @@ bench/env/.keep-*
 bench/env/.snap-*
 runs/_rate.json*
 runs/_symbols/
+*.safetensors
+*.bin
+training/kaggle_dataset/
+training/kaggle_kernel/
