@@ -3,9 +3,9 @@
 **Google AI & Kaggle Gemma Sprint Submission**  
 **Authors**: Rémi Soubeyrand & Antigravity  
 **Artifacts & Code**: [github.com/ba-rem26007/gemma4-legacy-replay](https://github.com/ba-rem26007/gemma4-legacy-replay)  
-**Model Weights (PrestaShop)**: [Hugging Face: `elrems/lora_gemma4-4b-prestashop-v1`](https://huggingface.co/elrems/lora_gemma4-4b-prestashop-v1) (134 MB adapter safetensors)  
-**Model Specs (Dolibarr)**: [Hugging Face: `elrems/lora_gemma4-4b-dolibarr-v1`](https://huggingface.co/elrems/lora_gemma4-4b-dolibarr-v1)  
-**SFT Dataset (Dolibarr 10-Yr)**: [Hugging Face Dataset: `elrems/dolibarr-gemma4-sft-trajectories`](https://huggingface.co/datasets/elrems/dolibarr-gemma4-sft-trajectories)
+**Model Weights (PrestaShop)**: [Hugging Face: `elrems/lora_gemma4-4b-prestashop-v1`](https://huggingface.co/elrems/lora_gemma4-4b-prestashop-v1) (Private repository / Mirror authenticated in Colab)  
+**Model Specs (Dolibarr)**: [Hugging Face: `elrems/lora_gemma4-4b-dolibarr-v1`](https://huggingface.co/elrems/lora_gemma4-4b-dolibarr-v1) (Public)  
+**SFT Dataset (Dolibarr 10-Yr)**: [Hugging Face Dataset: `elrems/dolibarr-gemma4-sft-trajectories`](https://huggingface.co/datasets/elrems/dolibarr-gemma4-sft-trajectories) (Public)
 
 ---
 
