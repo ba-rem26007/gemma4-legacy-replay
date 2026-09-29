@@ -71,26 +71,66 @@ def grep(commit, keywords):
 
 
 def windows(src, keywords, extra_lines=()):
-    """Extraits du fichier autour des lignes contenant un mot-clé (et des lignes imposées)."""
+    """Extraits du fichier classés par pertinence (densité de symboles/mots-clés) plutôt que position séquentielle.
+    
+    Évite de saturer le budget de lecture sur du boilerplate d'en-tête (licences, use) 
+    quand la méthode fautive se trouve en fin de fichier.
+    """
     rows = src.splitlines()
-    kws = [k.lower() for k in keywords if len(k) >= 3]
-    marks = [i for i, l in enumerate(rows) if any(k in l.lower() for k in kws)] + [i for i in extra_lines if i < len(rows)]
-    spans = []
-    for i in sorted(set(marks)):
+    if not rows:
+        return ""
+    kws = [k.strip().lower() for k in keywords if len(k.strip()) >= 3]
+    
+    # 1. Notation de chaque ligne selon la pertinence des symboles
+    marks = {}
+    for i, l in enumerate(rows):
+        ll = l.lower()
+        score = 0
+        for k in kws:
+            if k in ll:
+                score += 3 if re.search(r"\b" + re.escape(k) + r"\b", ll) else 1
+        if i in extra_lines:
+            score += 6
+        if score > 0:
+            marks[i] = score
+
+    if not marks:
+        return "\n".join(rows[:MAX_LINES_PER_FILE])
+
+    # 2. Construction et fusion des spans
+    raw_spans = []
+    for i, sc in sorted(marks.items()):
         a, b = max(0, i - WINDOW), min(len(rows), i + WINDOW + 1)
-        if spans and a <= spans[-1][1]:
-            spans[-1][1] = max(spans[-1][1], b)
+        raw_spans.append({"a": a, "b": b, "score": sc})
+
+    merged = []
+    for sp in sorted(raw_spans, key=lambda s: s["a"]):
+        if merged and sp["a"] <= merged[-1]["b"]:
+            merged[-1]["b"] = max(merged[-1]["b"], sp["b"])
+            merged[-1]["score"] += sp["score"]
         else:
-            spans.append([a, b])
-    out, total = [], 0
-    for a, b in spans:
+            merged.append(sp)
+
+    # 3. Classement des spans par densité de pertinence
+    ranked_spans = sorted(merged, key=lambda s: -s["score"])
+
+    # 4. Sélection des spans les plus denses dans la limite de MAX_LINES_PER_FILE
+    selected, total = [], 0
+    for sp in ranked_spans:
+        length = sp["b"] - sp["a"]
+        if total + length <= MAX_LINES_PER_FILE or not selected:
+            selected.append(sp)
+            total += length
         if total >= MAX_LINES_PER_FILE:
-            out.append("[… tronqué …]")
             break
-        b = min(b, a + MAX_LINES_PER_FILE - total)
-        out.append(f"[lignes {a + 1}-{b}]\n" + "\n".join(rows[a:b]))
-        total += b - a
-    return "\n".join(out) if out else "\n".join(rows[:MAX_LINES_PER_FILE])
+
+    # 5. Restitution dans l'ordre chronologique des lignes du fichier
+    selected.sort(key=lambda s: s["a"])
+    out = []
+    for sp in selected:
+        out.append(f"[lignes {sp['a'] + 1}-{sp['b']}]\n" + "\n".join(rows[sp["a"]:sp["b"]]))
+
+    return "\n[...]\n".join(out) if out else "\n".join(rows[:MAX_LINES_PER_FILE])
 
 
 def glossary_hits(ticket_text):

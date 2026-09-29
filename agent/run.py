@@ -154,6 +154,8 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
     # 2. LIRE
     files = [f for f in flow.parse_json(turn("lire", flow.msg_grep(hits), "grep", {"keywords": kws, "hits": hits}), "files")
              if flow.show(base, f)][:flow.MAX_FILES_READ]
+    initial_files = list(files)
+    all_files_read = set(files)
     contents = {f: flow.windows(flow.show(base, f), kws) for f in files}
     # 3. ÉDITER (avec au plus 2 retours arrière : relire d'autres fichiers ou relancer une recherche)
     reply = turn("editer", flow.msg_read(contents), "read", {"files": files})
@@ -161,7 +163,7 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
 
     def backtrack(reply):
         """Si la réponse demande une relecture / recherche au lieu d'éditer, on l'exécute."""
-        nonlocal backtracks, files, contents, kws
+        nonlocal backtracks, files, contents, kws, all_files_read
         while backtracks < 2 and not flow.parse_edits(reply) and re.search(r'"(files|keywords)"', reply):
             backtracks += 1
             if '"keywords"' in reply:
@@ -171,6 +173,7 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
             new = [f for f in flow.parse_json(reply, "files") if flow.show(base, f)][:flow.MAX_FILES_READ]
             if new:
                 files = new
+                all_files_read.update(new)
                 contents = {f: flow.windows(flow.show(base, f), kws) for f in files}
                 reply = turn("relire", flow.msg_read(contents), "read", {"files": files})
         return reply
@@ -212,10 +215,20 @@ def run_bug(bug, condition, model, retries, out, policy="llm"):
     else:
         result = {"pr": bug["pr"], "applied": False, "fixed": False, "regression": None,
                   "replay_error": "; ".join(errors) or "aucune édition"}
-    result["feedbacks"] = feedbacks
-    result.update({"condition": condition, "model": model, "files_read": files, "keywords": kws,
-                   "official_files": bug["files"],
-                   "loc_hit": bool(set(files) & set(bug["files"])), "turns": len(msgs) // 2})
+    result.update({
+        "condition": condition, "model": model,
+        "files_read": files,
+        "files_initial": initial_files,
+        "files_all_read": sorted(all_files_read),
+        "files_edited": sorted(state.keys()),
+        "keywords": kws,
+        "official_files": bug["files"],
+        "loc_hit_initial": bool(set(initial_files) & set(bug["files"])),
+        "loc_hit_ever": bool(all_files_read & set(bug["files"])),
+        "loc_hit_edited": bool(set(state.keys()) & set(bug["files"])),
+        "loc_hit": bool(all_files_read & set(bug["files"])),
+        "turns": len(msgs) // 2
+    })
     (out / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=1))
     trace.close()
     return result

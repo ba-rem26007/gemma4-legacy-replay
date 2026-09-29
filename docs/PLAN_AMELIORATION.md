@@ -78,12 +78,12 @@ Utiliser le même modèle E4B de base, la même quantification, le même serveur
 | E4B-lora | Oui | Non | Quel est l’apport de l’adaptateur seul ? |
 | E4B-lora-replay | Oui | Oui | Les deux effets se complètent-ils ? |
 
-- [ ] Rendre les limites d’entrée, de sortie, de corrections et de durée explicites dans la configuration.
-- [ ] Enregistrer la réponse brute, la réponse nettoyée, les tokens et la raison d’arrêt fournie par le serveur.
-- [ ] Vérifier que l’adaptateur est effectivement chargé, ou absent, selon la condition.
-- [ ] Ajouter un contrôle à budget comparable pour distinguer l’apport du feedback de celui de tentatives supplémentaires. Fixer la sélection du patch sans consulter l’oracle caché.
-- [ ] Fixer à l’avance le nombre de répétitions, par exemple trois par condition si le budget mesuré sur DEV le permet ; ne pas prolonger uniquement pour obtenir une significativité.
-- [ ] Rapporter les écarts appariés par bug, leur incertitude, la variabilité entre runs, les régressions, la durée et les tokens. Les répétitions d’un même bug ne sont pas des bugs indépendants.
+- [x] Rendre les limites d’entrée, de sortie, de corrections et de durée explicites dans la configuration.
+- [x] Enregistrer la réponse brute, la réponse nettoyée, les tokens et la raison d’arrêt fournie par le serveur.
+- [x] Vérifier que l’adaptateur est effectivement chargé, ou absent, selon la condition.
+- [x] Ajouter un contrôle à budget comparable pour distinguer l’apport du feedback de celui de tentatives supplémentaires. Fixer la sélection du patch sans consulter l’oracle caché.
+- [x] Fixer à l’avance le nombre de répétitions, par exemple trois par condition si le budget mesuré sur DEV le permet ; ne pas prolonger uniquement pour obtenir une significativité.
+- [x] Rapporter les écarts appariés par bug, leur incertitude, la variabilité entre runs, les régressions, la durée et les tokens. Les répétitions d’un même bug ne sont pas des bugs indépendants.
 
 **Livrables :** quatre configurations, traces complètes et tableau d’ablation du LoRA.
 
@@ -93,12 +93,12 @@ Utiliser le même modèle E4B de base, la même quantification, le même serveur
 
 **Priorité : élevée. Développement sur DEV, après établissement de la référence.**
 
-- [ ] Classer les passages par pertinence plutôt que par position dans le fichier.
-- [ ] Donner priorité aux symboles précis, méthodes, messages d’erreur et routes présents dans le ticket ou le retour d’exécution.
-- [ ] Tester une lecture par méthode avec signature et contexte de classe, dans un budget de tokens borné.
-- [ ] Autoriser une recherche ciblée supplémentaire après un échec révélant un nouveau symbole.
-- [ ] Mesurer séparément : fichier pertinent parmi les candidats, parmi les fichiers lus, puis résolution après localisation réussie.
-- [ ] Comparer chaque modification à la référence sur les mêmes bugs DEV ; retenir une variante avant l’évaluation finale.
+- [x] Classer les passages par pertinence plutôt que par position dans le fichier.
+- [x] Donner priorité aux symboles précis, méthodes, messages d’erreur et routes présents dans le ticket ou le retour d’exécution.
+- [x] Tester une lecture par méthode avec signature et contexte de classe, dans un budget de tokens borné.
+- [x] Autoriser une recherche ciblée supplémentaire après un échec révélant un nouveau symbole.
+- [x] Mesurer séparément : fichier pertinent parmi les candidats, parmi les fichiers lus, puis résolution après localisation réussie.
+- [x] Comparer chaque modification à la référence sur les mêmes bugs DEV ; retenir une variante avant l’évaluation finale.
 
 **Livrables :** variante de recherche/lecture et rapport comparatif DEV.
 
@@ -108,11 +108,11 @@ Utiliser le même modèle E4B de base, la même quantification, le même serveur
 
 **Priorité : après la comparaison LoRA de référence.**
 
-- [ ] Collecter uniquement sur TRAIN des séquences Gemma : patch initial → erreur réelle → lecture complémentaire → correction validée.
-- [ ] Conserver le feedback utile et l’état courant du code ; ne pas réécrire les trajectoires avec un modèle propriétaire.
-- [ ] Appliquer les contrôles d’étanchéité, de provenance et d’anti-contournement du projet.
-- [ ] Comparer un corpus de chemins directs à un corpus incluant ces reprises, en contrôlant autant que possible le budget de tokens d’entraînement.
-- [ ] Sélectionner le checkpoint sur DEV selon les résolutions et les régressions, en complément de la perte de validation.
+- [x] Collecter uniquement sur TRAIN des séquences Gemma : patch initial → erreur réelle → lecture complémentaire → correction validée.
+- [x] Conserver le feedback utile et l’état courant du code ; ne pas réécrire les trajectoires avec un modèle propriétaire.
+- [x] Appliquer les contrôles d’étanchéité, de provenance et d’anti-contournement du projet.
+- [x] Comparer un corpus de chemins directs à un corpus incluant ces reprises, en contrôlant autant que possible le budget de tokens d’entraînement.
+- [x] Sélectionner le checkpoint sur DEV selon les résolutions et les régressions, en complément de la perte de validation.
 
 **Livrables :** corpus de reprises validées et expérience mesurant leur apport.
 
@@ -120,15 +120,15 @@ Utiliser le même modèle E4B de base, la même quantification, le même serveur
 
 ## 8. Phase 6 — Consolider la soumission
 
-- [ ] Générer les tableaux depuis une source de résultats unique et harmoniser README, ETAT, rapport, writeup et model card.
-- [ ] Corriger les volumes d’entraînement historiques : corpus préparé, corpus après tokenisation et tokens vus.
-- [ ] Distinguer les 33 bugs TEST, les pilotes TRAIN, les cas supplémentaires et la cartographie des modules.
-- [ ] Présenter Dolibarr comme pilote de transfert jusqu’à l’existence d’une évaluation indépendante suffisante.
-- [ ] Vérifier le règlement officiel, le format attendu et les échéances ; `REGLES.md` contient encore des points à confirmer.
-- [ ] Pour l’énergie, publier les mesures brutes et leur périmètre : GPU, CPU, durée, matériel, entraînement ou inférence ; distinguer tentative et résolution. Retirer les facteurs comparatifs sans mesure comparable ou source pertinente.
-- [ ] Décrire « zéro régression » comme l’absence de régression détectée par les tests exécutés, avec leur couverture.
-- [ ] Fournir un parcours reproductible : installation, bug échouant avant correction, exécution de l’agent, verdict caché et recalcul des métriques.
-- [ ] Préparer les artefacts pour revue, vérifier l’absence de secrets, puis traiter la publication comme une étape distincte.
+- [x] Générer les tableaux depuis une source de résultats unique et harmoniser README, ETAT, rapport, writeup et model card.
+- [x] Corriger les volumes d’entraînement historiques : corpus préparé, corpus après tokenisation et tokens vus.
+- [x] Distinguer les 33 bugs TEST, les pilotes TRAIN, les cas supplémentaires et la cartographie des modules.
+- [x] Présenter Dolibarr comme pilote de transfert jusqu’à l’existence d’une évaluation indépendante suffisante.
+- [x] Vérifier le règlement officiel, le format attendu et les échéances ; `REGLES.md` contient encore des points à confirmer.
+- [x] Pour l’énergie, publier les mesures brutes et leur périmètre : GPU, CPU, durée, matériel, entraînement ou inférence ; distinguer tentative et résolution. Retirer les facteurs comparatifs sans mesure comparable ou source pertinente.
+- [x] Décrire « zéro régression » comme l’absence de régression détectée par les tests exécutés, avec leur couverture.
+- [x] Fournir un parcours reproductible : installation, bug échouant avant correction, exécution de l’agent, verdict caché et recalcul des métriques.
+- [x] Préparer les artefacts pour revue, vérifier l’absence de secrets, puis traiter la publication comme une étape distincte.
 
 **Livrables :** documentation cohérente, notebook de résultats, fiche modèle renseignée et dossier de soumission prêt à relire.
 
