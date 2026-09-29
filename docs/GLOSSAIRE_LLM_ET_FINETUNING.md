@@ -165,7 +165,7 @@ flowchart TD
 | **Gradient Accumulation** | Calcul des gradients sur plusieurs micro-lots successifs avant d'effectuer un pas d'optimisation (`optimizer.step()`). Simule un grand batch size sur un petit GPU. | ✅ **FAIT** | `gradient_accumulation_steps=8` avec un `per_device_train_batch_size=1`, simulant un batch effectif de 8 ou 16 sans saturer les 15 Go du GPU. |
 | **FlashAttention-2 / SDPA** | Réécriture au niveau GPU des opérations d'attention mathématique pour tirer parti de la SRAM ultra-rapide des puces sans allouer de mémoire intermédiaire. | ✅ **FAIT** | Utilisation de PyTorch SDPA (*Scaled Dot-Product Attention*) pour accélérer les passes avant et arrière de 35%. |
 | **Catastrophic Forgetting**<br>*(Oubli Catastrophique)* | Phénomène par lequel un réseau de neurones perd ses connaissances antérieures lorsqu'il est sur-entraîné sur une tâche trop spécifique. | 🛡️ **ÉVITÉ** | Évité grâce à LoRA (poids d'origine gelés) et à des gardes de régularisation empêchant l'altération des capacités linguistiques de base. |
-| **TDP & Wh**<br>*(Thermal Design Power / Watt-heures)* | Mesure physique et métrologique de la puissance électrique et de l'énergie réelle consommée par le matériel lors d'un calcul. | ✅ **MESURÉ** | **1.91 Wh par bug résolu** mesuré sur Tesla T4 (70W TDP), soit 35x à 50x moins que les requêtes vers les clusters géants H100 hébergeant Claude ou GPT-4o. |
+| **TDP & Wh**<br>*(Thermal Design Power / Watt-heures)* | Mesure physique et métrologique de la puissance électrique et de l'énergie réelle consommée par le matériel lors d'un calcul. | ✅ **MESURÉ** | **1.91 Wh par bug tenté** (≈ 15.7 Wh par bug résolu en Cond. E, 4/33) mesuré sur Tesla T4 (70W TDP), soit 35x à 50x moins d'énergie sur les tentatives (4x à 6x sur les résolutions) que les clusters H100 cloud. |
 
 ---
 
@@ -233,7 +233,7 @@ flowchart LR
     subgraph Edge ["Notre Solution : Gemma 4 (4B) LoRA Local Frugal"]
         Req2["Fenêtrage Ciblé<br>(70-250 lignes)"] --> GPU2["GPU Modeste / Grand Public<br>(1x Nvidia Tesla T4 ou RTX 3060 - 70W)"]
         GPU2 --> Cost2["Coût Financier : 0,00 €<br>(Amortissement matériel immédiat)"]
-        GPU2 --> Carbon2["Consommation : 1.91 Wh / bug<br>(Équivalent ampoule LED 12 min)"]
+        GPU2 --> Carbon2["Consommation : 1.91 Wh / bug tenté<br>(≈ 15.7 Wh / résolu, LED 12 min)"]
         GPU2 --> Risk2["Souveraineté 100% On-Premise<br>Air-Gapped, conforme RGPD / PCI-DSS"]
     end
 ```
@@ -273,7 +273,7 @@ mindmap
       RAG Jurisprudence BM25 (34k bugs)
       ReAct Non-Borne Rejete (Anti-Boucle)
     Metrologie & Souverainete
-      1.91 Wh par bug (T4 70W)
+      1.91 Wh par bug tente (15.7 Wh resolu)
       4.29 Go VRAM Inférence
       100% On-Premise / Air-Gapped
       2 Failles Zero-Day Detectees
