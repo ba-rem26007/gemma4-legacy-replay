@@ -29,3 +29,4 @@ runs/_symbols/
 *.bin
 training/kaggle_dataset/
 training/kaggle_kernel/
+upload_to_hf.py
