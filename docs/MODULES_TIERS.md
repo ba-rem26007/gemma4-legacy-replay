@@ -1,6 +1,8 @@
-# Écosystème des Modules Tiers et Communautaires PrestaShop : Analyse et Benchmark des 42 Dépôts Clés
+# Écosystème des Modules Tiers : Cartographie d'Extensibilité et Audit d'Architecture sur 42 Dépôts Clés
 
-Ce document répertorie le banc d'extensibilité exhaustif de **42 dépôts GitHub majeurs** de l'écosystème PrestaShop, couvrant l'intégralité du cycle de vie e-commerce : navigation, tunnel d'achat, passerelles de paiement, logistique, conformité juridique, internationalisation et reporting.
+Ce document répertorie la **cartographie d'extensibilité et l'audit d'architecture de 42 dépôts GitHub majeurs** de l'écosystème PrestaShop, couvrant l'intégralité du cycle de vie e-commerce : navigation, tunnel d'achat, passerelles de paiement, logistique, conformité juridique, internationalisation et reporting.
+
+> **Cadre Méthodologique** : Ce répertoire constitue un audit structurel de compatibilité (hooks PrestaShop, Symfony DI, typage PHP 8.2+). L'extensibilité opérationnelle de notre agent a fait l'objet d'un **cas pilote complet exécuté et réparé de bout en bout** sur `PrestaShop/ps_facetedsearch` (PR #1340) avec oracle Playwright dédié.
 
 ---
 

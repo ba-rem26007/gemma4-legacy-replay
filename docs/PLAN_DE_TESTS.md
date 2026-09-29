@@ -75,9 +75,9 @@ Afin de garantir une fiabilité de niveau bancaire sans faux positifs, chaque co
 
 ---
 
-## 4. Répertoire Exhaustif des 42 Modules Tiers Communautaires
+## 4. Cartographie d'Extensibilité et Audit d'Architecture sur 42 Dépôts Communautaires
 
-L'écosystème PrestaShop repose sur une architecture modulaire événementielle (système de *Hooks*). Le tableau ci-dessous recense les 42 dépôts majeurs testés et analysés pour l'extensibilité du modèle Gemma 4 :
+L'écosystème PrestaShop repose sur une architecture modulaire événementielle (système de *Hooks*). Le tableau ci-dessous recense la cartographie d'architecture et d'extensibilité menée sur 42 dépôts majeurs de l'écosystème (avec cas pilote d'oracle exécuté sur `ps_facetedsearch` #1340) :
 
 | # | Dépôt GitHub | Rôle & Usage Écosystème | Technologies Clés | Typologie Fréquente de Bugs & Dépréciations |
 |---|---|---|---|---|
