@@ -2,7 +2,7 @@
 
 Ce glossaire exhaustif regroupe les concepts, architectures, acronymes et métriques indispensables dans l'écosystème de l'Intelligence Artificielle Générative, du Fine-Tuning et des Agents de Code.
 
-Pour **chaque terme**, une colonne d'audit indique explicitement si le concept a été **appliqué dans notre projet (Gemma 4 Legacy Replay)**, comment il a été mis en œuvre ou la raison scientifique/économique de son écartement.
+Pour **chaque terme**, une colonne d'audit indique explicitement si le concept a été **appliqué dans notre projet (Gemma 4 Legacy Replay)**, comment il a été mis en œuvre ou la raison scientifique/économique de son écartement. Des **schémas d'architecture Mermaid** illustrent chaque mécanisme clé.
 
 ---
 
@@ -19,6 +19,33 @@ Pour **chaque terme**, une colonne d'audit indique explicitement si le concept a
 
 ## 1. Méthodes d'Adaptation & Fine-Tuning Efficace (PEFT)
 
+### Schéma Comparatif : FFT vs LoRA vs QLoRA
+
+```mermaid
+flowchart LR
+    subgraph FFT ["Full Fine-Tuning (FFT)"]
+        W1["Poids de Base W0<br>(FP16 - 100% Poids)"] -->|Mis à jour à chaque pas| W1_new["Nouveaux Poids W<br>(Gradients + États Adam = 32 Go+)"]
+    end
+
+    subgraph LoRA ["Low-Rank Adaptation (LoRA)"]
+        W2["Poids de Base W0<br>(FP16 - GELÉS)"] 
+        Input2["Entrée X"] --> W2
+        Input2 --> A2["Matrice A<br>(dim x r)"] --> B2["Matrice B<br>(r x dim)"]
+        W2 --> Add2["(+) Somme"]
+        B2 --> Add2
+        Add2 --> Out2["Sortie Y<br>(Seulement A et B entraînés: 0.3%)"]
+    end
+
+    subgraph QLoRA ["Quantized LoRA (QLoRA) - NOTRE CHOIX"]
+        W3["Poids de Base W0<br>(QUANTIFIÉS EN 4-BIT NF4)"] 
+        Input3["Entrée X"] --> W3
+        Input3 --> A3["Matrice A<br>(r=16, BF16)"] --> B3["Matrice B<br>(alpha=32, BF16)"]
+        W3 --> Add3["(+) Somme"]
+        B3 --> Add3
+        Add3 --> Out3["Sortie Y<br>(VRAM < 15 Go sur Tesla T4 gratuite)"]
+    end
+```
+
 | Terme & Acronyme | Définition & Rôle Technique | Statut dans Notre Projet | Détails de Mise en Œuvre ou Justification |
 |:---|:---|:---:|:---|
 | **PEFT**<br>*(Parameter-Efficient Fine-Tuning)* | Ensemble de techniques permettant d'adapter un modèle de fondation en n'entraînant qu'un pourcentage infime de paramètres (< 1%), gelant les autres. Réduit drastiquement l'empreinte VRAM et le temps d'entraînement. | ✅ **FAIT** | Bibliothèque Hugging Face `peft` utilisée pour entraîner l'adaptateur de Gemma 4 4B. Seuls **0.34% des paramètres** sont entraînés. |
@@ -31,6 +58,30 @@ Pour **chaque terme**, une colonne d'audit indique explicitement si le concept a
 
 ## 2. Alignement, Préférences & Fonctions de Récompense
 
+### Schéma : RLHF Subjectif vs Vérité Terrain Déterministe
+
+```mermaid
+flowchart TD
+    subgraph Classical ["RLHF Classique (Chatbots Généralistes)"]
+        Prompt1["Prompt Utilisateur"] --> LLM1["LLM Générateur"]
+        LLM1 --> R1["Réponse A"] & R2["Réponse B"]
+        R1 & R2 --> Human["Annotateur Humain<br>(Préférence Subjective)"]
+        Human --> RewardModel["Modèle de Récompense (RM)"]
+        RewardModel --> PPO["Optimiseur PPO<br>(Très instable, lourd)"]
+        PPO -.->|Mise à jour politique| LLM1
+    end
+
+    subgraph Deterministic ["Notre Alignement par Exécution Réelle (Code d'Entreprise)"]
+        Prompt2["Ticket d'Incident Réel"] --> Gemma["Agent Gemma 4"]
+        Gemma --> Patch["Patch SEARCH/REPLACE"]
+        Patch --> Docker["Bac à Sable Docker (Apache/MariaDB)"]
+        Docker --> Oracle["Oracle E2E Playwright + Smoke Tests"]
+        Oracle -->|Crash / Exception| Fail["Signal NÉGATIF (-1)"]
+        Oracle -->|Succès & 0 Régression| Pass["Signal POSITIF (+1)"]
+        Pass --> Trajectory["Trajectoire Certifiée (SFT / DPO)"]
+    end
+```
+
 | Terme & Acronyme | Définition & Rôle Technique | Statut dans Notre Projet | Détails de Mise en Œuvre ou Justification |
 |:---|:---|:---:|:---|
 | **RLHF**<br>*(Reinforcement Learning from Human Feedback)* | Alignement historique du modèle via un modèle de récompense (Reward Model) entraîné sur des préférences humaines, optimisé par l'algorithme PPO. | ❌ **ÉCARTÉ** | Trop instable, lourd et subjectif pour la réparation de code. En ingénierie logicielle, la vérité n'est pas une préférence humaine, c'est **l'exécution binaire des tests**. |
@@ -42,6 +93,15 @@ Pour **chaque terme**, une colonne d'audit indique explicitement si le concept a
 ---
 
 ## 3. Quantification, Formats & Inférence
+
+```mermaid
+flowchart LR
+    FP32["FP32 (Standard IEEE)<br>32 bits / poids<br>100% VRAM (16 Go+)"] -->|Réduction standard| BF16["BF16 / FP16<br>16 bits / poids<br>50% VRAM (~8 Go)"]
+    BF16 -->|Quantification INT8| INT8["INT8 (Linéaire)<br>8 bits / poids<br>25% VRAM (~4 Go)"]
+    BF16 -->|Quantification NF4| NF4["NF4 (NormalFloat 4)<br>4 bits informationnels<br>12.5% VRAM (~2.2 Go)"]
+    NF4 --> DoubleQ["Double Quantification (DQ)<br>Quantification des échelles<br>-0.37 bit/paramètre"]
+    DoubleQ --> FinalVRAM["VRAM Inférence Active : 4.29 Go<br>(Tourne sur GPU 6Go ou Laptop)"]
+```
 
 | Terme & Acronyme | Définition & Rôle Technique | Statut dans Notre Projet | Détails de Mise en Œuvre ou Justification |
 |:---|:---|:---:|:---|
@@ -56,6 +116,15 @@ Pour **chaque terme**, une colonne d'audit indique explicitement si le concept a
 
 ## 4. Architecture & Composants Internes des Transformers
 
+```mermaid
+flowchart TD
+    Tokens["Séquence de Tokens d'Entrée"] --> RoPE["Encodage Positionnel Rotatoire (RoPE)<br>Maintient la géométrie des numéros de lignes"]
+    RoPE --> GQA["Grouped-Query Attention (GQA)<br>Partage des têtes Clé/Valeur entre têtes Requête"]
+    GQA --> KVCache["Cache KV Dynamique<br>Évite le recalcul des tokens passés"]
+    KVCache --> MLP["Couches denses Feed-Forward (Dense)"]
+    MLP --> OutTokens["Génération Token suivant (< 3s / réponse)"]
+```
+
 | Terme & Acronyme | Définition & Rôle Technique | Statut dans Notre Projet | Détails de Mise en Œuvre ou Justification |
 |:---|:---|:---:|:---|
 | **MoE**<br>*(Mixture of Experts)* | Architecture neuronale où seules certaines sous-parties du réseau (experts) sont activées pour chaque token (ex: Mixtral 8x7B, DeepSeek-V3). | ℹ️ **ÉTUDIÉ** | Analysé pour comparer l'énergie des modèles propriétaires géants (Claude/GPT-4o) face à l'efficience d'un modèle **dense** compact (Gemma 4 4B). |
@@ -68,7 +137,26 @@ Pour **chaque terme**, une colonne d'audit indique explicitement si le concept a
 
 ## 5. Ingénierie du Fine-Tuning & Innovations Green AI (Nos Percées)
 
-*Cette section regroupe les termes techniques cruciaux souvent omis des glossaires standards mais qui constituent le cœur de notre innovation technique.*
+### Schéma de la Percée : Cross-Entropy Standard vs `ChunkedLossTrainer`
+
+```mermaid
+flowchart TD
+    subgraph Standard ["Cross-Entropy Standard (CRASH OOM IMMÉDIAT)"]
+        Hidden1["États Cachés H<br>[Batch=1, SeqLen=2048, Dim=2560]"] --> Proj1["Projection lm_head Totale<br>[1, 2048, 262 144 tokens]"]
+        Proj1 --> Tenseur1["Tenseur de Logits Géant : 2.15 Go brut<br>+ Graph de Rétropropagation : > 28 Go VRAM"]
+        Tenseur1 --> OOM["❌ CRASH CUDA OOM (Out Of Memory sur GPU 16 Go)"]
+    end
+
+    subgraph Chunked ["Notre Innovation : ChunkedLossTrainer (-94% VRAM)"]
+        Hidden2["États Cachés H<br>[Batch=1, SeqLen=2048, Dim=2560]"] --> Loop["Découpage Séquentiel en Micro-Blocs (taille=256)"]
+        Loop --> C1["Micro-Bloc 1: tokens 0-256"]
+        Loop --> C2["Micro-Bloc 2: tokens 256-512"]
+        Loop --> Cn["Micro-Bloc n: tokens 1792-2048"]
+        C1 & C2 & Cn --> LossMicro["Projection & Perte Locale / 256 tokens<br>(VRAM Pic = 13.8 Go)"]
+        LossMicro --> Accum["Accumulation Mathématique Exacte de la Perte"]
+        Accum --> Success["✅ ENTRAÎNEMENT RÉUSSI SUR TESLA T4 GRATUIT"]
+    end
+```
 
 | Terme & Acronyme | Définition & Rôle Technique | Statut dans Notre Projet | Détails de Mise en Œuvre ou Justification |
 |:---|:---|:---:|:---|
@@ -82,6 +170,39 @@ Pour **chaque terme**, une colonne d'audit indique explicitement si le concept a
 ---
 
 ## 6. Architectures Agentiques, RAG & Réparation de Code (SWE)
+
+### Schéma : Le Déroulé Déterministe en 4 Tours + RAG de Jurisprudence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Ticket Utilisateur (PrestaShop / Dolibarr)
+    participant A as Agent Gemma 4
+    participant RAG as Moteur RAG BM25 (34k Précédents)
+    participant TFIDF as Moteur de Fenêtrage TF-IDF
+    participant Docker as Conteneur Docker (Live Runtime)
+    participant Oracle as Oracle Playwright & Smoke Tests
+
+    U->>A: Titre et description de l'incident
+    Note over A: TOUR 1 : LOCATE
+    A->>TFIDF: {"action": "locate", "keywords": ["propal", "stdClass", ...]}
+    TFIDF->>A: Liste de 3 à 5 classes suspectes
+    Note over A: TOUR 2 : READ
+    A->>TFIDF: {"action": "read", "files": ["propal.class.php"]}
+    RAG->>A: [RAG BM25] Injection de jurisprudence similaire (Top-1 historique)
+    TFIDF->>A: Tranche fenêtrée de 250 lignes autour de l'anomalie
+    Note over A: TOUR 3 : EDIT
+    A->>Docker: Blocs atomiques SEARCH/REPLACE
+    Note over Docker: TOUR 4 : EVALUATION
+    Docker->>Oracle: Application du patch & exécution tests
+    alt Oracle et Smoke Tests Réussis
+        Oracle-->>U: VERDICT: PASS (0 Régression)
+    else Échec initial en Condition B (Replay)
+        Oracle->>A: Traceback d'exécution de l'échec (Tour de Rejeu)
+        A->>Docker: Nouveau patch corrigé SEARCH/REPLACE
+        Docker->>Oracle: Seconde évaluation -> PASS
+    end
+```
 
 | Terme & Acronyme | Définition & Rôle Technique | Statut dans Notre Projet | Détails de Mise en Œuvre ou Justification |
 |:---|:---|:---:|:---|
@@ -98,6 +219,25 @@ Pour **chaque terme**, une colonne d'audit indique explicitement si le concept a
 
 ## 7. Évaluation, Métriques & Métrologie Énergétique
 
+### Schéma Comparatif : Souveraineté & Empreinte Énergétique (Edge vs Cloud)
+
+```mermaid
+flowchart LR
+    subgraph Cloud ["Modèles Propriétaires Déportés (Claude 3.5 / GPT-4o)"]
+        Req1["Prompt Monolithique<br>(30k tokens / tour)"] --> Cluster["Grappe Datacenter Hyperscaler<br>(Nœuds HGX 8x H100 - 700W / GPU)"]
+        Cluster --> Cost["Coût Financier : ~0.36 $ / bug<br>(1 800 $ pour 5 000 tickets)"]
+        Cluster --> Carbon["Consommation : ~85 Wh / bug<br>(Refroidissement PUE 1.3 inclus)"]
+        Cluster --> Risk["Risque Souveraineté : Données & Code<br>émis vers des serveurs tiers US"]
+    end
+
+    subgraph Edge ["Notre Solution : Gemma 4 (4B) LoRA Local Frugal"]
+        Req2["Fenêtrage Ciblé<br>(70-250 lignes)"] --> GPU2["GPU Modeste / Grand Public<br>(1x Nvidia Tesla T4 ou RTX 3060 - 70W)"]
+        GPU2 --> Cost2["Coût Financier : 0,00 €<br>(Amortissement matériel immédiat)"]
+        GPU2 --> Carbon2["Consommation : 1.91 Wh / bug<br>(Équivalent ampoule LED 12 min)"]
+        GPU2 --> Risk2["Souveraineté 100% On-Premise<br>Air-Gapped, conforme RGPD / PCI-DSS"]
+    end
+```
+
 | Terme & Acronyme | Définition & Rôle Technique | Statut dans Notre Projet | Détails de Mise en Œuvre ou Justification |
 |:---|:---|:---:|:---|
 | **SWE-bench** | Le benchmark mondial de référence (Princeton) évaluant les agents sur la résolution de bugs GitHub réels (quasi exclusivement en Python). | ℹ️ **SOURCE D'INSPIRATION** | Nous comblons le vide laissé par SWE-bench en créant le premier benchmark similaire sur **le web réel d'entreprise (PHP monolithique)**. |
@@ -110,15 +250,15 @@ Pour **chaque terme**, une colonne d'audit indique explicitement si le concept a
 
 ---
 
-## Synthèse Graphique des Choix d'Ingénierie
+## 8. Synthèse Finale des Choix d'Ingénierie
 
 ```mermaid
 mindmap
   root((Gemma 4 Legacy Replay))
     Fine-Tuning Frugal
-      PEFT / QLoRA 4-bit (NF4)
-      ChunkedLossTrainer (-94% VRAM)
-      Gradient Checkpointing
+      PEFT / QLoRA 4-bit (NF4 + Double Quant)
+      ChunkedLossTrainer (-94% VRAM backprop)
+      Gradient Checkpointing & Accumulation
       bfloat16 + GQA Natif
       FFT & Cloud API Rejetes (0,00 €)
     Verification Deterministe
