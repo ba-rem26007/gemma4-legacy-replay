@@ -1,5 +1,10 @@
 # Gemma 4 × PrestaShop : Réparation Autonome de Code Legacy par Rejeu Dynamique et QLoRA Frugal
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ba-rem26007/gemma4-legacy-replay/blob/main/notebook/colab_gemma4_evaluation.ipynb)
+[![Live Protected Platform](https://img.shields.io/badge/Live_Showcase-kaggle.d1dev.fr-06b6d4)](https://kaggle.d1dev.fr)
+[![Energy Metrology](https://img.shields.io/badge/Energy-1.9_Wh/bug-10b981)](https://kaggle.d1dev.fr/SOBRIETE.md)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 Projet pour le hackathon officiel **Kaggle Gemma 4**.
 
 **Question de recherche fondamentale** : Un modèle compact et ouvert de 4 milliards de paramètres (**Gemma 4 4B**) peut-il réparer du code d'entreprise complexe et hautement couplé (**PrestaShop 8/9**, PHP 8.1, Symfony 6, MySQL) lorsqu'il est guidé par un vérificateur d'exécution déterministe (rejeu de tests E2E Playwright sur conteneurs Docker réinitialisés) ?
@@ -44,6 +49,7 @@ Projet pour le hackathon officiel **Kaggle Gemma 4**.
 * **[RAPPORT_GLOBAL.md](docs/RAPPORT_GLOBAL.md)** : Rapport scientifique et technique exhaustif all-in-one (52+ KB, 11 sections, incluant le Writeup officiel Kaggle en anglais).
 * **[PLAN_DE_TESTS.md](docs/PLAN_DE_TESTS.md)** : Cahier de recette intégral des 42 bugs du Cœur et des 42 modules tiers, pyramide en 5 niveaux, grille d'audit Kaggle.
 * **[MODULES_TIERS.md](docs/MODULES_TIERS.md)** : Répertoire d'architecture et benchmark d'extensibilité des 42 modules communautaires.
+* **[colab_gemma4_evaluation.ipynb](notebook/colab_gemma4_evaluation.ipynb)** : Notebook Google Colab interactif (GPU T4 gratuit, rejeu #40971, graphiques Pareto et tests statistiques).
 * **Plateforme Web Démonstrateur** : `https://kaggle.d1dev.fr/rapport` (Basic Auth : `d1dev` / `d1dev`, bouton 1-clic pour copie intégrale).
 
 ---
