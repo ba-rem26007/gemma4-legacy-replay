@@ -27,6 +27,7 @@
 * **Auteur / Équipe** : Rémi Soubeyrand & Antigravity (Google DeepMind Agentic Pair Programming)
 * **Dépôt Local & Public** : `/home/elrems/kaggle` · GitHub : `ba-rem26007/gemma4-legacy-replay`
 * **Plateforme de Démonstration Protégée** : `https://kaggle.d1dev.fr` (Accès Basic Auth : `d1dev` / `d1dev`)
+* **Notebook Google Colab Clé en Main (GPU Gratuit T4)** : [colab_gemma4_evaluation.ipynb](https://colab.research.google.com/github/ba-rem26007/gemma4-legacy-replay/blob/main/notebook/colab_gemma4_evaluation.ipynb)
 * **Modèles Évalués** : 
   - **Gemma 4 31B (API)** : Exploration de la borne supérieure et du rejeu dynamique.
   - **Google Gemma 4 (4B) Base** : Baseline Zero-Shot pour isoler rigoureusement l'apport du fine-tuning.
@@ -494,26 +495,37 @@ The autonomous repair pipeline applies out-of-the-box to 10 community modules (`
 
 # 11. GUIDE DE REPRODUCTION CLÉ EN MAIN
 
-### 1. Cloner et Installer les Dépendances
+### Option A : Rejeu Immédiat sur Google Colab (1 Clic, GPU T4 Gratuit)
+Pour auditer les résultats, exécuter l'inférence du modèle LoRA sur le bug emblématique #40971 et recalculer l'ensemble des 463 tests et statistiques formelles sans installer Docker :
+* **Lien Direct Notebook Colab** : [Ouvrir dans Google Colab](https://colab.research.google.com/github/ba-rem26007/gemma4-legacy-replay/blob/main/notebook/colab_gemma4_evaluation.ipynb)
+* Tout est pré-configuré : diagnostic GPU, téléchargement de l'adaptateur LoRA 134 Mo, inférence du patch canonique et tracés graphiques (Pareto, Perte SFT, Énergie).
+
+---
+
+### Option B : Exécution Locale Déterministe sur Docker
+
+#### 1. Cloner et Installer les Dépendances
 ```bash
 git clone https://github.com/ba-rem26007/gemma4-legacy-replay.git
 cd gemma4-legacy-replay
 npm install @playwright/test
 ```
 
-### 2. Télécharger les Poids LoRA Entraînés
+#### 2. Télécharger les Poids LoRA Entraînés (Miroir Sécurisé)
 ```bash
-wget https://anniv.soubeyrand.dev/lora.zip -O training/lora_final/gemma4_lora_final.zip
-unzip training/lora_final/gemma4_lora_final.zip -d training/lora_final/extracted/
+curl -u d1dev:d1dev -O https://kaggle.d1dev.fr/gemma4_lora_final.zip
+unzip gemma4_lora_final.zip -d training/lora_final/extracted/
 ```
 
-### 3. Lancer l'Évaluation Complète (Condition E)
+#### 3. Lancer l'Évaluation Complète (Condition E)
 ```bash
-# Instance psbench2 sur port 8082
-PSB=2 bash runs/run_test_E.sh <URL_SERVEUR_INFERENCE_OU_NGROK>
+# Instance psbench2 sur port 8082 avec réinitialisation .snap-psbench2.sql.gz
+PSB=2 bash bench/checkout.sh 40971 pre
+python3 agent/run.py --bugs 40971 --condition E
+python3 bench/eval.py 40971
 ```
 
-### 4. Recalculer les Métriques Déterministes
+#### 4. Recalculer les Métriques Déterministes (0,00 €)
 ```bash
 python3 bench/results.py
 ```
