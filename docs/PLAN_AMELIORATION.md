@@ -53,13 +53,13 @@ Les 89 exemples concernent le run décrit par le journal cité. Ce constat ne pr
 
 **Priorité : élevée. Dépend de la phase 1.**
 
-- [ ] Mesurer les longueurs avec le tokenizer et le template exacts utilisés à l’entraînement.
-- [ ] Compacter les lectures de code en gardant les signatures, le contexte nécessaire et les blocs SEARCH/REPLACE complets.
-- [ ] Étudier un découpage par décision assistant : chaque exemple conserve le contexte nécessaire à cette décision et son résultat attendu. Garder tous les exemples d’un même bug dans le même split.
-- [ ] Comparer sur un essai court les longueurs 2 048 / 4 096, puis 8 192 seulement si la mémoire et le temps disponibles le permettent.
-- [ ] Vérifier le masquage : prompts, retours d’outils et padding à `-100`, présence de tokens assistant utiles, cohérence du décalage causal.
-- [ ] Rejouer les correctifs des exemples transformés pour vérifier que la compression conserve leur sens et leur applicabilité.
-- [ ] Exporter un manifeste après tokenisation, avec les exclusions motivées et le nombre de tokens effectivement supervisés.
+- [x] Mesurer les longueurs avec le tokenizer et le template exacts utilisés à l’entraînement.
+- [x] Compacter les lectures de code en gardant les signatures, le contexte nécessaire et les blocs SEARCH/REPLACE complets.
+- [x] Étudier un découpage par décision assistant : chaque exemple conserve le contexte nécessaire à cette décision et son résultat attendu. Garder tous les exemples d’un même bug dans le même split.
+- [x] Comparer sur un essai court les longueurs 2 048 / 4 096, puis 8 192 seulement si la mémoire et le temps disponibles le permettent.
+- [x] Vérifier le masquage : prompts, retours d’outils et padding à `-100`, présence de tokens assistant utiles, cohérence du décalage causal.
+- [x] Rejouer les correctifs des exemples transformés pour vérifier que la compression conserve leur sens et leur applicabilité.
+- [x] Exporter un manifeste après tokenisation, avec les exclusions motivées et le nombre de tokens effectivement supervisés.
 
 **Livrables :** corpus versionné, statistiques après tokenisation et configuration d’entraînement validée sur un essai court.
 
