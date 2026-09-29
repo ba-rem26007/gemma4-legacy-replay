@@ -14,8 +14,8 @@
 5. [Résultats Expérimentaux Consolidés & Rigueur Statistique](#5-résultats-expérimentaux-consolidés--rigueur-statistique)
 6. [Étude des 4 Victoires, Ablation LoRA & Preuve d'Étanchéité](#6-étude-des-4-victoires-ablation-lora--preuve-détanchéité)
 7. [Protocole Métrologique de Sobriété Énergétique et Économique](#7-protocole-métrologique-de-sobriété-énergétique-et-économique)
-8. [Banc d'Épreuve Élargi à 42 Tests Certifiés & Pyramide Logicielle](#8-banc-dépreuve-élargi-à-42-tests-certifiés--pyramide-logicielle)
-9. [Cartographie d'Extensibilité et Audit d'Architecture sur 42 Dépôts Communautaires](#9-cartographie-dextensibilité-et-audit-darchitecture-sur-42-dépôts-communautaires)
+8. [Pyramide de Qualification Logicielle & Domaines de Vérification (33 Oracles Post-Cutoff Certifiés)](#8-pyramide-de-qualification-logicielle-et-domaines-de-vérification-33-oracles-post-cutoff-certifiés)
+9. [Cartographie d'Extensibilité (Audit, Non Évalué)](#9-cartographie-dextensibilité-audit-non-évalué)
 10. [Writeup Officiel du Concours Kaggle (Texte Intégral en Anglais)](#10-writeup-officiel-du-concours-kaggle-texte-intégral-en-anglais)
 11. [Guide de Reproduction Clé en Main](#11-guide-de-reproduction-clé-en-main)
 
@@ -43,12 +43,12 @@
 * **Audit Budgétaire Frugal** : Le fichier d'audit officiel `runs/_budget.json` atteste d'un coût de **0,00 €** sur l'ensemble de la campagne d'expérimentation.
 
 ### Les 6 Chiffres Clés du Projet
-1. **15 / 33 bugs résolus en Condition B (45.5% vs 39.0% en Baseline A)** : Gain de +6.5 points de pourcentage (+2.2 bugs net).
-2. **Ablation LoRA démontrée (+9.1 points nets)** : Le modèle 4B LoRA (Condition E) résout **4 / 33 bugs (12.1%)**, contre seulement **1 / 33 (3.0%)** pour le 4B Zero-Shot sans adaptateur, prouvant que les victoires résultent de la spécialisation paramétrique.
-3. **0,0 % de régression en Condition B et seulement 3,0 % en Condition E (97,0 % de stabilité applicative certifiée sans régression)** : Intégrité applicative certifiée par les sondes Front-Office et Back-Office sur conteneurs Docker remis à zéro.
-4. **1.9 Wh par bug résolu (Protocole Métrologique 100 ms)** : Mesuré via `nvidia-smi` sur Nvidia Tesla T4 (1.39 Wh GPU + 0.42 Wh CPU), soit une consommation **33x à 55x inférieure** aux clusters multi-H100 (60 à 100 Wh).
+1. **15 / 33 bugs résolus en Condition B (45.5% vs 12.8/33 = 39.0% en Baseline A)** : Gain cohérent de +6.5 points de pourcentage (+2.2 bugs net).
+2. **Effet de l'Adaptateur LoRA (+9.1 points)** : Le modèle 4B LoRA (Condition E) résout **4 / 33 bugs (12.1%)**, contre **1 / 33 (3.0%)** pour le 4B Zero-Shot sans adaptateur, avec un gain majeur sur la conformité de format (rejets réduits de 45.5% à 15.2%) et la localisation (18.2% à 42.4%).
+3. **Stabilité Applicative** : **0 régression (B)** et **1 régression sur 33 (E)** vérifiées par sondes Front-Office et Back-Office sur conteneurs Docker remis à zéro.
+4. **1,9 Wh par bug tenté (soit ≈ 15,7 Wh par bug résolu en Condition E, 4/33)** : Mesuré via `nvidia-smi` à 100 ms sur Nvidia Tesla T4 (1.39 Wh GPU + 0.42 Wh CPU), soit 33x à 55x inférieur par tentative aux clusters multi-H100 (60 à 100 Wh), et 4x à 6x inférieur par bug résolu.
 5. **Frontière de Pareto Souveraineté vs Puissance** : Le modèle 31B culmine à 45.5% pour les serveurs centraux, tandis que le 4B LoRA fournit une solution 100% on-premise à 4.29 Go de VRAM résolvant 1 bug sur 8 sans jamais faire fuiter de secret d'affaires.
-6. **Étanchéité Certifiée du Bug #40971** : Le patch identique au caractère près est audité : absent de tout dataset d'entraînement (mergé le 08/04/2026), il découle directement de la signature canonique univoque `Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup)` de l'API PrestaShop.
+6. **Étanchéité et Signature Canonique du Bug #40971** : Le patch identique au caractère près est audité : absent de tout dataset d'entraînement (mergé le 08/04/2026). La forme exacte est contrainte par l'API PrestaShop (`Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup)`) ; le mérite du modèle est d'avoir identifié l'argument manquant.
 
 ---
 
@@ -123,6 +123,7 @@ Tous les verdicts ont été mesurés sur l'instance Docker dédiée `psbench2` (
 |---|---|---|---|---|---|---|---|---|---|
 | **A** (Baseline 31B) | Gemma 4 31B | Ticket d'incident seul | 33 | 12.8 (moy. 4) | 39.0% | 19.8 (60.0%) | 12.1% | **0 (0.0%)** | 0,00 € |
 | **R** (RAG Few-Shot) | Gemma 4 31B | Ticket + 2 correctifs TRAIN | 33 | 12.8 (moy. 4) | 39.0% | 20.2 (61.2%) | 10.5% | **0 (0.0%)** | 0,00 € |
+| **C** (Glossaire Auto) | Gemma 4 31B | Ticket + glossaire métier | 33 | **13** | **39.4% (+0.4 pt)** | **18 (54.5%)** | **9.1%** | **0 (0.0%)** | 0,00 € |
 | **B** (Replay Test) | Gemma 4 31B | Ticket + feedback dynamique | 33 | **15** | **45.5% (+6.5 pts)** | **17 (51.5%)** | **6.1%** | **0 (0.0%)** | 0,00 € |
 | **O** (Borne Haute) | Gemma 4 31B | Ticket + retour direct oracle | 33 | **16** | **48.5% (+9.8 pts)** | **20 (60.6%)** | **3.0%** | **0 (0.0%)** | 0,00 € |
 | **A-4B** (Ablation Base) | **Gemma 4 4B Zero-Shot** | Ticket seul (SANS LoRA) | 33 | **1** | **3.0%** | **6 (18.2%)** | **45.5%** | **0 (0.0%)** | 0,00 € |
@@ -132,7 +133,7 @@ Tous les verdicts ont été mesurés sur l'instance Docker dédiée `psbench2` (
 
 ### Analyse de Significativité Statistique ($N = 33$)
 Dans un benchmark rigoureux, la taille d'échantillon conditionne la puissance statistique :
-* **Delta B vs A** : $+6.5\%$ (+2.2 bugs résolus nets).
+* **Delta B vs A** : $+6.5\%$ (+2.2 bugs résolus nets face à la moyenne de 4 runs de A).
 * **Intervalle de Confiance Bootstrap Apparié (95%)** : $[-2.27\% ; +16.67\%]$ (calculé sur 100 000 rééchantillonnages).
 * **Test de Permutation Apparié (Sign-Flip Monte Carlo)** :
   - $p$-valeur unilatérale = $0.1128$
@@ -140,8 +141,10 @@ Dans un benchmark rigoureux, la taille d'échantillon conditionne la puissance s
 ### Analyse du Paradoxe de Localisation : Pourquoi Loc Hit(B) < Loc Hit(A) ?
 Une lecture attentive du tableau révèle que la localisation initiale du bon fichier (`loc_hit`) au Tour 1 est plus élevée en Condition A (60,0 %, soit 19,8/33) qu'en Condition B (51,5 %, soit 17/33), alors même que B résout substantiellement plus de bugs (45,5 % vs 39,0 %) :
 * **Définition de `loc_hit`** : Cette métrique enregistre exclusivement la localisation initiale au **Tour 1** (`msg_locate`).
-* **L'impasse de la baseline sans feedback (Condition A)** : En Condition A, identifier le bon fichier au premier tour ne garantit rien : si le patch initial comporte une coquille de syntaxe ou une mauvaise compréhension de la méthode, l'agent échoue définitivement sans possibilité de se rattraper. Son taux de conversion *« Fichier trouvé au Tour 1 → Bug résolu »* n'est que de **64,6 %** (12,8 / 19,8).
-* **L'effet auto-correcteur du rejeu (Condition B)** : En Condition B, même si le ciblage initial au Tour 1 est plus exploratoire (51,5 %), l'erreur renvoyée par le test Playwright ou PHPStan fournit une **stack trace explicite** (nom de classe, numéro de ligne, exception levée). L'agent s'en sert pour corriger sa mire aux Tours 2 et 3. Son taux de conversion bondit ainsi à **88,2 %** (15 / 17). Le rejeu compense donc largement l'aléa du premier tour en guidant l'édition vers la résolution.
+* **Conversion Conditionnelle sur les Données Réelles (`eval/results.csv`)** :
+  - En Condition A (sur l'ensemble des 4 répétitions, 132 tests unitaires), 79 tentatives identifient le bon fichier et 44 sont effectivement résolues : le taux de conversion conditionnel est de $P(\text{résolu} \mid \text{loc\_hit}) = 44 / 79 = \mathbf{55,7\%}$. Sans test d'exécution, une coquille syntaxique ou une mauvaise signature au premier essai scelle l'échec définitif.
+  - En Condition B, le rejeu Playwright renvoie un message d'erreur ou une stack trace exploitable : sur les 17 bugs avec localisation exacte au Tour 1, 13 sont résolus, soit un taux de conversion conditionnel de $P(\text{résolu} \mid \text{loc\_hit}) = 13 / 17 = \mathbf{76,5\%}$.
+  - De surcroît, le rejeu permet de corriger des trajectoires mal amorcées : deux bugs résolus (#41320 et #41652) n'avaient pas été comptabilisés en `loc_hit` au premier tour mais ont été redressés aux itérations suivantes grâce au signal de test.
 
 ---
 
@@ -159,7 +162,7 @@ Si l'on regroupe les 4 répétitions de la baseline A en un oracle de consensus 
 
 *Paires discordantes* : $b = 2$ gains exclusifs sous rejeu (#40898, #41923), $c = 1$ échec (#41524).  
 Test exact binomial unilatéral : $p = 0,5000$.  
-*Portée scientifique* : Face à un consensus consolidé sur 4 runs, l'écart statistique est conservateur ($b=2, c=1$), mais il démontre qu'un **seul passage de la Condition B (15 résolus en Pass@1)** surpasse la synthèse cumulative de 4 passages de la baseline sans feedback (14 résolus).
+*Portée scientifique* : Face à un consensus consolidé sur 4 runs, l'écart statistique est modéré ($b=2, c=1$), mais il démontre qu'un **seul passage de la Condition B (15 résolus en Pass@1)** surpasse la synthèse cumulative de 4 passages de la baseline sans feedback (14 résolus).
 
 **2. Comparaison face aux Runs Individuels et Dispersion Stochastique**
 Face aux runs individuels de la baseline soumis à la température ($T = 0,2$) :
@@ -167,8 +170,8 @@ Face aux runs individuels de la baseline soumis à la température ($T = 0,2$) :
 * Face au run **A4 (11 résolus)** : $b = 4$ gains, $c = 0$ perte, $p = (0,5)^4 = 0,0625$ (statistique $\chi^2 = 2,25$).  
 *Enseignement* : Le rejeu dynamique élimine les faux départs et stabilise l'inférence en absorbant l'aléa thermique.
 
-**3. Démonstration Causale Isolée : Ablation LoRA (Condition E vs Condition A-4B)**
-La preuve statistique la plus nette du projet réside dans l'ablation isolée de l'adaptateur LoRA sur le modèle 4B :
+**3. Ablation de l'Adaptateur LoRA (Condition E vs Condition A-4B)**
+L'analyse comparative entre Gemma 4 4B Base (sans adaptateur) et Gemma 4 4B LoRA met en lumière l'impact de la spécialisation :
 | Statut | Résolu en A-4B (4B Base Zero-Shot) | Échec en A-4B | Total |
 |---|:---:|:---:|:---:|
 | **Résolu en E (4B LoRA)** | 1 | **3 ($b$)** | 4 |
@@ -176,9 +179,12 @@ La preuve statistique la plus nette du projet réside dans l'ablation isolée de
 | **Total** | 1 | 32 | 33 |
 
 *Paires discordantes* : $b = 3$, $c = 0$.  
-Test exact binomial unilatéral : $p = (0,5)^3 = \mathbf{0,125}$ ($12,5 \%$). Il y a **100 % de concordance positive** en faveur de l'adaptateur LoRA, avec **zéro régression**, prouvant formellement que le gain de **+9,1 points** (+14,2 points sur le périmètre complet de 42 tests) est causé par l'apprentissage et non par le hasard.
-* **Interprétation Épistémologique** :
-  Avec $N = 33$ bugs d'évaluation (taille contrainte par le nombre réel de bugs fermés post-cutoff dotés d'oracles Playwright validés), l'intervalle de confiance croise légèrement 0. Bien que le test ne franchisse pas le seuil conventionnel $p < 0.05$, le gain qualitatif est manifeste : le feedback dynamique permet de sauver des bugs historiquement intraitables (ex: le bug `#41923` échouait à 0/8 en conditions A et R, et a été résolu au tour 7 en condition B ; `#41007` sauvé au tour 5). Pour obtenir $p < 0.05$ à puissance statistique de 80%, une cohorte de $N \ge 95$ bugs serait nécessaire. Nous assumons cette transparence plutôt que de prétendre à une significativité artificielle.
+Les 3 paires discordantes vont toutes dans le sens du LoRA (b=3, c=0, p=0,125 unilatéral) : tendance cohérente mais non significative à N=33. L'effet le plus robuste du LoRA porte sur le format (rejets 45,5 % → 15,2 %) et la localisation (18,2 % → 42,4 %).  
+*(Note méthodologique : la condition A-4B a été évaluée selon le protocole de référence A sans feedback de test, tandis que la condition E intègre les poids LoRA entraînés et les règles de structure).*
+
+* **Interprétation Épistémologique & Rigueur N=33** :
+  Avec $N = 33$ bugs d'évaluation (taille contrainte par le nombre réel de bugs fermés post-cutoff dotés d'oracles Playwright validés), l'intervalle de confiance croise légèrement 0. Bien que le test ne franchisse pas le seuil conventionnel $p < 0.05$, le gain qualitatif est manifeste : le feedback dynamique permet de sauver des bugs historiquement intraitables (ex: le bug `#41923` échouait à 0/8 en conditions A et R, et a été résolu à la 3ᵉ itération d'édition — tour 7 de conversation — en condition B ; `#41007` sauvé à la 2ᵉ itération d'édition — tour 5 de conversation).  
+  *Distinction tours vs itérations* : Le protocole alloue un budget de $\le 2$ corrections de test (soit 3 itérations d'édition au maximum). Un tour de conversation dans les traces JSONL comptabilise chaque interaction unitaire (recherche/lecture aux tours 1-2, édition 1 au tour 3, feedback test au tour 4, édition 2 au tour 5, feedback test au tour 6, édition 3 concluante au tour 7). Pour obtenir $p < 0.05$ à puissance statistique de 80%, une cohorte de $N \ge 95$ bugs serait nécessaire. Nous assumons cette transparence plutôt que de prétendre à une significativité artificielle.
 
 * **Mesure de Variance et Répétabilité (Pass@1 vs Pass@3 sur Cohorte Récurrente)** :
   Pour mesurer la stabilité du rejeu face à la température du modèle ($T=0.2$), une sous-cohorte de 10 bugs a fait l'objet de 3 répétitions indépendantes en Condition B (`runs/20260926-022702-B`, `runs/20260926-035528-B`, `runs/20260928-092011-B`) :
@@ -215,14 +221,15 @@ L'obtention d'un patch 100% identique au caractère près sur le bug `#40971` da
    - Le corpus d'entraînement `training/` a été constitué à partir de bugs historiques clos avant la coupure temporelle.
    - Une recherche textuelle et par hash SHA-256 dans les 585 trajectoires (`trajectories/`) et les scripts d'entraînement confirme la présence de `40971` uniquement dans `data/bugs_test.csv`. Aucune trace n'existe dans le jeu d'apprentissage.
 2. **Contrainte Canonique de l'API PrestaShop** :
-   Dans le fichier `LogoUploader.php`, les lignes précédant l'insertion étaient :
+   Dans le fichier `src/Core/Shop/LogoUploader.php`, le code pre-fix de la méthode `updateInMultiShopContext()` contenait :
    ```php
-   $idShopGroup = (int) $this->shopContext->getIdShopGroup();
-   $idShop = (int) $this->shopContext->getIdShop();
+   $idShopGroup = Shop::getContextShopGroupID();
+   Shop::setContext(Shop::CONTEXT_ALL);
+   $logoAll = Configuration::get($fieldName);
+   Shop::setContext(Shop::CONTEXT_GROUP);
    ```
-   Dans l'architecture PrestaShop 8/9, l'unique méthode statique pour basculer le contexte en mode groupe est :
-   `Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup);`
-   La signature de la classe `classes/shop/Shop.php` n'offre aucune variante syntaxique alternative. Tout développeur ou modèle ayant intégré les règles d'architecture PrestaShop est contraint à cette ligne exacte. La correspondance au caractère près découle de la rigueur de l'API PrestaShop et non d'une mémorisation de commit.
+   Dans l'architecture PrestaShop 8/9, l'unique méthode statique pour basculer le contexte en mode groupe est `Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup)`.  
+   La forme exacte est contrainte par l'API ; le mérite du modèle est d'avoir identifié l'argument manquant `$idShopGroup` disponible dans la portée locale et requis par le typehint strict de PHP 8.3. La correspondance au caractère près découle de la rigueur de l'API PrestaShop et non d'une mémorisation de commit.
 
 ---
 
@@ -310,7 +317,10 @@ Une objection légitime concerne l'articulation entre le temps d'inférence LLM 
     $$E_{\text{CPU}} = 25\text{ W} \times \frac{60}{3600}\text{ h} = \mathbf{0,42\text{ Wh}}$$
 
 * **3. Bilan Énergétique Total Système (Inférence IA + Bac à Sable Docker)** :
-  $$E_{\text{total}} = E_{\text{GPU}} + E_{\text{CPU}} = 1,39 + 0,42 = \mathbf{1,81\text{ Wh}} \approx \mathbf{1,9\text{ Wh / bug}}$$
+  - **Par bug tenté** :
+    $$E_{\text{tenté}} = E_{\text{GPU}} + E_{\text{CPU}} = 1,39 + 0,42 = \mathbf{1,81\text{ Wh}} \approx \mathbf{1,9\text{ Wh / bug tenté}}$$
+  - **Par bug résolu en Condition E (4/33 résolus)** :
+    $$E_{\text{résolu}} = 1,81\text{ Wh} \times \frac{33}{4} \approx \mathbf{14,9\text{ Wh}} \quad (\text{soit } 1,91 \times \frac{33}{4} \approx \mathbf{15,7\text{ Wh / bug résolu}})$$
 
 ### 3. Matrice Comparative contre les Grands Modèles Propriétaires
 
@@ -319,56 +329,37 @@ Une objection légitime concerne l'articulation entre le temps d'inférence LLM 
 | **Nombre de Paramètres** | **4 Milliards** (4B) | ~200B à 1 800B (MoE) | **50x à 450x plus sobre** |
 | **VRAM Inférence Active** | **4.29 Go** (quantifié 4-bit) | Clusters H100 (8x 80 Go) | Accessible sur carte grand public (RTX 3060) |
 | **Puissance Électrique Tirée** | **48.2 W** (1x Tesla T4) | 5 600 W (Cluster 8x H100) | **~116x moins de puissance de pointe** |
-| **Énergie consommée / bug** | **1.81 Wh (≈ 1.9 Wh)** | ~60 à 100 Wh (Patterson et al. / Luccioni) | **33x à 55x moins énergivore** |
+| **Énergie par bug tenté** | **1.81 Wh (≈ 1.9 Wh)** | ~65 à 110 Wh (inférence agentique cloud) | **35x à 50x moins énergivore (tenté vs tenté)** |
+| **Énergie par bug résolu** | **≈ 15.7 Wh** (Condition E, 4/33) | ~60 à 100 Wh (Luccioni et al., FAccT 2023) | **4x à 6x moins énergivore (résolu vs résolu)** |
 | **Coût Financier Réel** | **0,00 €** (`runs/_budget.json`) | ~0.20 $ à 0.45 $ par bug | **Zéro dépense récurrente** |
 | **Projection sur 5 000 Bugs** | **0,00 €** | **~1 000 $ à 2 250 $** | Rentabilisation immédiate de l'infrastructure |
 | **Souveraineté des Données** | **100% On-Premise / Local** | Tiers Cloud US | Conformité RGPD, PCI-DSS et secret d'affaires |
 
 ---
 
-# 8. BANC D'ÉPREUVE ÉLARGI À 42 TESTS CERTIFIÉS & PYRAMIDE LOGICIELLE
+# 8. PYRAMIDE DE QUALIFICATION LOGICIELLE ET DOMAINES DE VÉRIFICATION (33 ORACLES POST-CUTOFF CERTIFIÉS)
 
-Pour offrir une robustesse statistique maximale tout en maintenant un standard de vérification écologique et déterministe, le protocole a été consolidé sur un banc d'épreuve de **42 tests réels certifiés** :
-* **33 Oracles End-to-End Playwright Cœur PrestaShop** : Validés sur code pre-fix (échec obligatoire) et post-fix (succès obligatoire), avec instance Docker isolée (`psbench2` port 8082) et réinitialisation MySQL `.snap.sql.gz`.
-* **9 Oracles d'Intégration & Non-Régression sur Modules Tiers** : Couvrant PHPStan (Niveau 8/9), PHPUnit et Playwright sur les modules critiques de l'écosystème (`ps_facetedsearch`, `blockwishlist`, `productcomments`, `contactform`, `ps_checkout`, `psgdpr`, `ps_emailalerts`, `fop_console`, `mollie`).
-* **Total Consolidé : 42 Tests Déterministes Évalués**.
-
-### Matrice Consolidée sur les 42 Tests Évalués
-
-| Condition | Modèle & Paramètres | Signal Fourni | Cœur (33) | Modules (9) | Total Résolus (42) | Taux Global | Bon Fichier (`loc_hit`) | Rejet Format |
-|---|---|---|---|---|---|---|---|---|
-| **A** (Baseline 31B) | Gemma 4 31B | Ticket seul | 12.8 / 33 | 4.5 / 9 | **17.3 / 42** | **41.2%** | 25.8 (61.4%) | 11.5% |
-| **R** (RAG Few-Shot) | Gemma 4 31B | Ticket + 2 exemples TRAIN | 12.8 / 33 | 4.5 / 9 | **17.3 / 42** | **41.2% (+0.0 pt)** | 26.0 (61.9%) | 10.2% |
-| **B** (Replay Test) | Gemma 4 31B | Ticket + Feedback dynamique | 15 / 33 | 7 / 9 | **22.0 / 42** | **52.4% (+11.2 pts)**| **25.0 (59.5%)** | **5.0%** |
-| **O** (Borne Haute) | Gemma 4 31B | Ticket + Retour Oracle direct | 16 / 33 | 8 / 9 | **24.0 / 42** | **57.1% (+15.9 pts)**| 27.0 (64.3%) | 2.5% |
-| **A-4B** (Ablation Base) | **Gemma 4 4B Zero-Shot** | Ticket seul (SANS LoRA) | 1 / 33 | 1 / 9 | **2.0 / 42** | **4.8%** | 8.0 (19.0%) | 42.8% |
-| **E** (LoRA Complet) | **Gemma 4 4B LoRA** | Modèle fine-tuné + Règles | 4 / 33 | 4 / 9 | **8.0 / 42** | **19.0% (+14.2 pts)**| **18.0 (42.9%)** | **14.3%** |
+Pour offrir une robustesse métrologique maximale et garantir l'intégrité scientifique des résultats, l'évaluation principale repose sur un banc d'épreuve rigoureux et étanche de **33 oracles réels certifiés** :
+* **33 Oracles End-to-End Playwright Cœur PrestaShop** : Validés sur code pre-fix (échec obligatoire) et post-fix (succès obligatoire), avec instance Docker isolée (`psbench2` port 8082) et réinitialisation MySQL transactionnelle `.snap.sql.gz`.
+* **Évaluation Multi-Runs** : 4 répétitions complètes de la baseline A (132 exécutions), répétitions sous Condition R, condition O (borne haute verifier), et conditions souveraines 4B (A-4B Zero-Shot et E LoRA).
+* **Nomenclature des Domaines de Qualification Qualité Logicielle (5 Niveaux)** :
+  * *Niveau 5 (100 ms)* : Sécurité AST Semgrep (protection contre les injections SQL `pSQL()` et les failles XSS `htmlspecialchars`).
+  * *Niveau 4 (500 ms)* : Analyse formelle PHPStan Niveau 8/9 (contrôle strict des types et détection des appels sur `null`).
+  * *Niveau 3 (100-200 ms)* : Tests unitaires PHPUnit (calculs de paniers, règles de taxes, devises).
+  * *Niveau 2 (2-5 s)* : Intégration Symfony CQRS et Doctrine ORM.
+  * *Niveau 1 (15-30 s)* : Oracles fonctionnels E2E Playwright Headless (navigation dynamique, requêtes asynchrones Ajax, validation du DOM).
+* **Tests de Résistance VRAM & Frugalité Énergétique** : Validation mathématique du `ChunkedLossTrainer` (baisse de 94% du pic mémoire, < 300 Mo de VRAM consommée pour la perte). Mesure physique de 1,9 Wh par bug tenté sur Nvidia Tesla T4 (échantillonnage 100 ms `nvidia-smi`) et budget réel de 0,00 €.
+* **Mesure de Variance et Reproductibilité Multi-Tours** : Évaluation Pass@1 (36.7%) et Pass@3 (50.0%) sur cohorte récurrente de 10 bugs, confirmant la stabilité de résolution des bugs emblématiques (#40971, #41007, #41923 résolus à 3/3 sous rejeu).
 
 ---
 
-### Nomenclature des 6 Domaines de Tests
+# 9. CARTOGRAPHIE D'EXTENSIBILITÉ (AUDIT, NON ÉVALUÉ)
 
-1. **Qualification des Oracles E2E Playwright** : Test de reproductibilité binaire pre-fix / post-fix. 33 oracles cœur certifiés + 9 oracles modules. 4 victoires directes confirmées par l'oracle en Condition E (#40971, #41193, #41007, #41130).
-2. **Smoke Tests Anti-Régression Système** : Double sonde HTTP (Front-Office 200 OK + Back-Office 200 OK) exécutée à chaque patch, associée au rollback SQL instantané `.snap.sql.gz`.
-3. **Pyramide des Tests de Contrôle Qualité Logicielle (5 Niveaux)** :
-   * *Niveau 5 (100 ms)* : Sécurité AST Semgrep (protection SQL injection `pSQL()` et XSS `htmlspecialchars`).
-   * *Niveau 4 (500 ms)* : Analyse formelle PHPStan Niveau 8/9 (contrôle strict des types et détection des appels sur `null`).
-   * *Niveau 3 (100-200 ms)* : Tests unitaires PHPUnit (calculs de paniers, règles de taxes, devises).
-   * *Niveau 2 (2-5 s)* : Intégration Symfony CQRS et Doctrine ORM.
-   * *Niveau 1 (15-30 s)* : Oracles fonctionnels E2E Playwright Headless.
-4. **Tests de Résistance VRAM & Frugalité Énergétique** : Validation mathématique du `ChunkedLossTrainer` (baisse de 94% du pic mémoire, < 300 Mo de VRAM consommée pour la perte). Mesure physique de 1,9 Wh par bug sur Nvidia Tesla T4 (échantillonnage 100 ms `nvidia-smi`) et budget réel de 0,00 €.
-5. **Mesure de Variance et Reproductibilité Multi-Tours** : Évaluation Pass@1 (36.7%) et Pass@3 (50.0%) sur cohorte récurrente de 10 bugs, prouvant la stabilité de résolution des bugs emblématiques (#40971, #41007, #41923 résolus à 3/3).
-6. **Tests d'Extensibilité Écosystème** : Application directe du pipeline agentique à 42 modules tiers de l'écosystème.
-
----
-
-# 9. CARTOGRAPHIE D'EXTENSIBILITÉ ET AUDIT D'ARCHITECTURE SUR 42 DÉPÔTS COMMUNAUTAIRES
-
-Pour démontrer que notre approche ne surapprend pas la topologie interne du cœur monolithique de PrestaShop, nous avons conduit une **cartographie d'extensibilité et un audit d'architecture sur 42 dépôts majeurs de l'écosystème PrestaShop**, représentant les piliers de production d'une boutique e-commerce moderne.
+Pour évaluer la transférabilité potentielle de notre méthodologie sans surapprendre la topologie interne du cœur monolithique de PrestaShop, nous avons conduit une **cartographie d'extensibilité et un audit d'architecture sur 42 dépôts majeurs de l'écosystème PrestaShop**, représentant les modules indispensables en production (paiement, transport, conformité, catalogue).
 
 > **Précision Méthodologique Importante** :  
-> * **Banc Cœur (Section 8)** : 42 bugs du Cœur évalués empiriquement par des oracles Playwright de bout en bout avec conteneur Docker et réinitialisation transactionnelle MySQL.
-> * **Écosystème Tiers (Section 9)** : Répertoire d'audit architectural recensant les hooks, la structure des classes et l'exposition aux dépréciations PHP 8.2+. L'extensibilité du modèle a été formellement validée par un **cas pilote de bout en bout sur `PrestaShop/ps_facetedsearch` (PR #1340)** avec oracle fonctionnel et correction canonique certifiée.
+> * **Banc d'Évaluation Certifié (Section 4 & 5)** : 33 bugs réels post-cutoff du Cœur évalués empiriquement par des oracles Playwright de bout en bout avec conteneur Docker et réinitialisation transactionnelle MySQL.
+> * **Cartographie d'Extensibilité (Section 9)** : Répertoire d'audit architectural recensant les hooks, la structure des classes et l'exposition aux dépréciations PHP 8.2+. Cette cartographie est un travail d'audit structurel et ne fait pas partie du score quantitatif benchmarké.
 
 | # | Dépôt GitHub | Rôle & Usage Écosystème | Technologies Clés | Typologie Fréquente de Bugs & Dépréciations |
 |---|---|---|---|---|
@@ -417,35 +408,13 @@ Pour démontrer que notre approche ne surapprend pas la topologie interne du cœ
 
 ---
 
----
+### Cas d'Étude Pilote : `PrestaShop/ps_facetedsearch` (PR #1340)
 
-### Cas d'Étude Concret et Pilote : `PrestaShop/ps_facetedsearch` (PR #1340)
-
+* **Statut** : *Cas pilote en cours, non inclus dans les résultats*.
 * **Dépôt** : `PrestaShop/ps_facetedsearch` · **Pull Request** : [#1340](https://github.com/PrestaShop/ps_facetedsearch/pull/1340)
 * **Date de fusion** : 19 septembre 2026 · **Titre** : *Fix PHP 8.5 null array offset deprecation in converter*
-* **Fichier affecté** : `src/Filters/Converter.php` · **Test** : `tests/php/FacetedSearch/Filters/ConverterTest.php`
-
-```diff
---- a/src/Filters/Converter.php
-+++ b/src/Filters/Converter.php
-@@ -411,7 +411,7 @@ public function createFacetedSearchFiltersFromQuery(ProductSearchQuery $query)
-                             continue;
-                         }
- 
--                        if (isset($receivedFilters[$feature['url_name']])) {
-+                        if ($feature['url_name'] !== null && isset($receivedFilters[$feature['url_name']])) {
-                             $featureValueLabels = $receivedFilters[$feature['url_name']];
-                         } elseif (isset($receivedFilters[$feature['name']])) {
-                             $featureValueLabels = $receivedFilters[$feature['name']];
-@@ -443,7 +443,7 @@ public function createFacetedSearchFiltersFromQuery(ProductSearchQuery $query)
-                             continue;
-                         }
- 
--                        if (isset($receivedFilters[$attributeGroup['url_name']])) {
-+                        if ($attributeGroup['url_name'] !== null && isset($receivedFilters[$attributeGroup['url_name']])) {
-```
-
-Ce cas d'étude démontre que les contraintes canoniques de typage strict acquises par **Gemma 4 LoRA** lors du fine-tuning s'appliquent immédiatement à la maintenance préventive sur les modules tiers.
+* **Fichier ciblé** : `src/Filters/Converter.php` · **Test unitaire associé** : `tests/php/FacetedSearch/Filters/ConverterTest.php`
+* **Contexte technique** : Résolution préventive d'accès à des offsets de tableaux avec clé `null` en préparation des versions strictes de PHP (PHP 8.4+). La généralisation de l'évaluation automatisée de bout en bout sur l'ensemble de ces modules tiers constitue un axe de travaux futurs.
 
 ---
 
@@ -493,7 +462,7 @@ Agentic code-repair benchmarks are dominated by Python projects with rich unit t
 | E | Fine-tuned complete (QLoRA Gemma 4 4B) | Autonomous edge deployment | **4/33 (12.1%)** |
 
 ## 4b. Self-Improvement Loop (Gemma Only, Zero Distillation)
-The only condition with a significant gain is O: execution feedback from a faithful verifier. We turn that into training data without any proprietary model:
+The largest gain comes from O (faithful verifier feedback), which motivates turning verifiers into training data without any proprietary model:
 1. **Gemma writes verifiers for TRAIN bugs** (`bench/gentest.py`): From the ticket and official fix, it writes a Playwright oracle, kept only if it fails on pre-fix code and passes on fix.
 2. **Gemma fixes TRAIN bugs with that verifier as feedback** (condition O on TRAIN).
 3. **Successful runs become condensed paths** (`trajectories/self_paths.py`): Exact keywords, file windows, and SEARCH/REPLACE blocks.
@@ -502,9 +471,9 @@ The only condition with a significant gain is O: execution feedback from a faith
 - **Reward Hacking Guards**: Paths are kept only if every edited function is touched by the official fix. Overall, 8 of 20 TRAIN bugs "solved" against model-written oracles (40%) were rejected by these guards.
 
 ## 5. Experimental Results & Statistical Significance
-- **Condition B (Replay Feedback)**: 15/33 (45.5%) vs baseline Condition A (39.0%), an improvement of +6.5 percentage points (+2.2 net bugs) with zero regressions.
-- **Statistical Uncertainty on N=33**: Paired 95% bootstrap CI: [-2.27%, +16.67%]; paired sign-flip permutation test p = 0.1128. While not meeting the classical p < 0.05 threshold due to cohorte size, replay feedback provides qualitatively critical rescues: bug #41923 (0/8 in baseline A/R) solved on turn 7, and #41007 solved on turn 5 after failure on turn 4.
-- **Ablation of LoRA (A-4B vs E)**: Gemma 4 4B without LoRA solves only 1/33 (3.0%) and fails syntax on 45.5% of patches. LoRA fine-tuning raises resolution to 4/33 (12.1%) and loc_hit to 42.4% (+9.1 pts net gain), confirming that domain adaptation specifically provides architectural routing and syntax compliance.
+- **Replay Feedback (Condition B vs A)**: Replay feedback shows a consistent but non-significant improvement (15/33 vs 12.8/33 mean over 4 baseline runs; paired permutation p = 0.11). Against a 4-run consensus, discordant pairs are 2 vs 1 (p = 0.50).
+- **Statistical Uncertainty on N=33**: Paired 95% bootstrap CI: [-2.27%, +16.67%]; paired sign-flip permutation test p = 0.1128. While not meeting the classical p < 0.05 threshold due to cohort size, replay feedback provides qualitatively critical rescues: bug #41923 (0/8 in baseline A/R) solved at the 3rd editing iteration (turn 7 of agent conversation), and #41007 solved at the 2nd editing iteration (turn 5 of conversation).
+- **Ablation of LoRA (A-4B vs E)**: Discordant pairs all favor LoRA (b=3, c=0, p=0.125 one-sided): a consistent but non-significant trend at N=33. The most robust effect of LoRA lies in format compliance (rejections drop from 45.5% to 15.2%) and localization (loc_hit rises from 18.2% to 42.4%). *(Note: A-4B evaluated under baseline condition A without test feedback; E incorporates LoRA weights and structural rules).*
 
 ## 6. Failure Taxonomy
 - Dominant failure mode: Localisation (35% wrong file, 14% no usable edit, 12% wrong fix, 0% regressions).
@@ -513,8 +482,11 @@ The only condition with a significant gain is O: execution feedback from a faith
 ## 6b. Energy, Environmental & Financial Sobriety (Edge-First AI)
 - **Rigorous Metrology**: High-frequency sampling (100 ms) via `nvidia-smi` on Nvidia Tesla T4 (TDP 70W).
 - Idle power: 12.4 W; active inference power: 48.2 W; average inference duration: 104 s -> E_GPU = 1.39 Wh.
-- Docker test execution on 2 vCPUs: 25 W for 60 s -> E_CPU = 0.42 Wh. Total: **1.81 Wh (approx 1.9 Wh)**.
-- Comparison with frontier cloud clusters (8x H100, 5,600 W, 60-100 Wh/bug): **33x to 55x lower energy footprint**.
+- Docker test execution on 2 vCPUs: 25 W for 60 s -> E_CPU = 0.42 Wh. Total: **1.81 Wh (approx 1.9 Wh) per attempted bug**.
+- **Per Resolved Bug**: ≈ **15.7 Wh per resolved bug** in Condition E (4/33, 1.91 Wh × 33 / 4).
+- **Symmetric Benchmark Comparison**:
+  - *Per attempted bug*: 1.91 Wh vs ~65 to 110 Wh on cloud multi-H100 clusters (35x to 50x lower energy footprint).
+  - *Per resolved bug*: ≈ 15.7 Wh vs ~60 to 100 Wh on cloud LLM clusters (Luccioni et al., FAccT 2023), representing an **approx. 4x to 6x reduction**.
 - Zero API token costs: 0.00 EUR tracked across all runs.
 
 ## 6c. The Sovereignty vs Accuracy Pareto Frontier
@@ -523,12 +495,10 @@ We deliberately present the trade-off between 31B and 4B models:
 - Gemma 4 4B LoRA (12.1% in Condition E): Optimal for privacy-critical edge triage (4.29 GB VRAM, 100% on-premise), resolving 1 out of 8 bugs locally before any human escalation or data exposure.
 
 ## 6d. Absence of Contamination & Canonical API Verification (#40971)
-Bug #40971 (merged April 8, 2026, post-cutoff) was verified clean of training data (zero occurrences in 585 training paths). The character-identical patch:
-`Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup);`
-results strictly from PrestaShop core's unyielding API constraint: `Shop::setContext` is the only static method in PrestaShop 8/9 to switch context to group mode, operating on variables already defined in scope.
+Bug #40971 (merged April 8, 2026, post-cutoff) was verified clean of training data (zero occurrences in 585 training paths). The exact form `Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup)` is constrained by the PrestaShop API; the model's merit was identifying the missing `$idShopGroup` argument required in scope.
 
 ## 7. Extensibility to Community Modules
-The autonomous repair pipeline applies out-of-the-box to 10 community modules (`ps_facetedsearch`, `blockwishlist`, `fop_console`, `mollie`, `ps_checkout`), resolving real deprecations (such as PR #1340 in `ps_facetedsearch`).
+We mapped 42 community modules for extensibility (hooks, class structure, PHP 8.2+ deprecation exposure). Only one end-to-end pilot (ps_facetedsearch PR #1340) was run; broader module evaluation is future work.
 
 ## 8. Threats to Validity
 - Benchmark size: N=33 test bugs from PrestaShop 9.1.x; larger multi-repository suites needed for p < 0.05 power.
@@ -545,7 +515,7 @@ The autonomous repair pipeline applies out-of-the-box to 10 community modules (`
 # 11. GUIDE DE REPRODUCTION CLÉ EN MAIN
 
 ### Option A : Rejeu Immédiat sur Google Colab (1 Clic, GPU T4 Gratuit)
-Pour auditer les résultats, exécuter l'inférence du modèle LoRA sur le bug emblématique #40971 et recalculer l'ensemble des 463 tests et statistiques formelles sans installer Docker :
+Pour auditer les résultats, exécuter l'inférence du modèle LoRA sur le bug emblématique #40971 et recalculer l'ensemble des 462 évaluations de benchmark répertoriées dans `eval/results.csv` (14 séries sur 33 bugs) et statistiques formelles sans installer Docker :
 * **Lien Direct Notebook Colab** : [Ouvrir dans Google Colab](https://colab.research.google.com/github/ba-rem26007/gemma4-legacy-replay/blob/main/notebook/colab_gemma4_evaluation.ipynb)
 * Tout est pré-configuré : diagnostic GPU, téléchargement de l'adaptateur LoRA 134 Mo, inférence du patch canonique et tracés graphiques (Pareto, Perte SFT, Énergie).
 

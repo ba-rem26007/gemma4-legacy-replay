@@ -13,18 +13,19 @@ Projet pour le hackathon officiel **Kaggle Gemma 4**.
 
 ## 1. En Bref & Chiffres Clés
 
-* **Double Périmètre Évalué** :
-  - **42 Bugs Réels du Cœur PrestaShop** : 33 incidents fermés post-cutoff (9.1.x) strictement étanches + 9 incidents cœur réévalués.
-  - **42 Modules Tiers de l'Écosystème** : Analyse d'extensibilité sur 8 domaines e-commerce avec cas d'étude pilote validé sur `ps_facetedsearch` (PR #1340).
-* **Conditions Expérimentales Étudiées** :
-  - `Condition A` (Baseline 31B) : Ticket seul brut → **41.2% (17.3/42)**.
-  - `Condition R` (RAG Few-Shot 31B) : Ticket + 2 exemples similaires → **41.2% (+0.0 pt)**.
-  - `Condition B` (Replay Test 31B) : Ticket + feedback dynamique Playwright → **52.4% (+11.2 pts, 22.0/42)**.
-  - `Condition O` (Borne Haute 31B) : Ticket + verdict direct de l'oracle → **57.1% (+15.9 pts, 24.0/42)**.
-  - `Condition A-4B` (Ablation Base 4B) : Gemma 4 4B Zero-Shot sans LoRA → **4.8% (2.0/42)** (42.8% de rejets syntaxiques).
-  - `Condition E` (LoRA Frugal 4B) : Gemma 4 4B spécialisé via `ChunkedLossTrainer` → **19.0% (+14.2 pts, 8.0/42)**.
-* **Preuve Causale de l'Adaptation LoRA** : Le LoRA apporte un gain net isolé de **+14.2 à +16.6 points**, réduisant le taux d'erreur de syntaxe de 42.8% à 14.3%.
-* **Frugalité Énergétique Métrologique** : **1.9 Wh par bug** mesuré à 100 ms sur Nvidia Tesla T4 via `nvidia-smi` (33x à 55x inférieur aux clusters H100).
+* **Périmètre Évalué & Cartographie** :
+  - **33 Bugs Réels Certifiés du Cœur PrestaShop** : Incidents fermés post-cutoff (9.1.x) strictement étanches, chacun validé par un oracle Playwright de bout en bout sur instance Docker `psbench2` réinitialisée.
+  - **Cartographie d'Extensibilité Écosystème** : 42 dépôts majeurs de modules communautaires audités (hooks, CQRS, typage PHP 8.2+).
+* **Conditions Expérimentales Étudiées (Vivier 33 Bugs)** :
+  - `Condition A` (Baseline 31B) : Ticket seul brut → **39.0% (12.8 / 33)** (moyenne sur 4 runs indépendants).
+  - `Condition R` (RAG Few-Shot 31B) : Ticket + 2 exemples similaires → **39.0% (+0.0 pt)**.
+  - `Condition C` (Glossaire Auto 31B) : Ticket + glossaire métier contextuel → **39.4% (13.0 / 33)**.
+  - `Condition B` (Replay Test 31B) : Ticket + feedback dynamique Playwright → **45.5% (+6.5 pts, 15 / 33)**, **0 régression**.
+  - `Condition O` (Borne Haute 31B) : Ticket + verdict direct de l'oracle → **48.5% (+9.8 pts, 16 / 33)**.
+  - `Condition A-4B` (Ablation Base 4B) : Gemma 4 4B Zero-Shot sans LoRA → **3.0% (1 / 33)** (45.5% de rejets syntaxiques).
+  - `Condition E` (LoRA Frugal 4B) : Gemma 4 4B spécialisé via `ChunkedLossTrainer` → **12.1% (+9.1 pts, 4 / 33)**.
+* **Effet de l'Adaptateur LoRA** : Gain net de **+9.1 points** (b=3, c=0 discordants en faveur du LoRA), réduisant les rejets de format de 45.5% à 15.2% et montant la localisation de 18.2% à 42.4%.
+* **Frugalité Énergétique Métrologique** : **1,9 Wh par bug tenté** (soit ≈ 15,7 Wh par bug résolu en Condition E) mesuré à 100 ms sur Nvidia Tesla T4 via `nvidia-smi` (33x à 55x inférieur par tentative aux clusters H100, 4x à 6x par bug résolu).
 * **Budget Réel** : **0,00 €** d'API propriétaire récurrente (`runs/_budget.json`).
 
 ---

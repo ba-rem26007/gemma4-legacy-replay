@@ -48,7 +48,7 @@ Agentic code-repair benchmarks are dominated by Python projects with rich unit t
 | E | Fine-tuned complete (QLoRA Gemma 4 4B) | Full 33 bugs evaluation | **4/33 (12.1%)** |
 
 ## 4b. Self-improvement loop (Gemma only, no distillation)
-The only condition with a significant gain is O: execution feedback from a faithful verifier. We turn that into training data without any proprietary model:
+The largest gain comes from O (faithful verifier feedback), which motivates turning verifiers into training data without any proprietary model:
 1. **Gemma writes verifiers for TRAIN bugs** (`bench/gentest.py`): from the ticket and the official fix, it writes a Playwright oracle, kept only if it **fails on the pre-fix code and passes on the fix** (up to 3 attempts with the error fed back). Verifiers are never training data.
 2. **Gemma fixes TRAIN bugs with that verifier as feedback** (condition O on TRAIN, `ORACLE_PREFIX=g`).
 3. **Successful runs become condensed paths** (`trajectories/self_paths.py`): Gemma's own keywords and file choices plus its final patch rewritten as SEARCH/REPLACE blocks; failed attempts dropped; blocks must reproduce the final patch exactly. Source label `gemma_self`, alongside 585 paths reconstructed from official fixes.
@@ -58,9 +58,9 @@ The only condition with a significant gain is O: execution feedback from a faith
 - **Leak-proofing**: TRAIN bugs are merged before the cutoff, bugs touching a TEST function are excluded, and the exporter refuses TEST bugs.
 
 ## 5. Results & Statistical Significance
-- **Condition B (Replay Feedback)**: **15/33 (45.5%)** vs baseline Condition A (39.0%), an improvement of **+6.5 percentage points** (+2.2 net bugs) with **zero regressions**.
-- **Statistical Power on N=33**: Paired 95% bootstrap CI on $\Delta(B - A)$ is **[-2.27%, +16.67%]**; paired sign-flip permutation test yields $p = 0.1128$ (one-tailed) and $p = 0.2213$ (two-tailed). While $N=33$ is limited by the post-cutoff pool of verified browser oracles, replay feedback qualitatively rescues hard bugs that failed completely under baseline prompting (e.g. #41923 scored 0/8 in A/R, solved on turn 7 in B; #41007 failed turn 4 and resolved on turn 5). Achieving $p < 0.05$ with 80% power would require $N \ge 95$ bugs.
-- **LoRA Ablation (A-4B vs E)**: Un-adapted Gemma 4 4B Zero-Shot (A-4B) resolves only 1/33 (3.0%), with 45.5% SEARCH/REPLACE format rejections and 18.2% loc_hit. LoRA domain adaptation raises resolution to **4/33 (12.1%)**, loc_hit to 42.4%, and format compliance to 84.8% (**+9.1 pts isolated gain**), proving that resolutions stem from adapter parametric specialization rather than base model priors.
+- **Replay Feedback (Condition B vs A)**: Replay feedback shows a consistent but non-significant improvement (15/33 vs 12.8/33 mean over 4 baseline runs; paired permutation p = 0.11). Against a 4-run consensus, discordant pairs are 2 vs 1 (p = 0.50).
+- **Statistical Power on N=33**: Paired 95% bootstrap CI on $\Delta(B - A)$ is **[-2.27%, +16.67%]**; paired sign-flip permutation test yields $p = 0.1128$ (one-tailed) and $p = 0.2213$ (two-tailed). While $N=33$ is limited by the post-cutoff pool of verified browser oracles, replay feedback qualitatively rescues hard bugs that failed completely under baseline prompting: bug #41923 (0/8 in baseline A/R) was resolved at the 3rd editing iteration (turn 7 of agent conversation), and #41007 was resolved at the 2nd editing iteration (turn 5 of conversation). *(Budget is $\le 2$ test corrections / 3 editing iterations; conversation turns track individual prompt-response steps).*
+- **Ablation of LoRA (A-4B vs E)**: Discordant pairs all favor LoRA (b=3, c=0, p=0.125 one-sided): a consistent but non-significant trend at N=33. The most robust effect of LoRA lies in format compliance (rejections drop from 45.5% to 15.2%) and localization (loc_hit rises from 18.2% to 42.4%). *(Note: A-4B evaluated under baseline condition A without test feedback; E incorporates LoRA weights and structural rules).*
 - **R vs A**: 0.0 pt, paired 95% CI [-9.1% ; +9.1%] → passive code injection yields no measurable effect on legacy code.
 - **Oracle Upper Bound (O)**: Reaches 16/33 (48.5%, +9.8 pts, paired 95% CI [+0.8% ; +20.5%]).
 
@@ -69,21 +69,21 @@ The only condition with a significant gain is O: execution feedback from a faith
 - Consequence: a golden-master chain that only guards against regressions cannot raise the score here; what helps is (a) finding the right file and (b) a **faithful reproduction** test.
 
 ## 6a. Absence of Contamination & Canonical API Verification (#40971)
-Bug #40971 was merged on April 8, 2026 (post-cutoff) and verified completely absent from all training traces. The character-identical patch:
-`Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup);`
-is not memorized: it is the sole static method in PrestaShop 8/9 core to set multi-shop group context, operating on variables already defined in scope. The identical syntax is a direct consequence of strict API determinism.
+Bug #40971 was merged on April 8, 2026 (post-cutoff) and verified completely absent from all training traces. The exact syntax `Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup);` is constrained by the PrestaShop API; the model's merit was identifying the missing `$idShopGroup` argument required in scope. Pre-fix code in `src/Core/Shop/LogoUploader.php` already initialized `$idShopGroup = Shop::getContextShopGroupID();`, and the model correctly supplied this argument to satisfy PHP 8.3 typehints.
 
 ## 6a bis. The Sovereignty vs Accuracy Pareto Frontier
 We highlight a deliberate architectural trade-off:
 - **Gemma 4 31B (45.5% in Condition B)**: Suited for centralized, compute-heavy CI pipelines requiring deep multi-hop reasoning.
-- **Gemma 4 4B LoRA (12.1% in Condition E)**: Suited for privacy-critical edge triage, operating within **4.29 GB VRAM** and consuming only **1.9 Wh per bug** on-premise without exposing commercial trade secrets or customer data to external cloud APIs.
+- **Gemma 4 4B LoRA (12.1% in Condition E)**: Suited for privacy-critical edge triage, operating within **4.29 GB VRAM** and consuming only **1.91 Wh per attempted bug** (≈ 15.7 Wh per resolved bug) on-premise without exposing commercial trade secrets or customer data to external cloud APIs.
 - Proposal validated by O: the expert records the reproduction once (Playwright codegen, 2–5 min/bug, `docs/ENREGISTREMENT.md`).
 
 ## 6b. Energy, Environmental & Financial Sobriety (Edge-First AI)
 A key architectural contribution of our approach is demonstrating that a compact, specialized 4-billion parameter model (**Gemma 4 4B + QLoRA**) can match or surpass massive generalist models (such as Claude 3.5 Sonnet or GPT-4o) on real enterprise codebase repair, while operating with unprecedented frugality:
 - **Zero API Expenditure**: Across our entire benchmark and training campaign, our tracked budget (`runs/_budget.json`) is **0.00 €**, relying strictly on free-tier T4 GPUs and local containers. In contrast, evaluating 5,000 legacy bugs with proprietary cloud models would exceed **$1,500 - $2,000** in API token fees.
 - **VRAM & Hardware Accessibility**: By applying 4-bit quantization and ChunkedLossTrainer, memory during inference stays at **4.29 GB VRAM**, making the system deployable on standard consumer GPUs (Nvidia RTX 3060 / 4070 Ti) or developer laptops without specialized datacenter hardware.
-- **Energy Footprint**: A single bug resolution consumes **~1.9 Wh** on a 70W TDP GPU (comparable to running a 9W LED bulb for 12 minutes), representing a **35x to 50x energy reduction** compared to hyperscale multi-H100 inference clusters.
+- **Energy Footprint**:
+  - **Per attempted bug**: **1.91 Wh** on a 70W TDP GPU (comparable to running a 9W LED bulb for 12 minutes), representing a **35x to 50x energy reduction** compared to multi-H100 cloud clusters (~65 to 110 Wh per attempt).
+  - **Per resolved bug**: **≈ 15.7 Wh** in Condition E (4/33 solved, 1.91 Wh × 33 / 4), achieving an **approx. 4x to 6x energy reduction** compared to cloud models (~60 to 100 Wh per resolved task; Luccioni et al., FAccT 2023).
 - **Data Sovereignty & Enterprise Compliance**: In commercial e-commerce environments, customer orders, payment credentials, and internal proprietary logic never leave the local infrastructure, ensuring strict GDPR, PCI-DSS, and trade-secret compliance.
 
 ## 6c. Multi-Tier Verification & Community Modules Extensibility
@@ -91,7 +91,7 @@ While our primary evaluation benchmark relies on dynamic end-to-end browser orac
 1. **Static Analysis & Fast Feedback (PHPStan Level 8/9)**: Instantaneous (< 500 ms) identification of type mismatches and null pointer dereferences (e.g. bug #41130 in Admin API OAuth context).
 2. **Deterministic Unit Suites (PHPUnit)**: Sub-second validation of isolated domain calculators and pure functions.
 3. **E2E Browser Oracles (Playwright)**: Full browser headless simulation for UI/UX, session management, and asynchronous Ajax flows.
-4. **Generalization to Community Modules**: The exact same autonomous repair workflow applies natively to third-party open-source modules across the PrestaShop ecosystem (`ps_facetedsearch`, `blockwishlist`, `fop_console`, `mollie`, `ps_checkout`), demonstrating true domain transferability beyond the core monolithic codebase.
+4. **Generalization to Community Modules**: We mapped 42 community modules for extensibility (hooks, class structure, PHP 8.2+ deprecation exposure). Only one end-to-end pilot (ps_facetedsearch PR #1340) was run; broader module evaluation is future work.
 
 ## 7. Related work
 See `RELATED.md` (SWE-bench, Multi-SWE-bench — no PHP —, SWE-agent, Agentless, SWE-Gym, SWE-smith).

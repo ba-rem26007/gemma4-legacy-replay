@@ -2,7 +2,7 @@
 
 Ce document répertorie la **cartographie d'extensibilité et l'audit d'architecture de 42 dépôts GitHub majeurs** de l'écosystème PrestaShop, couvrant l'intégralité du cycle de vie e-commerce : navigation, tunnel d'achat, passerelles de paiement, logistique, conformité juridique, internationalisation et reporting.
 
-> **Cadre Méthodologique** : Ce répertoire constitue un audit structurel de compatibilité (hooks PrestaShop, Symfony DI, typage PHP 8.2+). L'extensibilité opérationnelle de notre agent a fait l'objet d'un **cas pilote complet exécuté et réparé de bout en bout** sur `PrestaShop/ps_facetedsearch` (PR #1340) avec oracle Playwright dédié.
+> **Cadre Méthodologique** : Ce répertoire constitue un audit structurel de compatibilité (hooks PrestaShop, Symfony DI, typage PHP 8.2+). L'extensibilité opérationnelle de notre agent fait l'objet d'un cas pilote (`PrestaShop/ps_facetedsearch` PR #1340) en cours, non inclus dans les résultats quantitatifs du benchmark.
 
 ---
 
@@ -55,9 +55,9 @@ Ce document répertorie la **cartographie d'extensibilité et l'audit d'architec
 
 ---
 
-## 2. Cas d'Étude Concret et Pilote : `PrestaShop/ps_facetedsearch` (PR #1340)
+## 2. Cas d'Étude Pilote : `PrestaShop/ps_facetedsearch` (PR #1340)
 
-### Fiche d'Identité du Bug Pilote
+* **Statut** : *Cas pilote en cours, non inclus dans les résultats quantitatifs du benchmark*.
 * **Dépôt** : `PrestaShop/ps_facetedsearch`
 * **Pull Request** : [#1340](https://github.com/PrestaShop/ps_facetedsearch/pull/1340)
 * **Date de fusion** : 19 septembre 2026
@@ -72,26 +72,5 @@ Deprecated: Passing null to parameter #1 ($offset) of type string|int is depreca
 ```
 Dans `Converter::createFacetedSearchFiltersFromQuery()`, si `$feature['url_name']` ou `$attributeGroup['url_name']` est `null`, l'évaluation `isset($receivedFilters[$feature['url_name']])` déclenche cette dépréciation.
 
-### Comparaison Code Officiel vs Résolution Validée par Gemma 4
-
-```diff
---- a/src/Filters/Converter.php
-+++ b/src/Filters/Converter.php
-@@ -411,7 +411,7 @@ public function createFacetedSearchFiltersFromQuery(ProductSearchQuery $query)
-                             continue;
-                         }
- 
--                        if (isset($receivedFilters[$feature['url_name']])) {
-+                        if ($feature['url_name'] !== null && isset($receivedFilters[$feature['url_name']])) {
-                             $featureValueLabels = $receivedFilters[$feature['url_name']];
-                         } elseif (isset($receivedFilters[$feature['name']])) {
-                             $featureValueLabels = $receivedFilters[$feature['name']];
-@@ -443,7 +443,7 @@ public function createFacetedSearchFiltersFromQuery(ProductSearchQuery $query)
-                             continue;
-                         }
- 
--                        if (isset($receivedFilters[$attributeGroup['url_name']])) {
-+                        if ($attributeGroup['url_name'] !== null && isset($receivedFilters[$attributeGroup['url_name']])) {
-```
-
-Ce test pilote démontre que les réflexes d'analyse statique et de conformité de typage inculqués à **Gemma 4 LoRA** s'appliquent immédiatement aux modules sans surapprentissage du cœur.
+### Analyse de Transférabilité Architecturale
+Ce cas pilote illustre la transférabilité potentielle des réflexes d'analyse statique et de conformité de typage inculqués à **Gemma 4 LoRA** lors du fine-tuning aux modules tiers sans surapprentissage du cœur. L'évaluation automatisée de bout en bout de l'ensemble de ces 42 modules tiers constitue un axe de travaux futurs.

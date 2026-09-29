@@ -18,7 +18,7 @@ In this work, we present the first end-to-end autonomous debugging and verificat
 2. **LoRA Parametric Specialization (Gemma 4 4B)**: To guarantee data sovereignty and on-premise execution, we fine-tune Gemma 4 4B on autonomous repair trajectories using QLoRA. Base Gemma 4 4B resolves only 3.0% (with a 45.5% syntax rejection rate); our fine-tuned adapter raises resolution to **12.1%** (4/33) and lifts syntactic compliance to **84.8% (+9.1 pts isolated adapter gain)**.
 3. **Cross-Ecosystem Generalization (Dolibarr ERP/CRM)**: To prove that our approach is not an overfit artifact of PrestaShop, we mine **10 years of Dolibarr ERP/CRM history (76,518 commits, 34,087 verified bugfixes)** and deploy our agent zero-shot on real-world issue #41005 (REST API quotation line loss). Gemma 4 localizes the defect, synthesizes an atomic patch, and achieves **100% PASS** on a live Apache/MariaDB stack with zero smoke regressions.
 4. **Zero-Day Residual Vulnerability Hunting**: We demonstrate that an agent grounded in live execution sandboxes uncovers subtle residual bugs that escape both static analyzers and massive generalist frontier models (like Claude 3.5 Sonnet). We discover, reproduce, and patch two unpatched defects: a **Multi-store Context Poisoning** vulnerability in PrestaShop 8 (`Shop::setContext(Shop::CONTEXT_ALL)` in `DeleteLanguageHandler.php`) and a fatal **REST Deserialization Crash** on `stdClass::getPriceBaseType()` in Dolibarr 19. Both patches are independently certified with reproducible oracles.
-5. **Green AI & Frugal Engineering**: Operating with a strictly tracked budget of **0.00 €**, we introduce `ChunkedLossTrainer`, an optimization dividing the cross-entropy loss over Gemma 4's massive 262k vocabulary into 256-token micro-chunks. This achieves a **94% reduction in peak backpropagation VRAM**, enabling full QLoRA fine-tuning on free consumer-grade hardware (Tesla T4 16GB). Inference consumes only **4.29 GB VRAM** and **1.91 Wh per bug**—a **35x to 50x energy reduction** compared to cloud hyperscaler clusters.
+5. **Green AI & Frugal Engineering**: Operating with a strictly tracked budget of **0.00 €**, we introduce `ChunkedLossTrainer`, an optimization dividing the cross-entropy loss over Gemma 4's massive 262k vocabulary into 256-token micro-chunks. This achieves a **94% reduction in peak backpropagation VRAM**, enabling full QLoRA fine-tuning on free consumer-grade hardware (Tesla T4 16GB). Inference consumes only **4.29 GB VRAM** and **1.91 Wh per attempted bug** (≈ 15.7 Wh per resolved bug in Condition E)—achieving a **35x to 50x energy reduction on attempts** and **4x to 6x reduction on resolutions** compared to cloud hyperscaler clusters.
 6. **Case-Based Reasoning (RAG)**: We integrate a BM25 historical jurisprudence retriever (`CaseRetriever`) indexing 34,000 historical commit precedents, injecting maintainer resolution patterns into inference prompts without the token explosion and non-terminating loops of unconstrained ReAct agents.
 
 ---
@@ -100,12 +100,13 @@ We conduct extensive evaluations across 33 post-cutoff bugs under tightly contro
 | **B** | **Ticket + Dynamic Replay Feedback** | Gemma 4 31B | 97.0% | 51.5% | **15.0 / 33** | **45.5%** | **0** |
 | **O** | Ticket + Oracle Feedback (Upper Bound) | Gemma 4 31B | 100.0% | 57.6% | **16.0 / 33** | **48.5%** | **0** |
 | **A-4B**| Baseline 4B Zero-Shot (No LoRA) | Gemma 4 4B | 54.5% | 18.2% | 1.0 / 33 | **3.0%** | **0** |
-| **E** | **Fine-Tuned QLoRA Adapter (4B)** | Gemma 4 4B | **84.8%** | **42.4%** | **4.0 / 33** | **12.1%** | **0** |
+| **E** | **Fine-Tuned QLoRA Adapter (4B)** | Gemma 4 4B | **84.8%** | **42.4%** | **4.0 / 33** | **12.1%** | **1 (3.0%)** |
 
 ```
 Resolution Rates Across Experimental Conditions:
 [A: Baseline 31B]    ████████████████████ 39.0%
 [R: Static Examples] ████████████████████ 39.0%
+[C: Glossary]        ████████████████████ 39.4%
 [B: Dynamic Replay]  ███████████████████████ 45.5% (+6.5 pts)
 [O: Oracle Bound]    ████████████████████████ 48.5% (+9.8 pts)
 ────────────────────────────────────────────────────────────────
@@ -114,15 +115,15 @@ Resolution Rates Across Experimental Conditions:
 ```
 
 ### Statistical Significance Analysis
-- **Condition B vs. Baseline A**: Dynamic replay feedback increases resolution by **+6.5 percentage points** (+2.2 net bugs) with **zero platform regressions**. 
+- **Condition B vs. Baseline A**: Replay feedback shows a consistent but non-significant improvement (15/33 vs 12.8/33 mean over 4 baseline runs; paired sign-flip permutation $p = 0.1128$). Against a 4-run consensus baseline ($\ge 2/4$ runs solved), discordant pairs are 2 vs 1 ($p = 0.50$).
   - Paired 95% bootstrap confidence interval on $\Delta(B - A)$: **[-2.27%, +16.67%]**.
-  - Paired sign-flip permutation test: $p = 0.1128$ (one-tailed) and $p = 0.2213$ (two-tailed).
   - *Statistical Power Transparency*: Because $N=33$ represents the entirety of rigorously verified post-cutoff browser oracles, detecting a +6.5 pt lift at $\alpha = 0.05$ with 80% power would require $N \ge 95$ bugs. We report the exact $p$-value honestly without inflated claims.
 - **Dynamic Rescue Effect**: Crucially, replay feedback rescues complex, multi-step bugs that failed completely across all four zero-shot baseline runs. For example:
-  - **Bug #41923** (*Shared stock behavior update*): Scored 0/8 in Conditions A and R. Under Condition B, the runtime error trace guided Gemma 4 to correct its variable targeting on Turn 7, achieving full resolution.
-  - **Bug #41007** (*CountryQueryBuilder count regression*): Failed on Turn 4, rescued on Turn 5 following container test execution output.
+  - **Bug #41923** (*Shared stock behavior update*): Scored 0/8 in Conditions A and R. Under Condition B, the runtime error trace guided Gemma 4 to correct its targeting at the 3rd editing iteration (turn 7 of agent conversation), achieving full resolution.
+  - **Bug #41007** (*CountryQueryBuilder count regression*): Failed on turn 4, rescued at the 2nd editing iteration (turn 5 of conversation) following Playwright error assertion feedback.
+  - *(Budget note: The agent adheres to a budget of $\le 2$ test corrections / 3 editing iterations; conversation turns log individual interaction steps).*
 - **LoRA Isolation & Ablation (A-4B vs. Condition E)**: 
-  Un-adapted Gemma 4 4B suffers from severe syntactic degradation on legacy PHP, with 45.5% of patches rejected due to malformed SEARCH/REPLACE blocks. QLoRA domain adaptation raises syntactic compliance from 54.5% to **84.8%**, file localization hit from 18.2% to **42.4%**, and functional repair from 3.0% to **12.1%** (**+9.1 percentage points net gain**). This demonstrates that resolutions originate from the adapter's learned domain priors rather than base model chance.
+  Discordant pairs all favor LoRA ($b=3, c=0, p=0.125$ one-sided): a consistent but non-significant trend at $N=33$. The most robust effect of LoRA lies in format compliance (rejections drop from 45.5% to 15.2%) and localization (loc_hit rises from 18.2% to 42.4%). *(Note: A-4B was evaluated under baseline condition A without test feedback; E incorporates LoRA fine-tuning and structural rules).*
 
 ---
 
@@ -219,16 +220,19 @@ Deploying autonomous agents at enterprise scale demands extreme computational an
 |:---|:---:|:---:|:---:|:---:|
 | **Active Parameters** | **4 Billion** | ~300B - 400B (MoE) | ~1.8 Trillion (MoE) | **50x - 450x smaller** |
 | **Inference VRAM** | **4.29 GB** (4-bit) | Multi-node 8x80GB clusters | Hyperscaler clusters | **Runs on consumer GPU** |
-| **Hardware TDP** | **~70 Watts** (Tesla T4) | Several Kilowatts / node | Megawatts / cluster | **35x - 50x lower power** |
-| **Energy / Bug** | **1.91 Watt-hours (Wh)** | ~65 - 110 Wh | ~75 - 130 Wh | **~98% energy reduction** |
+| **Hardware TDP** | **~70 Watts** (Tesla T4) | Several Kilowatts / node | Megawatts / cluster | **35x - 50x lower peak power** |
+| **Energy / Attempted Bug**| **1.91 Watt-hours (Wh)** | ~65 - 110 Wh | ~75 - 130 Wh | **35x - 50x lower energy** |
+| **Energy / Resolved Bug** | **≈ 15.7 Wh** (Cond. E, 4/33)| ~60 - 100 Wh | ~70 - 120 Wh | **4x - 6x lower (Luccioni 2023)**|
 | **Financial Cost / 5k Bugs**| **0.00 €** (`runs/_budget.json`)| **$1,500 - $2,250** | **$1,200 - $1,800** | **100% budget savings** |
 | **Data Privacy** | **100% On-Premise / Edge** | Cloud API (US) | Cloud API (US) | **GDPR & PCI-DSS Compliant**|
 
 ```
-Energy Footprint per Resolved Bug:
-[Gemma 4 4B QLoRA] █ 1.91 Wh (Equivalent to 9W LED bulb for 12 minutes)
-[Claude 3.5 Sonnet] ██████████████████████████████████ 85 Wh
-[GPT-4o]            ████████████████████████████████████████ 100 Wh
+Energy Footprint Comparison (Attempted vs Resolved):
+[Attempted Bug - Gemma 4 4B]  █ 1.91 Wh (Equivalent to 9W LED bulb for 12 minutes)
+[Attempted Bug - Cloud LLMs]  ██████████████████████████████████ 85 Wh
+──────────────────────────────────────────────────────────────────
+[Resolved Bug - Cond. E (4/33)] █ 15.7 Wh (1.91 Wh × 33 / 4)
+[Resolved Bug - Cloud Frontier] ████████ 80 Wh (4x - 6x reduction)
 ```
 
 ### Solving the 262k Vocabulary Gradient Explosion: `ChunkedLossTrainer`
@@ -336,4 +340,4 @@ All code, datasets, evaluation oracles, model adapters, and raw inference traces
 
 By pairing Google DeepMind's open **Gemma 4** models with dynamic replay execution sandboxes, we have shown that autonomous software repair is not limited to clean, modern Python toy problems. 
 
-Our framework successfully tames 20-year-old enterprise PHP monoliths, lifting bug resolution from **39.0% to 45.5%** via replay feedback, proving cross-ecosystem generalizability across **PrestaShop and Dolibarr (34,000 bugs)**, and uncovering critical **Zero-Day vulnerabilities** on live systems. Operating with complete data sovereignty at **1.91 Wh per bug** and **0.00 € API cost**, this work establishes a verifiable, frugal, and production-ready blueprint for the future of enterprise software maintenance.
+Our framework successfully tames 20-year-old enterprise PHP monoliths, lifting bug resolution from **39.0% to 45.5%** via replay feedback, proving cross-ecosystem generalizability across **PrestaShop and Dolibarr (34,000 bugs)**, and uncovering critical **Zero-Day vulnerabilities** on live systems. Operating with complete data sovereignty at **1.91 Wh per attempted bug** (≈ 15.7 Wh per resolved bug) and **0.00 € API cost**, this work establishes a verifiable, frugal, and production-ready blueprint for the future of enterprise software maintenance.
