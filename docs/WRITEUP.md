@@ -88,6 +88,12 @@ A key architectural contribution of our approach is demonstrating that a compact
   - **Per resolved bug**: **≈ 15.7 Wh** in Condition E (4/33 solved, 1.91 Wh × 33 / 4), achieving an **approx. 4x to 6x energy reduction** compared to cloud models (~60 to 100 Wh per resolved task; Luccioni et al., FAccT 2023).
 - **Data Sovereignty & Enterprise Compliance**: In commercial e-commerce environments, customer orders, payment credentials, and internal proprietary logic never leave the local infrastructure, ensuring strict GDPR, PCI-DSS, and trade-secret compliance.
 
+## 7. Pipeline Improvements (Phases 1–6)
+- **Compact Corpus v2**: Reconstructed 660 verified trajectories ([`trajectories/train_compact.jsonl`](../trajectories/train_compact.jsonl)) with refined windowing (`WINDOW=8, MAX_LINES=50`). Under 4,096 tokens, **641 trajectories are retained (97.1% retention rate)**, multiplying the trainable volume by **7.2x** compared to the 89 historical examples.
+- **Relevance-Ranked Windows (`windows_ranked`)**: Passages are ranked by symbol density and keyword specificity rather than sequential position in the file, preventing early truncation of methods located near the end of large classes ([`docs/RAPPORT_PHASE4.md`](RAPPORT_PHASE4.md)).
+- **Multi-Turn Recovery SFT**: Extracted 17 autonomous Gemma recovery trajectories ([`trajectories/train_recovery.jsonl`](../trajectories/train_recovery.jsonl)) from TRAIN bugs, teaching the model to adjust following test execution feedback with zero test contamination ([`docs/RAPPORT_PHASE5.md`](RAPPORT_PHASE5.md)).
+- **2x2 Factorial Ablation Harness**: Implemented in [`bench/matrix_e4b.py`](../bench/matrix_e4b.py) to isolate LoRA and Replay effects strictly on the dense `gemma-4-e4b-it` model without MoE confounding.
+
 ## 6c. Multi-Tier Verification & Community Modules Extensibility
 While our primary evaluation benchmark relies on dynamic end-to-end browser oracles (Playwright), the verification pipeline is structured as an extensible multi-tier hierarchy:
 1. **Static Analysis & Fast Feedback (PHPStan Level 8/9)**: Instantaneous (< 500 ms) identification of type mismatches and null pointer dereferences (e.g. bug #41130 in Admin API OAuth context).

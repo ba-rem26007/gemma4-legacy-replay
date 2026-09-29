@@ -193,3 +193,18 @@ python3 bench/eval.py 40971
 # 3. Recalculer instantanément l'ensemble des métriques officielles sans coût LLM
 python3 bench/results.py
 ```
+
+---
+
+## 8. Banc d'Ablation 2x2 & Métriques Découplées (Phases 3 & 4)
+
+Dans le cadre du plan d'amélioration [`docs/PLAN_AMELIORATION.md`](PLAN_AMELIORATION.md), deux nouvelles batteries de tests ont été intégrées :
+
+1. **Matrice Factorielle E4B 2x2 ([`bench/matrix_e4b.py`](../bench/matrix_e4b.py))** :
+   * Teste le modèle dense `google/gemma-4-e4b-it` sous 4 configurations strictes : `E4B-base` (0/0), `E4B-replay` (0/1), `E4B-lora` (1/0), `E4B-lora-replay` (1/1).
+   * Isole l'effet marginal de LoRA sans biais architectural.
+   * Exécution de contrôle : `python3 bench/matrix_e4b.py --dry-run`.
+2. **Métrologie de Localisation Tripartite ([`agent/run.py`](../agent/run.py))** :
+   * `loc_hit_initial` : Précision du ciblage au premier tour de grep.
+   * `loc_hit_ever` : Fichier cible ouvert à un moment quelconque (y compris après relecture/backtrack).
+   * `loc_hit_edited` : Fichier cible modifié par les blocs SEARCH/REPLACE.

@@ -87,3 +87,14 @@ Création d'un sous-classeur de `Trainer` : `ChunkedLossTrainer`.
   * `tokenizer_config.json`
   * `chat_template.jinja`
 * **Miroir de téléchargement public** : `https://anniv.soubeyrand.dev/lora.zip`
+
+---
+
+## 7. Évolution vers le Corpus Compact v2 (641 trajectoires)
+
+L'audit de la Phase 1 ([`docs/AUDIT_PHASE1.md`](AUDIT_PHASE1.md)) a révélé que sur les 585 exemples du run v15 initial, seuls **89 avaient été tokenisés** en raison du filtre `MAX_LEN = 2048` et de fenêtres de lecture trop larges (120 lignes de boilerplate).
+
+La Phase 2 ([`docs/RAPPORT_PHASE2.md`](RAPPORT_PHASE2.md)) a résolu ce goulot d'étranglement :
+1. **Nouveau corpus [`trajectories/train_compact.jsonl`](../trajectories/train_compact.jsonl)** : **660 trajectoires reconstruites et certifiées** à 100% par patch Git en mémoire.
+2. **Taux de rétention de 97,1%** : Avec un fenêtrage affiné (`WINDOW=8`, `MAX_LINES=50`) et un seuil de 4 096 tokens, **641 exemples sont conservés**, soit une multiplication par **$7{,}2\times$** du volume d'entraînement.
+3. **Apprentissage de la reprise** : Intégration de 17 trajectoires multi-tours d'auto-apprentissage (erreur d'oracle $\to$ correction $\to$ succès) sans fuite du test set ([`trajectories/train_recovery.jsonl`](../trajectories/train_recovery.jsonl)).

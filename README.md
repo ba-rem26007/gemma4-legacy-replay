@@ -30,17 +30,16 @@ Projet pour le hackathon officiel **Kaggle Gemma 4**.
 
 ---
 
-## 2. Volume de Données Injectées (Data Footprint)
+## 2. Volume de Données Injectées & Évolution du Corpus
 
-1. **Données d'Entraînement (Fine-Tuning QLoRA)** :
-   - **585 trajectoires de résolution vérifiées** (`trajectories/train.jsonl` : 569 PR historiques reconstruites + 25 auto-chemins `self.jsonl`).
-   - **~2,21 millions de tokens** au total (moyenne de 3 889 tokens par exemple).
-   - **3 époques complètes** (~6,6 millions de tokens vus).
-   - Micro-chunks différentiables de **256 tokens** via `ChunkedLossTrainer` (réduction de 28.4 à 13.8 GB = 51% total VRAM).
-   - Adaptateur final autonome de **134 Mo** (`adapter_model.safetensors`).
+1. **Données d'Entraînement & Plan d'Amélioration** ([`docs/PLAN_AMELIORATION.md`](docs/PLAN_AMELIORATION.md)) :
+   - **Historique v15** : 585 trajectoires préparées, mais seules **89 avaient été retenues après tokenisation** suite à la limite de 2 048 tokens et à des fenêtres de code trop larges ([`docs/AUDIT_PHASE1.md`](docs/AUDIT_PHASE1.md)).
+   - **Corpus Compact v2** : [`trajectories/train_compact.jsonl`](trajectories/train_compact.jsonl) génère **660 trajectoires certifiées** par patch Git en mémoire. Avec un fenêtrage affiné (`WINDOW=8`, `MAX_LINES=50`), **641 trajectoires tiennent sous 4 096 tokens (97,1% de rétention)**, multipliant par **$7{,}2\times$** le volume réellement entraînable ([`docs/RAPPORT_PHASE2.md`](docs/RAPPORT_PHASE2.md)).
+   - **Reprise après Erreur** : [`trajectories/train_recovery.jsonl`](trajectories/train_recovery.jsonl) intègre **17 trajectoires multi-tours d'auto-apprentissage** (erreur d'oracle $\to$ correction $\to$ succès), 100% sans fuite du test set ([`docs/RAPPORT_PHASE5.md`](docs/RAPPORT_PHASE5.md)).
+   - **Architecture Frugale** : Micro-chunks différentiables de **256 tokens** via `ChunkedLossTrainer` (VRAM totale réduite de 28.4 à 13.8 Go = −51%). Adaptateur final de **134 Mo** (`adapter_model.safetensors`, SHA256: `fac3f1af...`).
 2. **Données Injectées à l'Inférence (Contexte au tour par tour)** :
+   - **Localisation par pertinence (`windows_ranked`)** : Classement par densité de symboles (regex mot entier, stacktraces) au lieu de l'ordre linéaire du fichier, évitant de saturer le budget sur les licences en tête de fichier ([`docs/RAPPORT_PHASE4.md`](docs/RAPPORT_PHASE4.md)).
    - Fenêtre ciblée de **1 500 à 3 500 tokens** (très inférieure aux 8 192 tokens de Gemma 4).
-   - `windows()` : extraction de ±20 lignes autour des mots-clés, plafonné à 120 lignes / fichier (évite d'injecter des classes de 5 000 lignes).
    - Feedback d'erreur d'assertion Playwright : ~200 à 500 tokens.
 
 ---

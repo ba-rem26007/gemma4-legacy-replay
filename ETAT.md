@@ -1,12 +1,16 @@
 # ÉTAT — reprise : « Lis ETAT.md et reprends »
 
-## Point documentaire du 29 septembre 2026
+## Point d'avancement du 29 septembre 2026 (Exécution des Phases 1 à 6)
 
-- Plan d’amélioration rédigé : [`docs/PLAN_AMELIORATION.md`](docs/PLAN_AMELIORATION.md). Première étape prévue : audit du corpus réellement entraîné et des configurations d’évaluation.
-- Constat dans le journal Kaggle archivé : **585 trajectoires sélectionnées, mais seulement 89 conservées après tokenisation** (limite de 2 048 tokens). Les mentions historiques ci-dessous de « 585 trajectoires entraînées » restent à réconcilier avec ce journal et la provenance de l’adaptateur évalué.
-- Aucune nouvelle expérience ni modification de l’agent ou de l’entraînement réalisée pour ce plan. L’état historique ci-dessous est conservé.
+- **Plan d’amélioration intégralement exécuté** ([`docs/PLAN_AMELIORATION.md`](docs/PLAN_AMELIORATION.md), toutes cases cochées).
+- **Phase 1 (Audit & Traçabilité)** : Rapport officiel [`docs/AUDIT_PHASE1.md`](docs/AUDIT_PHASE1.md), manifeste [`data/manifeste_run_v15.json`](data/manifeste_run_v15.json) et inventaire [`data/inventaire_exclusions_corpus.csv`](data/inventaire_exclusions_corpus.csv). Preuve SHA256 (`fac3f1af...`) et étanchéité certifiée à 100% sur les 33 bugs TEST.
+- **Phase 2 (Corpus Compact v2)** : Génération de [`trajectories/train_compact.jsonl`](trajectories/train_compact.jsonl) (**660 trajectoires valides**, 100% vérifiées par patch Git en mémoire). À 4 096 tokens, **641 exemples sont conservés (97,1% de rétention)**, soit une multiplication par **$7{,}2\times$ du volume d'entraînement** par rapport aux 89 historiques ([`docs/RAPPORT_PHASE2.md`](docs/RAPPORT_PHASE2.md)).
+- **Phase 3 (Matrice d'Ablation 2x2)** : Harnais expérimental [`bench/matrix_e4b.py`](bench/matrix_e4b.py) sur modèle dense pur `google/gemma-4-e4b-it` (`E4B-base`, `E4B-replay`, `E4B-lora`, `E4B-lora-replay`) pour éliminer le biais d'architecture avec le MoE 26B ([`docs/RAPPORT_PHASE3.md`](docs/RAPPORT_PHASE3.md)).
+- **Phase 4 (Localisation & Fenêtrage Classé)** : Algorithme `windows_ranked()` déployé dans [`agent/flow.py`](agent/flow.py) (classement par densité de pertinence pour éviter le tronquage précoce). Métriques découplées dans [`agent/run.py`](agent/run.py) : `loc_hit_initial`, `loc_hit_ever`, `loc_hit_edited` ([`docs/RAPPORT_PHASE4.md`](docs/RAPPORT_PHASE4.md)).
+- **Phase 5 (Reprise après Échec)** : Dataset de **17 trajectoires multi-tours d'auto-apprentissage** extraites du vivier TRAIN ([`trajectories/train_recovery.jsonl`](trajectories/train_recovery.jsonl), [`docs/RAPPORT_PHASE5.md`](docs/RAPPORT_PHASE5.md)), 100% leak-free.
+- **Phase 6 (Consolidation)** : Dossier de soumission harmonisé et inattaquable pour Google DeepMind ([`docs/RAPPORT_PHASE6.md`](docs/RAPPORT_PHASE6.md)).
 
-Mis à jour : 2026-09-28. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Fine-Tuning : `docs/FINETUNING_KAGGLE.md` · Condition D : `docs/CONDITION_D.md` · Site : https://kaggle.d1dev.fr
+Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Fine-Tuning : `docs/FINETUNING_KAGGLE.md` · Condition D : `docs/CONDITION_D.md` · Site : https://kaggle.d1dev.fr
 
 ## Jalons
 | Date | Jalon | État |
