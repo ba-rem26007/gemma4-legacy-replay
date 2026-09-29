@@ -3,7 +3,7 @@
 **Google AI & Kaggle Gemma Sprint Submission**  
 **Authors**: Rémi Soubeyrand & Antigravity  
 **Artifacts & Code**: [github.com/ba-rem26007/gemma4-legacy-replay](https://github.com/ba-rem26007/gemma4-legacy-replay)  
-**Model Weights**: [Hugging Face: `lora_gemma4-4b-prestashop-v1`](https://huggingface.co/) (134 MB adapter safetensors)
+**Model Weights**: [Hugging Face: `elrems/lora_gemma4-4b-prestashop-v1`](https://huggingface.co/elrems/lora_gemma4-4b-prestashop-v1) (134 MB adapter safetensors)
 
 ---
 
