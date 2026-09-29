@@ -43,9 +43,11 @@ Agentic code-repair benchmarks are dominated by Python projects with rich unit t
 | B | Ticket + replay tests with execution feedback | Realistic verifier in loop | **15/33 (45.5%)** |
 | C | Ticket + business glossary (term → code symbol) | Localisation help | 13/33 (39.4%) |
 | O | Ticket + oracle feedback (deliberate leak) | Upper bound of any verifier | **16/33 (48.5%)** |
-| A-4B | Ticket alone (Zero-Shot Gemma 4 4B, no LoRA) | Ablation baseline for LoRA isolation | 1/33 (3.0%) |
+| A-4B | Ticket alone (Gemma 4 26B A-4B, MoE) | Baseline (MoE 26B, ~4B active) | 5/33 (15.2%) |
 | D | Fine-tuned pilot (QLoRA Gemma 4 4B) | Single bug pilot (#41007) | 1/1 (100%) |
-| E | Fine-tuned complete (QLoRA Gemma 4 4B) | Full 33 bugs evaluation | **4/33 (12.1%)** |
+| E | Fine-tuned complete (dense gemma-4-e4b-it) | Full 33 bugs evaluation | **4/33 (12.1%)** |
+
+*Note: Conditions A-4B and E use different base models (MoE vs dense) and do not constitute a clean LoRA ablation.*
 
 ## 4b. Self-improvement loop (Gemma only, no distillation)
 The largest gain comes from O (faithful verifier feedback), which motivates turning verifiers into training data without any proprietary model:
@@ -53,14 +55,14 @@ The largest gain comes from O (faithful verifier feedback), which motivates turn
 2. **Gemma fixes TRAIN bugs with that verifier as feedback** (condition O on TRAIN, `ORACLE_PREFIX=g`).
 3. **Successful runs become condensed paths** (`trajectories/self_paths.py`): Gemma's own keywords and file choices plus its final patch rewritten as SEARCH/REPLACE blocks; failed attempts dropped; blocks must reproduce the final patch exactly. Source label `gemma_self`, alongside 585 paths reconstructed from official fixes.
 4. **QLoRA** on these paths → condition D & E on TEST (same fixed flow, same message format).
-5. **Memory-efficient Chunked Loss**: training Gemma 4 with a 262k vocabulary on 15 GB GPUs without OOM via 256-token micro-chunks on assistant turns.
+5. **Memory-efficient Chunked Loss**: training Gemma 4 with a 262k vocabulary on 15 GB GPUs without OOM via 256-token micro-chunks on assistant turns (VRAM reduction: 28.4 → 13.8 GB = 51% total).
 - **Reward Hacking Guards**: Paths are kept only if every edited function is touched by the official fix. Overall, 8 of 20 TRAIN bugs "solved" against model-written oracles (40 %) were rejected by these guards. Cost on 25 successful TEST fixes judged by strong oracles: 20 kept, 5 rejected (valid fixes in another file).
 - **Leak-proofing**: TRAIN bugs are merged before the cutoff, bugs touching a TEST function are excluded, and the exporter refuses TEST bugs.
 
 ## 5. Results & Statistical Significance
-- **Replay Feedback (Condition B vs A)**: Replay feedback shows a consistent but non-significant improvement (15/33 vs 12.8/33 mean over 4 baseline runs; paired permutation p = 0.11). Against a 4-run consensus, discordant pairs are 2 vs 1 (p = 0.50).
+- **Replay Feedback (Condition B vs A)**: Replay feedback shows a consistent but non-significant improvement (15/33 vs 12.8/33 mean over 4 baseline runs; paired permutation p = 0.11). Against a 4-run consensus, discordant pairs are b=1 (B-only), c=2 (A-only).
 - **Statistical Power on N=33**: Paired 95% bootstrap CI on $\Delta(B - A)$ is **[-2.27%, +16.67%]**; paired sign-flip permutation test yields $p = 0.1128$ (one-tailed) and $p = 0.2213$ (two-tailed). While $N=33$ is limited by the post-cutoff pool of verified browser oracles, replay feedback qualitatively rescues hard bugs that failed completely under baseline prompting: bug #41923 (0/8 in baseline A/R) was resolved at the 3rd editing iteration (turn 7 of agent conversation), and #41007 was resolved at the 2nd editing iteration (turn 5 of conversation). *(Budget is $\le 2$ test corrections / 3 editing iterations; conversation turns track individual prompt-response steps).*
-- **Ablation of LoRA (A-4B vs E)**: Discordant pairs all favor LoRA (b=3, c=0, p=0.125 one-sided): a consistent but non-significant trend at N=33. The most robust effect of LoRA lies in format compliance (rejections drop from 45.5% to 15.2%) and localization (loc_hit rises from 18.2% to 42.4%). *(Note: A-4B evaluated under baseline condition A without test feedback; E incorporates LoRA weights and structural rules).*
+- **Ablation of LoRA (A-4B vs E)**: Note that these are DIFFERENT base models (MoE 26B vs dense 4B), not a clean LoRA ablation. The most robust effect of E lies in format compliance (rejections drop from 45.5% to 15.2%) and localization (loc_hit rises from 18.2% to 42.4%). *(Note: A-4B evaluated under baseline condition A without test feedback; E incorporates LoRA weights and structural rules).*
 - **R vs A**: 0.0 pt, paired 95% CI [-9.1% ; +9.1%] → passive code injection yields no measurable effect on legacy code.
 - **Oracle Upper Bound (O)**: Reaches 16/33 (48.5%, +9.8 pts, paired 95% CI [+0.8% ; +20.5%]).
 

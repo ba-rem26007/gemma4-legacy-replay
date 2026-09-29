@@ -30,8 +30,8 @@
 * **Notebook Google Colab Clé en Main (GPU Gratuit T4)** : [colab_gemma4_evaluation.ipynb](https://colab.research.google.com/github/ba-rem26007/gemma4-legacy-replay/blob/main/notebook/colab_gemma4_evaluation.ipynb)
 * **Modèles Évalués** : 
   - **Gemma 4 31B (API)** : Exploration de la borne supérieure et du rejeu dynamique.
-  - **Google Gemma 4 (4B) Base** : Baseline Zero-Shot pour isoler rigoureusement l'apport du fine-tuning.
-  - **Gemma 4 (4B) + Adaptateur LoRA 134 Mo** : Modèle autonome souverain entraîné sur 585 chemins réels via `ChunkedLossTrainer`.
+  - **Google Gemma 4 (26B MoE, ~4B active)** : Baseline A-4B (`gemma-4-26b-a4b-it`).
+  - **Gemma 4 (4B) dense + Adaptateur LoRA 134 Mo** : Modèle dense autonome (`gemma-4-e4b-it`) entraîné sur 585 chemins réels via `ChunkedLossTrainer`.
 * **Terrain d'Épreuve** : PrestaShop 8.x / 9.1.x (PHP 8.1, Symfony 6, MySQL 8 / MariaDB 10.11)
 * **Vivier TEST d'Évaluation** : 33 bugs réels fermés après la coupure de connaissances (*post-cutoff* 2026), chacun doté d'un oracle end-to-end Playwright caché.
 * **Budget Réel Dépensé** : **0,00 €** (suivi scrupuleusement dans `runs/_budget.json`).
@@ -44,7 +44,7 @@
 
 ### Les 6 Chiffres Clés du Projet
 1. **15 / 33 bugs résolus en Condition B (45.5% vs 12.8/33 = 39.0% en Baseline A)** : Gain cohérent de +6.5 points de pourcentage (+2.2 bugs net).
-2. **Effet de l'Adaptateur LoRA (+9.1 points)** : Le modèle 4B LoRA (Condition E) résout **4 / 33 bugs (12.1%)**, contre **1 / 33 (3.0%)** pour le 4B Zero-Shot sans adaptateur, avec un gain majeur sur la conformité de format (rejets réduits de 45.5% à 15.2%) et la localisation (18.2% à 42.4%).
+2. **Différence entre architectures** : Le modèle dense 4B LoRA (Condition E) résout **4 / 33 bugs (12.1%)**, contre **5 / 33 (15.2%)** pour le modèle MoE 26B (Condition A-4B). Le modèle E montre néanmoins une supériorité sur la conformité de format (rejets réduits à 15.2%) et la localisation (42.4%). Ces conditions utilisent des modèles de base différents et ne constituent pas une ablation LoRA stricte.
 3. **Stabilité Applicative** : **0 régression (B)** et **1 régression sur 33 (E)** vérifiées par sondes Front-Office et Back-Office sur conteneurs Docker remis à zéro.
 4. **1,9 Wh par bug tenté (soit ≈ 15,7 Wh par bug résolu en Condition E, 4/33)** : Mesuré via `nvidia-smi` à 100 ms sur Nvidia Tesla T4 (1.39 Wh GPU + 0.42 Wh CPU), soit 33x à 55x inférieur par tentative aux clusters multi-H100 (60 à 100 Wh), et 4x à 6x inférieur par bug résolu.
 5. **Frontière de Pareto Souveraineté vs Puissance** : Le modèle 31B culmine à 45.5% pour les serveurs centraux, tandis que le 4B LoRA fournit une solution 100% on-premise à 4.29 Go de VRAM résolvant 1 bug sur 8 sans jamais faire fuiter de secret d'affaires.
@@ -103,7 +103,7 @@ L'agent ne dispose d'aucun accès terminal arbitraire ; il communique via un pro
 ### 2. Entraînement Frugal QLoRA avec `ChunkedLossTrainer` (`training/kaggle_kernel/train_kaggle.py`)
 * **Problème de départ** : Gemma 4 possède un vocabulaire gigantesque de 262 144 tokens. Le calcul standard de la perte cross-entropy génère un tenseur de logits float32 de 4.3 Go qui déclenche un crash OOM immédiat sur les GPU 15 Go (Nvidia Tesla T4).
 * **Notre innovation mathématique** : Le `ChunkedLossTrainer` découpe la projection des logits en micro-blocs différentiables de 256 tokens appliqués exclusivement sur les positions des réponses de l'assistant (`labels != -100`).
-* **Résultat** : Réduction de **94% du pic de VRAM** de la fonction de perte (< 300 Mo).
+* **Résultat** : Réduction de VRAM de 28.4 à 13.8 GB = 51% total de VRAM.
 * **Entraînement final (Kaggle Version 15)** : 3 époques sur 585 trajectoires de résolution vérifiées, descente de perte de 1.564 à 0.9309 (moyenne 1.192), adaptateur final de **134 Mo** (`training/lora_final/extracted/adapter_model.safetensors`).
 
 ### 3. Arbitrage Scientifique d'Entraînement : Pourquoi Refuser le Sur-apprentissage Aveugle
@@ -125,9 +125,9 @@ Tous les verdicts ont été mesurés sur l'instance Docker dédiée `psbench2` (
 | **R** (RAG Few-Shot) | Gemma 4 31B | Ticket + 2 correctifs TRAIN | 33 | 12.8 (moy. 4) | 39.0% | 20.2 (61.2%) | 10.5% | **0 (0.0%)** | 0,00 € |
 | **C** (Glossaire Auto) | Gemma 4 31B | Ticket + glossaire métier | 33 | **13** | **39.4% (+0.4 pt)** | **18 (54.5%)** | **9.1%** | **0 (0.0%)** | 0,00 € |
 | **B** (Replay Test) | Gemma 4 31B | Ticket + feedback dynamique | 33 | **15** | **45.5% (+6.5 pts)** | **17 (51.5%)** | **6.1%** | **0 (0.0%)** | 0,00 € |
-| **O** (Borne Haute) | Gemma 4 31B | Ticket + retour direct oracle | 33 | **16** | **48.5% (+9.8 pts)** | **20 (60.6%)** | **3.0%** | **0 (0.0%)** | 0,00 € |
-| **A-4B** (Ablation Base) | **Gemma 4 4B Zero-Shot** | Ticket seul (SANS LoRA) | 33 | **1** | **3.0%** | **6 (18.2%)** | **45.5%** | **0 (0.0%)** | 0,00 € |
-| **E** (LoRA Complet) | **Gemma 4 4B LoRA** | Modèle fine-tuné 4B + Règles | **33** | **4** | **12.1% (+9.1 pts)** | **14 (42.4%)** | **15.2%** | **1 (3.0%)** | **0,00 €** |
+| **O** (Borne Haute) | Gemma 4 31B | Ticket + retour direct oracle | 33 | **16** | **48.5% (+9.8 pts)** | **20 (60.6%)** | **3.0%** | **2 (6.1%)** | 0,00 € |
+| **A-4B** (MoE 26B) | **Gemma 4 26B A-4B** | Ticket seul (MoE) | 33 | **5** | **15.2%** | **6 (18.2%)** | **45.5%** | **1 (3.0%)** | 0,00 € |
+| **E** (LoRA Complet) | **Gemma 4 4B LoRA** | Modèle dense 4B + Règles | **33** | **4** | **12.1%** | **14 (42.4%)** | **15.2%** | **1 (3.0%)** | **0,00 €** |
 
 ---
 
@@ -160,9 +160,9 @@ Si l'on regroupe les 4 répétitions de la baseline A en un oracle de consensus 
 | **Échec en B** | **1 ($c$)** | 17 | 18 |
 | **Total** | 14 | 19 | 33 |
 
-*Paires discordantes* : $b = 2$ gains exclusifs sous rejeu (#40898, #41923), $c = 1$ échec (#41524).  
+*Paires discordantes* : $b = 1$ (B-only), $c = 2$ (A-only).
 Test exact binomial unilatéral : $p = 0,5000$.  
-*Portée scientifique* : Face à un consensus consolidé sur 4 runs, l'écart statistique est modéré ($b=2, c=1$), mais il démontre qu'un **seul passage de la Condition B (15 résolus en Pass@1)** surpasse la synthèse cumulative de 4 passages de la baseline sans feedback (14 résolus).
+*Portée scientifique* : Face à un consensus consolidé sur 4 runs, l'écart statistique est modéré ($b=1, c=2$), mais il démontre qu'un **seul passage de la Condition B (15 résolus en Pass@1)** surpasse la synthèse cumulative de 4 passages de la baseline sans feedback (14 résolus).
 
 **2. Comparaison face aux Runs Individuels et Dispersion Stochastique**
 Face aux runs individuels de la baseline soumis à la température ($T = 0,2$) :
@@ -171,15 +171,15 @@ Face aux runs individuels de la baseline soumis à la température ($T = 0,2$) :
 *Enseignement* : Le rejeu dynamique élimine les faux départs et stabilise l'inférence en absorbant l'aléa thermique.
 
 **3. Ablation de l'Adaptateur LoRA (Condition E vs Condition A-4B)**
-L'analyse comparative entre Gemma 4 4B Base (sans adaptateur) et Gemma 4 4B LoRA met en lumière l'impact de la spécialisation :
-| Statut | Résolu en A-4B (4B Base Zero-Shot) | Échec en A-4B | Total |
+L'analyse comparative entre Gemma 4 26B (MoE) et Gemma 4 4B LoRA (dense) met en lumière l'impact de la spécialisation :
+| Statut | Résolu en A-4B (MoE 26B) | Échec en A-4B | Total |
 |---|:---:|:---:|:---:|
-| **Résolu en E (4B LoRA)** | 1 | **3 ($b$)** | 4 |
-| **Échec en E (4B LoRA)** | **0 ($c$)** | 29 | 29 |
-| **Total** | 1 | 32 | 33 |
+| **Résolu en E (Dense 4B LoRA)** | 1 | **3 ($b$)** | 4 |
+| **Échec en E (Dense 4B LoRA)** | **4 ($c$)** | 25 | 29 |
+| **Total** | 5 | 28 | 33 |
 
-*Paires discordantes* : $b = 3$, $c = 0$.  
-Les 3 paires discordantes vont toutes dans le sens du LoRA (b=3, c=0, p=0,125 unilatéral) : tendance cohérente mais non significative à N=33. L'effet le plus robuste du LoRA porte sur le format (rejets 45,5 % → 15,2 %) et la localisation (18,2 % → 42,4 %).  
+*Paires discordantes* : $b = 3$, $c = 4$.  
+Ces conditions utilisent des modèles de base différents (MoE vs dense), il ne s'agit pas d'une ablation LoRA pure. L'effet le plus robuste du modèle E (dense+LoRA) porte sur le format (rejets 45,5 % → 15,2 %) et la localisation (18,2 % → 42,4 %).  
 *(Note méthodologique : la condition A-4B a été évaluée selon le protocole de référence A sans feedback de test, tandis que la condition E intègre les poids LoRA entraînés et les règles de structure).*
 
 * **Interprétation Épistémologique & Rigueur N=33** :
@@ -205,11 +205,11 @@ L'écart entre la Condition B (45.5% sur modèle 31B) et la Condition E (12.1% s
 
 # 6. ÉTUDE DES 4 VICTOIRES, ABLATION LORA & PREUVE D'ÉTANCHÉITÉ
 
-### Ablation Formelle : Gemma 4 4B Base vs Gemma 4 4B LoRA
-Pour répondre à l'hypothèse d'une réussite imputable au modèle de base :
-* **Gemma 4 4B Base Zero-Shot (A-4B)** : Résout **1 seul bug sur 33 (3.0%)**. Il souffre d'un taux d'échec de formatage de **45.5%** (incapable d'émettre des blocs `<<<<<<< SEARCH` valides, tendance à commenter ou réécrire le fichier) et sa localisation chute à 18.2%.
-* **Gemma 4 4B LoRA (Condition E)** : Résout **4 bugs sur 33 (12.1%)**. Le format SEARCH/REPLACE est respecté à **84.8%** et la localisation atteint **42.4%**.
-* **Gain Net du QLoRA** : **+9.1 points** et multiplication par 2.3 de la précision de ciblage des fichiers.
+### Comparaison Architecturale : MoE 26B (A-4B) vs Dense 4B LoRA (E)
+Pour comprendre l'apport de la spécialisation par rapport à un modèle plus large :
+* **Gemma 4 26B A-4B (MoE, ~4B active)** : Résout **5 bugs sur 33 (15.2%)**. Il souffre d'un taux d'échec de formatage de **45.5%** (incapable d'émettre des blocs `<<<<<<< SEARCH` valides) et sa localisation est de 18.2%.
+* **Gemma 4 4B LoRA (dense, Condition E)** : Résout **4 bugs sur 33 (12.1%)**. Le format SEARCH/REPLACE est respecté à **84.8%** (rejets à 15.2%) et la localisation atteint **42.4%**.
+* **Bilan** : Bien que le modèle dense soit plus contraint en taille que le MoE, le LoRA multiplie par 2.3 la précision de ciblage des fichiers et réduit massivement les erreurs de format, démontrant l'impact d'une spécialisation sur les trajectoires de résolution.
 
 ---
 
@@ -348,7 +348,7 @@ Pour offrir une robustesse métrologique maximale et garantir l'intégrité scie
   * *Niveau 3 (100-200 ms)* : Tests unitaires PHPUnit (calculs de paniers, règles de taxes, devises).
   * *Niveau 2 (2-5 s)* : Intégration Symfony CQRS et Doctrine ORM.
   * *Niveau 1 (15-30 s)* : Oracles fonctionnels E2E Playwright Headless (navigation dynamique, requêtes asynchrones Ajax, validation du DOM).
-* **Tests de Résistance VRAM & Frugalité Énergétique** : Validation mathématique du `ChunkedLossTrainer` (baisse de 94% du pic mémoire, < 300 Mo de VRAM consommée pour la perte). Mesure physique de 1,9 Wh par bug tenté sur Nvidia Tesla T4 (échantillonnage 100 ms `nvidia-smi`) et budget réel de 0,00 €.
+* **Tests de Résistance VRAM & Frugalité Énergétique** : Validation mathématique du `ChunkedLossTrainer` (baisse de 51% du pic mémoire, 28.4 → 13.8 GB). Mesure physique de 1,9 Wh par bug tenté sur Nvidia Tesla T4 (échantillonnage 100 ms `nvidia-smi`) et budget réel de 0,00 €.
 * **Mesure de Variance et Reproductibilité Multi-Tours** : Évaluation Pass@1 (36.7%) et Pass@3 (50.0%) sur cohorte récurrente de 10 bugs, confirmant la stabilité de résolution des bugs emblématiques (#40971, #41007, #41923 résolus à 3/3 sous rejeu).
 
 ---

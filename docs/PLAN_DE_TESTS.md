@@ -141,19 +141,19 @@ L'écosystème PrestaShop repose sur une architecture modulaire événementielle
 | **Condition A** (Baseline) | Gemma 4 31B (Zero-Shot) | Ticket seul brut | **12.8 / 33** | **39.0%** | 19.8 (60.0%) | 12.1% | **0 (0.0%)** | **0,00 €** |
 | **Condition R** (RAG Few-Shot) | Gemma 4 31B (Few-Shot) | Ticket + 2 exemples TRAIN | **12.8 / 33** | **39.0% (+0.0 pt)** | 20.2 (61.2%) | 10.5% | **0 (0.0%)** | **0,00 €** |
 | **Condition B** (Replay Test) | Gemma 4 31B (Feedback dynamique) | Ticket + Erreur Playwright | **15.0 / 33** | **45.5% (+6.5 pts)**| **17.0 (51.5%)** | **6.1%** | **0 (0.0%)** | **0,00 €** |
-| **Condition O** (Borne Haute) | Gemma 4 31B (Oracle direct) | Ticket + Verdict oracle | **16.0 / 33** | **48.5% (+9.8 pts)**| 20.0 (60.6%) | 3.0% | **0 (0.0%)** | **0,00 €** |
-| **Condition A-4B** (Ablation Base)| **Gemma 4 4B Zero-Shot** | Ticket seul (SANS LoRA) | **1.0 / 33** | **3.0%** | 6.0 (18.2%) | 45.5% | **0 (0.0%)** | **0,00 €** |
-| **Condition E** (LoRA Frugal) | **Gemma 4 4B LoRA** | Modèle fine-tuné + Règles | **4.0 / 33** | **12.1% (+9.1 pts)**| **14.0 (42.4%)** | **15.2%** | **1 (3.0%)** | **0,00 €** |
+| **Condition O** (Borne Haute) | Gemma 4 31B (Oracle direct) | Ticket + Verdict oracle | **16.0 / 33** | **48.5% (+9.8 pts)**| 20.0 (60.6%) | 3.0% | **2 (6.1%)** | **0,00 €** |
+| **Condition A-4B** (MoE 26B) | **Gemma 4 26B A-4B** | Ticket seul (MoE) | **5.0 / 33** | **15.2%** | 6.0 (18.2%) | 45.5% | **1 (3.0%)** | **0,00 €** |
+| **Condition E** (LoRA Frugal) | **Gemma 4 4B LoRA** | Modèle dense + Règles | **4.0 / 33** | **12.1%** | **14.0 (42.4%)** | **15.2%** | **1 (3.0%)** | **0,00 €** |
 
-* **Effet de l'Adaptateur LoRA** : Le passage de A-4B (3,0%) à E (12,1%) apporte un **gain net de +9,1 points** ($b=3, c=0$ paires discordantes, $p=0,125$ unilatéral), tout en divisant par 3 le taux d'erreur de syntaxe de patch (45,5% à 15,2%) et multipliant par 2,3 la localisation (18,2% à 42,4%).
+* **Différence Architecturale** : La comparaison entre A-4B (MoE) et E (dense) ne constitue pas une ablation LoRA stricte, car ces conditions utilisent des modèles de base différents. Toutefois, le modèle dense 4B divise par 3 le taux d'erreur de syntaxe de patch (45,5% à 15,2%) et multiplie par 2,3 la localisation (18,2% à 42,4%) par rapport au modèle MoE.
 
 ---
 
 ## 6. Grille d'Audit de Conformité Kaggle (Les 5 Piliers)
 
 ### Pilier 1 : Rigueur Scientifique et Données d'Évaluation
-- [x] **Ablation Gemma 4 4B Base Zero-shot** : Quantifiée sur les 33 bugs post-cutoff (1 résolu = 3.0%). Gain LoRA documenté à **+9.1 pts nets** (4/33).
-- [x] **Significativité statistique** : Bootstrap apparié 95% `[-2.27%, +16.67%]`, permutation appariée `p = 0.1128`, consensus 4 runs (`b = 2, c = 1, p = 0.50`) et LoRA E vs A-4B (`b = 3, c = 0, p = 0.125`).
+- [x] **Ablation Gemma 4 4B Base Zero-shot** : Quantifiée sur les 33 bugs post-cutoff (5 résolus = 15.2% pour MoE 26B, vs 4 résolus = 12.1% pour dense 4B).
+- [x] **Significativité statistique** : Bootstrap apparié 95% `[-2.27%, +16.67%]`, permutation appariée `p = 0.1128`, consensus 4 runs (`b = 1, c = 2, p = 0.50`) et LoRA E vs A-4B (`b = 3, c = 4`).
 - [x] **Étanchéité Certifiée du Bug #40971** : Signature canonique d'API `Shop::setContext(Shop::CONTEXT_GROUP, $idShopGroup)` documentée. Absence de `LogoUploader.php` dans le train vérifiée.
 - [x] **Formule Énergétique Métrologique (1.91 Wh/bug tenté, ≈ 15.7 Wh/bug résolu)** : Échantillonnage haute fréquence 100 ms via `nvidia-smi` sur Tesla T4. Formule : `Wh = (48.2 W * 104 s + 25 W * 60 s) / 3600 = 1.81 Wh ≈ 1.91 Wh`.
 
@@ -169,7 +169,7 @@ L'écosystème PrestaShop repose sur une architecture modulaire événementielle
 
 ### Pilier 4 : Environnement Technique, Code et Reproductibilité
 - [x] **Bac à sable Docker & Rollback SQL** : Restauration systématique de `.snap-psbench2.sql.gz` sur `psbench2` (port 8082), deux sondes HTTP 200 OK.
-- [x] **Module `ChunkedLossTrainer` publié** : Code source isolé et documenté dans `training/chunked_loss.py` (chute de 94% de VRAM prouvée).
+- [x] **Module `ChunkedLossTrainer` publié** : Code source isolé et documenté dans `training/chunked_loss.py` (baisse de 51% de VRAM prouvée).
 - [x] **Dépôt nettoyé & commande 1-ligne** : Zéro secret versionné, README.md avec commande exacte pour rejouer le bug #40971.
 
 ### Pilier 5 : Validation des Accès Externes et Démonstrateur

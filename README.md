@@ -21,10 +21,10 @@ Projet pour le hackathon officiel **Kaggle Gemma 4**.
   - `Condition R` (RAG Few-Shot 31B) : Ticket + 2 exemples similaires → **39.0% (+0.0 pt)**.
   - `Condition C` (Glossaire Auto 31B) : Ticket + glossaire métier contextuel → **39.4% (13.0 / 33)**.
   - `Condition B` (Replay Test 31B) : Ticket + feedback dynamique Playwright → **45.5% (+6.5 pts, 15 / 33)**, **0 régression**.
-  - `Condition O` (Borne Haute 31B) : Ticket + verdict direct de l'oracle → **48.5% (+9.8 pts, 16 / 33)**.
-  - `Condition A-4B` (Ablation Base 4B) : Gemma 4 4B Zero-Shot sans LoRA → **3.0% (1 / 33)** (45.5% de rejets syntaxiques).
-  - `Condition E` (LoRA Frugal 4B) : Gemma 4 4B spécialisé via `ChunkedLossTrainer` → **12.1% (+9.1 pts, 4 / 33)**.
-* **Effet de l'Adaptateur LoRA** : Gain net de **+9.1 points** (b=3, c=0 discordants en faveur du LoRA), réduisant les rejets de format de 45.5% à 15.2% et montant la localisation de 18.2% à 42.4%.
+  - `Condition O` (Borne Haute 31B) : Ticket + verdict direct de l'oracle → **48.5% (+9.8 pts, 16 / 33)**, **2 régressions**.
+  - `Condition A-4B` (MoE 26B) : Modèle `gemma-4-26b-a4b-it` (~4B active) → **15.2% (5 / 33)**.
+  - `Condition E` (LoRA Frugal 4B) : Modèle dense `gemma-4-e4b-it` spécialisé via `ChunkedLossTrainer` → **12.1% (4 / 33)**, **1 régression**.
+* **Note sur les architectures** : A-4B et E utilisent des modèles de base différents (MoE vs dense). Il ne s'agit pas d'une ablation LoRA pure.
 * **Frugalité Énergétique Métrologique** : **1,9 Wh par bug tenté** (soit ≈ 15,7 Wh par bug résolu en Condition E) mesuré à 100 ms sur Nvidia Tesla T4 via `nvidia-smi` (33x à 55x inférieur par tentative aux clusters H100, 4x à 6x par bug résolu).
 * **Budget Réel** : **0,00 €** d'API propriétaire récurrente (`runs/_budget.json`).
 
@@ -36,7 +36,7 @@ Projet pour le hackathon officiel **Kaggle Gemma 4**.
    - **585 trajectoires de résolution vérifiées** (`trajectories/train.jsonl` : 569 PR historiques reconstruites + 25 auto-chemins `self.jsonl`).
    - **~2,21 millions de tokens** au total (moyenne de 3 889 tokens par exemple).
    - **3 époques complètes** (~6,6 millions de tokens vus).
-   - Micro-chunks différentiables de **256 tokens** via `ChunkedLossTrainer` (chute de 94% du pic VRAM, < 300 Mo).
+   - Micro-chunks différentiables de **256 tokens** via `ChunkedLossTrainer` (réduction de 28.4 à 13.8 GB = 51% total VRAM).
    - Adaptateur final autonome de **134 Mo** (`adapter_model.safetensors`).
 2. **Données Injectées à l'Inférence (Contexte au tour par tour)** :
    - Fenêtre ciblée de **1 500 à 3 500 tokens** (très inférieure aux 8 192 tokens de Gemma 4).
@@ -93,7 +93,7 @@ bench/eval.py          Évalue un patch (anti-régression HTTP 200 + oracle bina
 bench/test_pool.py     Vivier TEST 9.1.x post-cutoff → data/bugs_test.csv
 agent/flow.py          Déroulé fixe (localiser → lire fenêtré → éditer → tester)
 agent/run.py           Agent Gemma (API standard OpenAI-compatible), traces → runs/
-training/chunked_loss.py Trainer Hugging Face micro-chunks 256 tokens (baisse 94% VRAM)
+training/chunked_loss.py Trainer Hugging Face micro-chunks 256 tokens (baisse 51% VRAM)
 trajectories/          Chemins d'apprentissage vérifiés (train.jsonl, self.jsonl)
 docs/RAPPORT_GLOBAL.md Document maître de synthèse (52+ KB, Writeup officiel en anglais)
 docs/PLAN_DE_TESTS.md  Cahier de recette officiel (42 bugs Cœur + 42 Modules tiers)

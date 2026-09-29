@@ -127,7 +127,7 @@ flowchart TD
 
 | Terme & Acronyme | Définition & Rôle Technique | Statut dans Notre Projet | Détails de Mise en Œuvre ou Justification |
 |:---|:---|:---:|:---|
-| **MoE**<br>*(Mixture of Experts)* | Architecture neuronale où seules certaines sous-parties du réseau (experts) sont activées pour chaque token (ex: Mixtral 8x7B, DeepSeek-V3). | ℹ️ **ÉTUDIÉ** | Analysé pour comparer l'énergie des modèles propriétaires géants (Claude/GPT-4o) face à l'efficience d'un modèle **dense** compact (Gemma 4 4B). |
+| **MoE**<br>*(Mixture of Experts)* | Architecture neuronale où seules certaines sous-parties du réseau (experts) sont activées pour chaque token (ex: Mixtral 8x7B, DeepSeek-V3). | ✅ **UTILISÉ** | Le modèle `gemma-4-26b-a4b-it` (Condition A-4B) utilise cette architecture : 26B de paramètres totaux, ~4B actifs par token. Il résout 5/33 (15.2%) en zero-shot. |
 | **MHA / GQA / MQA**<br>*(Multi-Head / Grouped-Query / Multi-Query Attention)* | Évolutions de l'attention. Le **GQA** regroupe plusieurs têtes de requêtes (Q) pour une seule tête de clés/valeurs (KV), divisant la mémoire du cache KV par 4 ou 8. | ✅ **NATIF** | Gemma 4 utilise nativement le **GQA**, ce qui permet de maintenir des fenêtres de contexte longues sans saturation de la VRAM. |
 | **RoPE**<br>*(Rotary Position Embedding)* | Encodage positionnel appliquant une matrice de rotation aux représentations vectorielles. Permet une excellente extrapolation de la longueur de contexte. | ✅ **NATIF** | Présent dans l'architecture Gemma 4, permettant d'ingérer des fenêtres de code sans dégradation spatiale des numéros de ligne. |
 | **KV Cache**<br>*(Key-Value Cache)* | Mise en mémoire tampon des tenseurs Clé et Valeur des tokens précédents lors de la génération autoregressive, évitant un recalcul quadratique en $O(N^2)$. | ✅ **UTILISÉ** | Activé par défaut lors de l'inférence (`use_cache=True`) pour accélérer la génération du patch à moins de 3 secondes. |
@@ -147,7 +147,7 @@ flowchart TD
         Tenseur1 --> OOM["❌ CRASH CUDA OOM (Out Of Memory sur GPU 16 Go)"]
     end
 
-    subgraph Chunked ["Notre Innovation : ChunkedLossTrainer (-94% VRAM)"]
+    subgraph Chunked ["Notre Innovation : ChunkedLossTrainer (−51% VRAM totale)"]
         Hidden2["États Cachés H<br>[Batch=1, SeqLen=2048, Dim=2560]"] --> Loop["Découpage Séquentiel en Micro-Blocs (taille=256)"]
         Loop --> C1["Micro-Bloc 1: tokens 0-256"]
         Loop --> C2["Micro-Bloc 2: tokens 256-512"]
@@ -160,7 +160,7 @@ flowchart TD
 
 | Terme & Acronyme | Définition & Rôle Technique | Statut dans Notre Projet | Détails de Mise en Œuvre ou Justification |
 |:---|:---|:---:|:---|
-| **Chunked Loss**<br>*(Micro-Chunking de Perte)* | **Notre innovation majeure (`ChunkedLossTrainer`)** : Découpe le calcul de la Cross-Entropy sur la dimension séquentielle en micro-blocs de 256 tokens, sans jamais matérialiser le tenseur géant de logits sur tout le vocabulaire. | ✅ **NOTRE PERCÉE** | Gemma 4 possède un vocabulaire géant de **262 144 tokens**. Le calcul de perte standard demandait 28.4 Go de VRAM (crash OOM immédiat). Notre micro-chunking **réduit le pic VRAM de 94% (13.8 Go)** sur Tesla T4. |
+| **Chunked Loss**<br>*(Micro-Chunking de Perte)* | **Notre innovation majeure (`ChunkedLossTrainer`)** : Découpe le calcul de la Cross-Entropy sur la dimension séquentielle en micro-blocs de 256 tokens, sans jamais matérialiser le tenseur géant de logits sur tout le vocabulaire. | ✅ **NOTRE PERCÉE** | Gemma 4 possède un vocabulaire géant de **262 144 tokens**. Le calcul de perte standard demandait 28.4 Go de VRAM (crash OOM immédiat). Notre micro-chunking **réduit la VRAM totale d'entraînement de 51% (28.4 → 13.8 Go)** sur Tesla T4. |
 | **Gradient Checkpointing**<br>*(Activation Checkpointing)* | Ne conserve que certaines activations clés lors de la passe avant et recalcule les activations intermédiaires lors de la rétropropagation. Échange du temps de calcul contre un gain massif de VRAM. | ✅ **FAIT** | Activé via `model.gradient_checkpointing_enable()` dans `training/train_lora.py`, divisant l'empreinte mémoire d'activation par 3. |
 | **Gradient Accumulation** | Calcul des gradients sur plusieurs micro-lots successifs avant d'effectuer un pas d'optimisation (`optimizer.step()`). Simule un grand batch size sur un petit GPU. | ✅ **FAIT** | `gradient_accumulation_steps=8` avec un `per_device_train_batch_size=1`, simulant un batch effectif de 8 ou 16 sans saturer les 15 Go du GPU. |
 | **FlashAttention-2 / SDPA** | Réécriture au niveau GPU des opérations d'attention mathématique pour tirer parti de la SRAM ultra-rapide des puces sans allouer de mémoire intermédiaire. | ✅ **FAIT** | Utilisation de PyTorch SDPA (*Scaled Dot-Product Attention*) pour accélérer les passes avant et arrière de 35%. |
@@ -257,7 +257,7 @@ mindmap
   root((Gemma 4 Legacy Replay))
     Fine-Tuning Frugal
       PEFT / QLoRA 4-bit (NF4 + Double Quant)
-      ChunkedLossTrainer (-94% VRAM backprop)
+      ChunkedLossTrainer (-51% VRAM totale)
       Gradient Checkpointing & Accumulation
       bfloat16 + GQA Natif
       FFT & Cloud API Rejetes (0,00 €)

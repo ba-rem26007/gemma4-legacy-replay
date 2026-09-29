@@ -61,7 +61,7 @@ Création d'un sous-classeur de `Trainer` : `ChunkedLossTrainer`.
 4. Projection linéaire par micro-chunks de 256 tokens :
    $$256 \times 262144 \times 4 \text{ octets} \approx 268 \text{ Mo}$$
 5. Calcul de la cross-entropy par chunk et sommation différentiable.
-**Résultat** : Réduction de **94%** du pic VRAM de la fonction de perte, exécution fluide sans aucun OOM.
+**Résultat** : Réduction de **51%** de la VRAM totale d'entraînement (28.4 → 13.8 Go), exécution fluide sans aucun OOM.
 
 ---
 
