@@ -1,5 +1,11 @@
 # ÉTAT — reprise : « Lis ETAT.md et reprends »
 
+## Point documentaire du 29 septembre 2026
+
+- Plan d’amélioration rédigé : [`docs/PLAN_AMELIORATION.md`](docs/PLAN_AMELIORATION.md). Première étape prévue : audit du corpus réellement entraîné et des configurations d’évaluation.
+- Constat dans le journal Kaggle archivé : **585 trajectoires sélectionnées, mais seulement 89 conservées après tokenisation** (limite de 2 048 tokens). Les mentions historiques ci-dessous de « 585 trajectoires entraînées » restent à réconcilier avec ce journal et la provenance de l’adaptateur évalué.
+- Aucune nouvelle expérience ni modification de l’agent ou de l’entraînement réalisée pour ce plan. L’état historique ci-dessous est conservé.
+
 Mis à jour : 2026-09-28. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Fine-Tuning : `docs/FINETUNING_KAGGLE.md` · Condition D : `docs/CONDITION_D.md` · Site : https://kaggle.d1dev.fr
 
 ## Jalons
