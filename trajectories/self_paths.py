@@ -135,6 +135,9 @@ def main():
     test = {int(r["pr"]) for r in csv.DictReader(open(ROOT / "data" / "bugs_test.csv"))}
     if a.allow_test and Path(a.out).resolve().is_relative_to(ROOT / "trajectories"):
         sys.exit("--allow-test : écrire hors de trajectories/ (jamais de TEST dans les données d'entraînement)")
+    # étanchéité au niveau FONCTION (même règle que reconstruct.py) : aucun chemin touchant une fonction d'un bug post-coupure
+    post = [c for c in cat.values() if (c["merged_at"] or "9999") >= a.cutoff]
+    post_fns = {(f, fn) for c in post for f, fns in c["functions"].items() for fn in fns if not fn.startswith("(")}
     stats, out = {}, []
     for run in a.runs:
         for d in sorted(p for p in Path(run).iterdir() if p.is_dir() and p.name.isdigit() and (p / "result.json").exists()):
@@ -142,7 +145,8 @@ def main():
             bug = cat.get(pr)
             if not bug:
                 why = "hors_catalogue"
-            elif not a.allow_test and (pr in test or (bug["merged_at"] or "9999") >= a.cutoff):
+            elif not a.allow_test and (pr in test or (bug["merged_at"] or "9999") >= a.cutoff
+                                       or {(f, fn) for f, fns in bug["functions"].items() for fn in fns} & post_fns):
                 why = "exclu_etancheite"
             elif not verdict(d):
                 why = "non_resolu"

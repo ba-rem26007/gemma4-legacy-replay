@@ -1,343 +1,155 @@
-# Making Legacy Monoliths Verifiable: Replay Tests, Frugal Fine-Tuning, and Zero-Day Hunting with Gemma 4 across PrestaShop and Dolibarr
+# Making a Legacy PHP Monolith Verifiable for a Gemma 4 Bug-Fixing Agent
 
-**Google AI & Kaggle Gemma Sprint Submission**  
-**Authors**: Rémi Soubeyrand & Antigravity  
-**Artifacts & Code**: [github.com/ba-rem26007/gemma4-legacy-replay](https://github.com/ba-rem26007/gemma4-legacy-replay)  
-**Model Weights (PrestaShop)**: [Hugging Face: `elrems/lora_gemma4-4b-prestashop-v1`](https://huggingface.co/elrems/lora_gemma4-4b-prestashop-v1) (Private repository / Mirror authenticated in Colab)  
-**Model Specs (Dolibarr)**: [Hugging Face: `elrems/lora_gemma4-4b-dolibarr-v1`](https://huggingface.co/elrems/lora_gemma4-4b-dolibarr-v1) (Public)  
-**SFT Dataset (Dolibarr 10-Yr)**: [Hugging Face Dataset: `elrems/dolibarr-gemma4-sft-trajectories`](https://huggingface.co/datasets/elrems/dolibarr-gemma4-sft-trajectories) (Public)
+### Hidden replay oracles on 33 post-cutoff PHP bugs, and how often a Gemma-only self-learning loop games its own tests
+
+**Author:** Rémi Soubeyrand · Kaggle "Google – The Gemma 4 Developer Agent", Paper Track
+**Code, data and traces:** https://github.com/ba-rem26007/gemma4-legacy-replay (Apache-2.0)
 
 ---
 
-## Executive Summary & Abstract
+## Abstract
 
-Autonomous software engineering benchmarks—most notably SWE-bench and its derivatives—suffer from an overwhelming representation bias: they almost exclusively evaluate modern Python codebases equipped with comprehensive, hermetic `pytest` suites. Real-world enterprise software looks entirely different. Over 76% of the web is powered by PHP (W3Techs, 2024), dominated by 15- to 20-year-old monolithic architectures (e-commerce, ERPs, CRMs) characterized by loose typing, sprawling global states, multi-tenant databases, and zero unit tests. In these mission-critical environments, verification relies on user sessions, browser interactions, and database state transitions.
+Code-repair benchmarks mostly use Python projects that ship unit tests. Much of the web runs on PHP [W3Techs], often legacy code where a bug only shows in a browser session against a database. We make one such monolith, PrestaShop, **verifiable**: each of 33 real bugs, fixed upstream after our 2025-06-01 split, gets a hidden Playwright oracle run against a Dockerized shop with a reset database, failing before and passing after the official fix. A fixed-flow Gemma 4 31B agent solves 12.8/33 from the ticket alone (38.6%, mean of 4 trials). Similar fixes (R) and a glossary (C) add nothing measurable. Gemma-written reproduction tests with execution feedback (B) reach 15/33 in a single run (+6.8 pts, 95% CI [−2.3, +16.7], p ≈ 0.11, not significant). The hidden oracle as feedback, an approximate ceiling in this flow (single run), reaches 16/33. We then close the loop with Gemma alone: it writes oracles for older TRAIN bugs, then fixes them. Of 41 "solved" bugs, **13 (32%) edit code outside the official fix** and are rejected by guards: without such a reference, the loop can reward gaming its own tests. We also report a modest QLoRA run of Gemma 4 E4B on two free T4 GPUs.
 
-In this work, we present the first end-to-end autonomous debugging and verification framework specifically engineered for real enterprise legacy monoliths using **Gemma 4 (31B and 4B)**:
-1. **Dynamic Replay Benchmark (PrestaShop 8/9)**: We construct a leak-proof benchmark of 33 post-cutoff bugs verified via hidden **end-to-end browser oracles** (Playwright driving real Dockerized stores and MariaDB instances). Gemma 4 31B achieves **39.0%** in baseline zero-shot (Condition A). When equipped with **dynamic replay execution feedback (Condition B)**, resolution jumps to **45.5% (+6.5 percentage points, 15/33)** with **zero regressions** across the 31B evaluation conditions.
-2. **LoRA Parametric Specialization (Gemma 4 4B)**: To guarantee data sovereignty and on-premise execution, we fine-tune Gemma 4 4B on autonomous repair trajectories using QLoRA. Base Gemma 4 E4B (dense, 4B parameters) resolves **12.1%** (4/33) when fine-tuned with our QLoRA adapter, lifting syntactic compliance from 54.5% to **84.8%**.
-3. **Cross-Ecosystem Generalization (Dolibarr ERP/CRM)**: To prove that our approach is not an overfit artifact of PrestaShop, we mine **10 years of Dolibarr ERP/CRM history (76,518 commits, 34,087 verified bugfixes)** and deploy our agent zero-shot on real-world issue #41005 (REST API quotation line loss). Gemma 4 localizes the defect, synthesizes an atomic patch, and achieves **100% PASS** on a live Apache/MariaDB stack with zero smoke regressions.
-4. **Zero-Day Residual Vulnerability Hunting**: We demonstrate that an agent grounded in live execution sandboxes uncovers subtle residual bugs that escape both static analyzers and massive generalist frontier models (like Claude 3.5 Sonnet). We discover, reproduce, and patch two unpatched defects: a **Multi-store Context Poisoning** vulnerability in PrestaShop 8 (`Shop::setContext(Shop::CONTEXT_ALL)` in `DeleteLanguageHandler.php`) and a fatal **REST Deserialization Crash** on `stdClass::getPriceBaseType()` in Dolibarr 19. Both patches are independently certified with reproducible oracles.
-5. **Green AI & Frugal Engineering**: Operating with a strictly tracked budget of **0.00 €**, we introduce `ChunkedLossTrainer`, an optimization dividing the cross-entropy loss over Gemma 4's massive 262k vocabulary into 256-token micro-chunks. This achieves a **51% reduction in total training VRAM** (28.4 GB → 13.8 GB), enabling full QLoRA fine-tuning on free consumer-grade hardware (Tesla T4 16GB). Inference consumes only **4.29 GB VRAM** and **1.91 Wh per attempted bug** (≈ 15.7 Wh per resolved bug in Condition E)—achieving a **35x to 50x energy reduction on attempts** and **4x to 6x reduction on resolutions** compared to cloud hyperscaler clusters.
-6. **Case-Based Reasoning (RAG)**: We integrate a BM25 historical jurisprudence retriever (`CaseRetriever`) indexing 34,000 historical commit precedents, injecting maintainer resolution patterns into inference prompts without the token explosion and non-terminating loops of unconstrained ReAct agents.
+## 1. Problem
 
----
+PHP runs on 69.8% of websites whose server-side language is known (W3Techs, 30 September 2026). Much of that code is "legacy" in Feathers' sense: code without tests [Feathers]. SWE-bench-style evaluation assumes the repository's own tests can judge a patch [SWE-bench]. Multi-SWE-bench adds seven languages but no PHP [Multi-SWE]. In PrestaShop, a typical bug (#41921, "Not able to change stock behaviour in shared stock") depends on multistore configuration, database rows and a back-office form. No unit test exists that would fail on it.
 
-## 1. Problem Formulation: The "Legacy Monolith" Gap in AI Code Repair
+We ask three questions:
+- **Q1.** Can end-to-end replay (browser + database) turn such bugs into verifiable tasks for an open model?
+- **Q2.** Which help matters: examples, vocabulary, tests written from the ticket, or the hidden oracle itself?
+- **Q3.** Can Gemma bootstrap its own training data from its own verifiers, without any proprietary model?
 
-Modern code generation benchmarks evaluate models on clean, modern, well-typed codebases:
+**Contributions:** (1) a replay benchmark of 33 post-cutoff PHP bugs with hidden browser+database oracles; (2) a measured comparison of verifier types for Gemma 4; (3) a Gemma-only self-learning loop where guards against the official fix reject 13 of 41 "solved" bugs.
 
-```
-┌─────────────────────────────────┐       ┌─────────────────────────────────┐
-│     SWE-bench Paradigm          │  vs.  │    Real Enterprise Reality      │
-├─────────────────────────────────┤       ├─────────────────────────────────┤
-│ • Clean Python 3.10+ / Pytest   │       │ • 20-Year PHP Monolith (8.1/8.2)│
-│ • Deterministic Unit Isolation  │       │ • Global State, Sessions, DB    │
-│ • Rich Docstrings & Type Hints  │       │ • stdClass, Arrays, Magic Call  │
-│ • Single-Tenant Memory State    │       │ • Multi-Tenant / Multi-Shop     │
-│ • Fast Test Suites (< 2s)       │       │ • Browser-Driven End-to-End E2E │
-└─────────────────────────────────┘       └─────────────────────────────────┘
-```
+## 2. Benchmark
 
-When applied to monolithic systems like PrestaShop (e-commerce) or Dolibarr (ERP/CRM), frontier models fail systematically:
-- **Attention Dilution on Monolithic Files**: Monolithic controller and model classes span 3,000 to 7,000 lines (e.g. `AdminProductsController.php`, `propal.class.php`). Standard 32k-context models lose track of local variable scopes.
-- **The "Modern Code" Prior Trap**: Generalist models assume modern OOP design patterns. When analyzing Dolibarr, Claude 3.5 Sonnet assumes that `is_object($var)` implies a valid domain entity; it misses that REST deserialization yields generic PHP `stdClass` instances that satisfy `is_object()` but fatal error on method invocation (`$line->getPriceBaseType()`).
-- **Data Sovereignty & Enterprise Secrecy**: Enterprise ERP and e-commerce systems contain confidential margins, customer PII, and proprietary business logic. Organizations are legally and competitively barred from streaming their codebases to third-party US cloud APIs. An edge-first model running locally under 5 GB VRAM is a mandatory business prerequisite.
+**Selection.** `bench/select.py` keeps merged functional bug-fix PRs with a linked issue that touch at most 3 files. Of the 187 catalogued bugs merged after our 2025-06-01 split, 55 candidates from the 9.1.x branch were screened by hand (`data/bugs_test.csv`). **33** got a valid oracle. The other 22 were excluded, mostly because they need a JavaScript build (13) or have no reproducible UI path (5). The 33 fixes were merged between 2026-02-12 and 2026-07-22. Gemma 4's declared training cutoff is January 2025 [Gemma4-card], so the split leaves 5 months of margin. Five TEST issues (#20448, #29009, #29663, #35690, #36058) were **opened** before the cutoff (numbered before PR #37679, merged in 2024), so their ticket text may have been seen in pre-training. Only their fixes are later.
 
----
+**Environment.** `bench/checkout.sh <pr> pre|post|patch.diff` starts the nearest official `prestashop/prestashop` image with MySQL 8.0, applies a database snapshot and puts the touched files in the requested state.
 
-## 2. Benchmark Architecture: Verifiable Dynamic Replay
+**Oracles.** Each bug has a Playwright spec (27 back office, 6 front office) plus a `setup.sql`, in the record-and-replay tradition of web testing [WATERFALL, WebTesting]. The agent never sees it. A bug counts as solved only if the oracle passes **and** a smoke test (front-office home page and back-office login) passes on a freshly reset database.
 
-To make legacy code verifiable without synthetic or hallucinated unit tests, we establish an execution-grounded test harness:
+**Evaluator audit.** Files edited outside the official diff were not restored between bugs; after fixing this we re-ran the verdicts on fresh instances without calling the model again (`bench/reeval.py`). 322 of the 462 verdicts in `eval/results.csv` come from that re-evaluation.
 
-```mermaid
-flowchart TD
-    subgraph Host ["Orchestration & Verification Engine"]
-        BugTicket["Bug Ticket (Post-Cutoff Issue)"] --> Agent["Gemma 4 Agent (4-Turn Fixed Flow)"]
-        Agent -->|1. Locate| Kw["Keywords (JSON)"]
-        Kw -->|TF-IDF Windowing| Src["Context Windows (250 lines)"]
-        Src -->|2. Edit| Patch["SEARCH/REPLACE Patch"]
-        Patch --> Apply["Container Patch Applicator"]
-    end
+## 3. Agent
 
-    subgraph Sandbox ["Isolated Docker Environment (Live Stack)"]
-        Apply --> WebServer["Apache / PHP 8.1 - 8.2 Engine"]
-        WebServer <--> MariaDB["MariaDB 10.11 (Restored Database Snapshot)"]
-        WebServer --> Browser["Playwright Headless Browser Session"]
-    end
+Following Agentless [Agentless] rather than an open-ended agent [SWE-agent], the flow is fixed and short (`agent/run.py`, `agent/flow.py`):
 
-    subgraph Evaluation ["Dual-Tier Oracle Verification"]
-        Browser --> Oracle["Hidden Oracle (Fails Pre-Fix, Passes Post-Fix)"]
-        WebServer --> Smoke["Anti-Regression Smoke Suite (FO + BO Login)"]
-        Oracle & Smoke --> Decision{Dual Verdict}
-        Decision -->|Both Pass| Pass["VERDICT: PASS"]
-        Decision -->|Any Fail| Fail["VERDICT: FAIL"]
-    end
+1. **LOCATE.** The model returns keywords, which we grep in the repository.
+2. **READ.** The model picks at most 3 files and sees keyword-centred windows of them.
+3. **EDIT.** The model writes SEARCH/REPLACE blocks. It may backtrack twice to search or read again.
+4. **TEST.** Feedback conditions only: up to 2 corrections, each showing the test output and the current edited files.
 
-    Fail -.->|Condition B: Dynamic Traceback| Agent
-```
+The main model is Gemma 4 31B [Gemma4] through the Google AI Studio API at temperature 0.2. The whole campaign used **3,910 API calls and cost 0 €** (`runs/_budget.json`).
 
-### Key Principles of the Benchmark
-1. **Temporal Cutoff Leak-Proofing**: All evaluated bugs were merged upstream **after** Gemma 4's knowledge cutoff. The training corpus consists strictly of pre-cutoff historical PRs.
-2. **Hidden End-to-End Oracles**: Each bug is paired with a browser oracle written with Playwright. The oracle is **hidden** from the agent during inference (in Conditions A, B, C, R). A bug is declared solved if and only if:
-   $$\text{Verdict} = \text{Oracle}(\text{Patched}) \land \neg \text{Regression}(\text{Smoke FO}) \land \neg \text{Regression}(\text{Smoke BO})$$
-3. **Database State Reset**: PrestaShop and Dolibarr store essential configurations, multi-store bindings, and permissions in relational tables. Prior to every test run, the container database is atomically restored from a pristine `.sql` snapshot.
-4. **Atomic SEARCH/REPLACE Protocol**: The agent is restricted to generating exact, line-for-line search and replace blocks, eliminating file truncation and syntax corruption.
+## 4. Results
 
----
+| Cond. | What the agent sees (Gemma 4 31B unless noted) | Solved /33 | Right file | Regr. |
+|---|---|---|---|---|
+| A | Ticket only; 4 trials (12/13/15/11) | **12.8 (38.6%)** | 19.8 | 0 |
+| R | + 2 similar TRAIN fixes (TF-IDF) + glossary (8 tickets); 4 trials | 12.8 (38.6%) | 20.2 | 0 |
+| C | + auto glossary; static repro test (10 bugs) | 13 (39.4%) | 18 | 1 |
+| B | + Gemma-written repro test **with feedback** (10 bugs); 1 run | **15 (45.5%)** | 17 | 0 |
+| O | + **hidden oracle as feedback** (approx. ceiling); 1 run | **16 (48.5%)** | 19 | 2 |
+| A-26B | Ticket only, Gemma 4 26B A4B | 5 (15.2%) | 21 | 0 |
+| E | Gemma 4 E4B + our LoRA + rules, glossary, B-style feedback | 4 (12.1%) | 14 | 1 |
 
-## 3. Experimental Evaluation: PrestaShop 8/9 Benchmark (33 Bugs)
+Right file: attempts reading the officially fixed file (mean for A, R). Regr.: smoke-test regressions. A-26B is `A-4B` in `eval/results.csv` (from `bench/results.py`). A solves 17/33 at least once over 4 trials. CIs: paired per bug against A, 95% bootstrap, 5,000 resamples, `random.seed(0)`, as in `bench/results.py`.
 
-We conduct extensive evaluations across 33 post-cutoff bugs under tightly controlled conditions.
+**What does not help (Q2).** R − A = 0.0 pts, CI [−9.1, +9.1]: two similar historical fixes (plus the glossary on 8 tickets) change nothing. C's glossary matched 16 tickets without improving localisation (18 vs 19.8 right files); an index of back-office pages (11/33) did not help either.
 
-### Comprehensive Results Matrix
+**Approximate ceiling (O).** Feeding back the hidden oracle is a deliberate leak approximating the most a verifier could give in this flow. The first attempt solves 13/33, like A; feedback lifts it to 16/33 (#41299, #41394, #41923): +9.8 pts, CI [+0.8, +20.5], the only interval entirely above zero, barely. Two O attempts broke the smoke test (#41225, #41573).
 
-| Condition | Description | Model | Format Compl. | Loc. Hit | Bugs Solved | Success Rate | Regressions |
-|:---|:---|:---|:---:|:---:|:---:|:---:|:---:|
-| **A** | Baseline Ticket Only (Zero-Shot) | Gemma 4 31B | 97.0% | 60.0% | 12.8 / 33 | **39.0%** | **0** |
-| **R** | Ticket + 2 Similar Fixes (TF-IDF) | Gemma 4 31B | 97.0% | 61.2% | 12.8 / 33 | **39.0%** | **0** |
-| **C** | Ticket + Auto Domain Glossary | Gemma 4 31B | 93.9% | 54.5% | 13.0 / 33 | **39.4%** | **0** |
-| **B** | **Ticket + Dynamic Replay Feedback** | Gemma 4 31B | 97.0% | 51.5% | **15.0 / 33** | **45.5%** | **0** |
-| **O** | Ticket + Oracle Feedback (Upper Bound) | Gemma 4 31B | 100.0% | 57.6% | **16.0 / 33** | **48.5%** | **0** |
-| **A-4B**| Baseline MoE Zero-Shot (No LoRA) | Gemma 4 26B-A4B (MoE, ~4B active) | 54.5% | 18.2% | 5.0 / 33 | **15.2%** | **0** |
-| **E** | **Fine-Tuned QLoRA Adapter (4B)** | Gemma 4 4B | **84.8%** | **42.4%** | **4.0 / 33** | **12.1%** | **1 (3.0%)** |
+**Realistic verifier (B).** `bench/reprotest.py` asks Gemma for a Playwright reproduction test **from the ticket alone**, kept only if it fails on the current code. This worked for 10 of 33 bugs (on the other 23, B's prompt equals A's). Only 1 of those tests passes with the official fix; on the other 9, no candidate patch ever passed it, including the 5 the hidden oracle accepts: the feedback was a constant "fail". B solves 15/33: +6.8 pts over A's mean, CI [−2.3, +16.7], one-sided sign-flip permutation p ≈ 0.11 (two-sided 0.23), **not significant**. It is a single run: 15 equals A's best trial (A ranges 11–15), is below A's 17/33 over 4 trials, and B reads the right file less often (17 vs 19.8). The split:
+- On the 10 bugs with feedback, B solves 6 against 4.5 for A.
+- On the 23 bugs without feedback, B solves 9 against 8.25 for A, likely sampling noise.
+- Two earlier exploratory B runs on the same 10 bugs used an older flow version and solved 4 and 3.
 
-```
-Resolution Rates Across Experimental Conditions:
-[A: Baseline 31B]    ████████████████████ 39.0%
-[R: Static Examples] ████████████████████ 39.0%
-[C: Glossary]        ████████████████████ 39.4%
-[B: Dynamic Replay]  ███████████████████████ 45.5% (+6.5 pts)
-[O: Oracle Bound]    ████████████████████████ 48.5% (+9.8 pts)
-────────────────────────────────────────────────────────────────
-[A-4B: MoE 26B-A4B]  ████████ 15.2%
-[E: 4B QLoRA]        ██████ 12.1% (+9.1 pts isolated adapter gain)
-```
+The clearest case is PR #41923 ([link](https://github.com/PrestaShop/PrestaShop/pull/41923), issue #41921): 0/8 across A and R, solved in all 3 B runs (main plus two exploratory) and in C. In the main B run the final patch is identical to Gemma's first edit, written before any test output; the two failing rounds only caused a revert and a restore. The gain comes from seeing the reproduction test, not from execution feedback.
 
-### Statistical Significance Analysis
-- **Condition B vs. Baseline A**: Replay feedback shows a consistent but non-significant improvement (15/33 vs 12.8/33 mean over 4 baseline runs; paired sign-flip permutation $p = 0.1128$). Against a 4-run consensus baseline ($\ge 2/4$ runs solved), discordant pairs are $b=1$ (B-only) vs $c=2$ (A-only), $p = 0.50$.
-  - Paired 95% bootstrap confidence interval on $\Delta(B - A)$: **[-2.27%, +16.67%]**.
-  - *Statistical Power Transparency*: Because $N=33$ represents the entirety of rigorously verified post-cutoff browser oracles, detecting a +6.5 pt lift at $\alpha = 0.05$ with 80% power would require $N \ge 95$ bugs. We report the exact $p$-value honestly without inflated claims.
-- **Dynamic Rescue Effect**: Crucially, replay feedback rescues complex, multi-step bugs that failed completely across all four zero-shot baseline runs. For example:
-  - **Bug #41923** (*Shared stock behavior update*): Scored 0/8 in Conditions A and R. Under Condition B, the runtime error trace guided Gemma 4 to correct its targeting at the 3rd editing iteration (turn 7 of agent conversation), achieving full resolution.
-  - **Bug #41007** (*CountryQueryBuilder count regression*): Failed on turn 4, rescued at the 2nd editing iteration (turn 5 of conversation) following Playwright error assertion feedback.
-  - *(Budget note: The agent adheres to a budget of $\le 2$ test corrections / 3 editing iterations; conversation turns log individual interaction steps).*
-- **LoRA Ablation (A-4B vs. Condition E)**: 
-  *Critical methodological note*: A-4B uses `gemma-4-26b-a4b-it` (26B MoE, ~4B active parameters, 30 layers), while E uses `gemma-4-e4b-it` (dense 4B, 42 layers) with our QLoRA adapter. These are architecturally distinct models, making this a **cross-architecture comparison**, not a pure LoRA isolation. A-4B resolves 5/33 (15.2%); E resolves 4/33 (12.1%). Discordant pairs: $b=3$ (E-only), $c=4$ (A-4B-only), yielding no significant difference. The primary measurable effect of our QLoRA specialization on the dense E4B is in **format compliance** (syntax rejection drops from 54.5% to 15.2%) and **localization accuracy** (loc_hit rises from 18.2% to 42.4%).
+**Smaller models.** Gemma 4 26B A4B with the ticket alone solves 5/33 (−23.5 pts, CI [−38.6, −9.1]). It reads the right file at least as often as the 31B model (21 vs 19.8) but applies a patch in only 12/33 cases.
 
----
+**Answer to Q1.** Replay makes the bugs *measurable* (every verdict reproducible and paired) but only partly *fixable*: the hidden oracle gains about 3 bugs, and a ticket-derived verifier gained less in our single run (+2.2 over A's mean), without statistical support at n = 33.
 
-## 4. Cross-Ecosystem Generalization: Dolibarr ERP/CRM (10 Years & 34,000 Commits)
+## 5. Self-learning loop and reward hacking (Q3)
 
-A key scientific pitfall of software agent benchmarks is single-repository overfitting. To prove generalizability across disparate architectural paradigms, we expanded the system to **Dolibarr ERP/CRM**, an open-source PHP ERP powering over 100,000 businesses globally.
+O suggested verifiers as a training signal. We built the loop **with Gemma 4 31B only**, on TRAIN bugs merged before the split (10 of the 99 with a valid oracle share functions fixed after it and are excluded from training data):
 
-```
-Dolibarr Mining & Generalization Pipeline:
-┌─────────────────────────────────┐
-│ 76,518 Git Commits (2016-2026)  │
-└────────────────┬────────────────┘
-                 ▼
-┌─────────────────────────────────┐
-│ 34,087 Qualified Bugfixes       │
-├─────────────────────────────────┤
-│ • 31,487 Historical (TRAIN)     │ ──► [Stratified Pool: 1,000 Cases] ──► [300 SFT Multi-Turn Paths]
-│ •  2,600 Post-Cutoff (TEST)     │ ──► [Certified Test Cohort: 42 Bugs]
-└─────────────────────────────────┘
-```
+1. **Gemma writes the oracle** (`bench/gentest.py`) from the ticket and official fix, kept only if it fails before and passes after the fix. Of 276 bugs, browser oracles: **0 of ~22** (Gemma could not drive the back office reliably); PHP command-line oracles: **99 of ~254** (**39%**). Totals come from `bench/gentest.jsonl`, the mode split from generation logs.
+2. **Gemma fixes the bug** in condition O, with its own oracle as feedback. It "solves" **41 of 99**.
+3. **Guards** (`trajectories/self_paths.py`) accept a path only if it was re-verified and each edited file and function is also touched by the official fix. **23 are accepted after the function-level split filter. 13 of 41 (32%) edit code outside the official fix** (7 other files, 6 other functions) and are rejected; 3 more, inside it, are dropped because the edited file never appeared in the agent's search.
 
-### Empirical Transfer Proof: Real Bug #41005 (Live Docker Verification)
-We deployed our fixed-flow Gemma 4 agent zero-shot on Dolibarr Bug **#41005**:
-- **Ticket**: *"FIX: a proposal created from the REST API loses its lines (fatal on stdClass)"*.
-- **Target File**: `htdocs/comm/propal/class/propal.class.php` (4,200 lines).
-- **Execution Log**:
-  1. *Tour 1 (Locate)*: Gemma 4 generated targeted technical keywords: `["api_proposals.class.php", "Propal", "create", "propaldet", "stdClass"]`.
-  2. *Tour 2 (Read)*: Flow engine retrieved the file and windowed lines 1320-1370.
-  3. *Tour 3 (Edit)*: Gemma 4 identified the defect (`is_object($this->lines[$i])` evaluating to true for REST JSON `stdClass` instances) and generated an atomic SEARCH/REPLACE:
-     ```diff
-     FILE: htdocs/comm/propal/class/propal.class.php
-     <<<<<<< SEARCH
-     						if (!is_object($this->lines[$i])) {	// If this->lines is not array of objects, coming from REST API
-     =======
-     						if (!($this->lines[$i] instanceof PropaleLigne)) {	// If this->lines is not array of PropaleLigne objects, coming from REST API
-     >>>>>>> REPLACE
-     ```
-  4. *Tour 4 (Verification)*: Patch applied directly into container `dolibench-doli-1`. Anti-regression smoke test passed. Dedicated oracle `bench/oracles/g41005.php` executed REST payload creation: **VERDICT PASS**.
+On #38417 the official fix changes one faulty call to `ImageType::getImagesTypes()` in the webservice. Gemma instead rewrote an unrelated SQL join and added a special case inside `ImageType` (`if ($type === 'customizations') $type = 'products';`), which is enough to satisfy its oracle. On #38168 it edited the right file but a different method, making a query return nothing. We call these **reward hacking**: the model satisfied a model-written test without fixing the bug where the maintainers did.
 
----
+This is our central finding for RL or self-training on legacy code: **when the oracle is model-written, "tests pass" is not a sufficient reward.** Up to one in three "successes" (13/41) edit code the maintainers did not touch; the two we inspected (#38417, #38168) are symptomatic patches. The guard is conservative (it would also reject a valid fix placed elsewhere), so 13/41 is an upper bound on gaming, not a measured rate. The loop stays usable only because TRAIN bugs have an official fix to compare against. Of the 25 accepted paths, 7 are identical to the official fix and 17 reach ≥ 0.4 similarity (`trajectories/self.jsonl`, `docs/BOUCLE.md`).
 
-## 5. Zero-Day Residual Vulnerability Discovery on Both Stacks
+## 6. Frugal fine-tuning (modest result)
 
-A major advantage of our execution-grounded architecture is its capability to uncover **residual, unpatched defects** in production software that both static analyzers and massive proprietary models miss.
+**Data.** The 585 prepared examples are 569 paths reconstructed deterministically from official TRAIN fixes (`trajectories/reconstruct.py`) plus 16 Gemma paths from the loop, which is how many existed at training time. No proprietary model output is included (unlike [SWE-Gym]), and bugs are real (unlike [SWE-smith]). TRAIN excludes any bug that shares a PR, an issue or a modified function with a TEST bug (`data/ETANCHEITE.md`: 820 TRAIN, 58 excluded). Only **89** examples fit in 2,048 tokens, and only those were trained on.
 
-```
-Dual Zero-Day Discoveries Certified by Live Execution Oracles:
+**Training.** We trained QLoRA on Gemma 4 E4B: 4-bit, r = 16, α = 32, 3 epochs, 18 steps, lr 5e-5, on 2× T4 on Kaggle. It ran for 7,209 s with a mean training loss of 1.192 (`training/kaggle_kernel/train_kaggle.py`, `docs/FINETUNING_KAGGLE.md`).
 
-1. PrestaShop 8 / 9 Multi-Store Engine
-   ┌────────────────────────────────────────────────────────────────────────┐
-   │ File: src/Core/Domain/Language/CommandHandler/DeleteLanguageHandler.php│
-   │ Defect: Shop::setContext(Shop::CONTEXT_ALL) left un-restored           │
-   │ Impact: Global thread context poisoned to CONTEXT_ALL (Shop ID = NULL) │
-   │ Oracle: bench/test_context_leak_language.php (FAIL -> PASS)            │
-   └────────────────────────────────────────────────────────────────────────┘
+**Chunked loss.** Gemma 4's vocabulary has 262,144 entries. Upcasting the full float32 logits takes 2.15 GB per 2,048-token sequence, 4.29 GB for a micro-batch of 2 (1 per device × 2 T4); `docs/FINETUNING_KAGGLE.md` reports an out-of-memory error. `training/chunked_loss.py` projects only assistant positions, 256 tokens at a time:
 
-2. Dolibarr ERP/CRM 19.0.2 REST Quotation Subsystem
-   ┌────────────────────────────────────────────────────────────────────────┐
-   │ File: htdocs/comm/propal/class/supplier_proposal.class.php             │
-   │ Defect: Supplier proposal lines deserialized as stdClass trigger fatal │
-   │ Impact: Call to undefined method stdClass::getPriceBaseType()          │
-   │ Oracle: bench/oracles/test_supplier_proposal_stdclass.php (FAIL->PASS) │
-   └────────────────────────────────────────────────────────────────────────┘
-```
-
-### Discovery 1: PrestaShop Multi-Store Context Leak (`DeleteLanguageHandler.php`)
-- **Vulnerability**: When deleting a language in multi-store mode, `DeleteLanguageHandler` changes the global context via `Shop::setContext(Shop::CONTEXT_ALL)` to delete associated language records across all shops. However, it fails to restore the original shop context upon completion.
-- **Consequence**: Subsequent operations executed on the same PHP-FPM worker run under `CONTEXT_ALL` with `Shop::getContextShopID() === null`, corrupting cart sessions, order calculations, and module queries.
-- **Oracle & Verification**: We engineered `bench/test_context_leak_language.php`, which asserts the preservation of the active shop context before and after handler invocation. The unpatched core failed with `AssertionError: Context was NOT restored! (Left at CONTEXT_ALL)`.
-- **Patch**: We wrapped the handler logic in a `try...finally` block restoring `$tmpContext` and `$tmpShop`. The oracle passed with **100% compliance**.
-
-### Discovery 2: Dolibarr Supplier Proposal REST Crash (`supplier_proposal.class.php`)
-- **Vulnerability**: While upstream PR #41005 fixed customer proposals (`propal.class.php`), the identical architectural defect was left residual in `supplier_proposal.class.php` (lines 1097-1113). Deserializing a supplier proposal via the REST API injected raw `stdClass` instances, triggering an unhandled fatal error:
-  `PHP Fatal error: Uncaught Error: Call to undefined method stdClass::getPriceBaseType()`.
-- **Oracle & Verification**: We built `bench/oracles/test_supplier_proposal_stdclass.php`. The test failed fatally on stock Dolibarr 19.0.2. Applying our localized patch converted incoming `stdClass` objects to `SupplierProposalLine` instances:
-  ```diff
-  --- a/htdocs/comm/propal/class/supplier_proposal.class.php
-  +++ b/htdocs/comm/propal/class/supplier_proposal.class.php
-  @@ -1098,2 +1098,2 @@
-  -				if (!is_object($this->lines[$i])) {
-  +				if (!($this->lines[$i] instanceof SupplierProposalLine)) {
-  ```
-  The oracle executed successfully: **PASS**.
-
----
-
-## 6. Green AI & Algorithmic Frugality: The `ChunkedLossTrainer` Breakthrough
-
-Deploying autonomous agents at enterprise scale demands extreme computational and financial sobriety.
-
-### Financial and Carbon Accounting
-
-| Metric | Gemma 4 4B + QLoRA (Ours) | Claude 3.5 Sonnet | GPT-4o | Factor Improvement |
-|:---|:---:|:---:|:---:|:---:|
-| **Active Parameters** | **4 Billion** | ~300B - 400B (MoE) | ~1.8 Trillion (MoE) | **50x - 450x smaller** |
-| **Inference VRAM** | **4.29 GB** (4-bit) | Multi-node 8x80GB clusters | Hyperscaler clusters | **Runs on consumer GPU** |
-| **Hardware TDP** | **~70 Watts** (Tesla T4) | Several Kilowatts / node | Megawatts / cluster | **35x - 50x lower peak power** |
-| **Energy / Attempted Bug**| **1.91 Watt-hours (Wh)** | ~65 - 110 Wh | ~75 - 130 Wh | **35x - 50x lower energy** |
-| **Energy / Resolved Bug** | **≈ 15.7 Wh** (Cond. E, 4/33)| ~60 - 100 Wh | ~70 - 120 Wh | **4x - 6x lower (Luccioni 2023)**|
-| **Financial Cost / 5k Bugs**| **0.00 €** (`runs/_budget.json`)| **$1,500 - $2,250** | **$1,200 - $1,800** | **100% budget savings** |
-| **Data Privacy** | **100% On-Premise / Edge** | Cloud API (US) | Cloud API (US) | **GDPR & PCI-DSS Compliant**|
-
-```
-Energy Footprint Comparison (Attempted vs Resolved):
-[Attempted Bug - Gemma 4 4B]  █ 1.91 Wh (Equivalent to 9W LED bulb for 12 minutes)
-[Attempted Bug - Cloud LLMs]  ██████████████████████████████████ 85 Wh
-──────────────────────────────────────────────────────────────────
-[Resolved Bug - Cond. E (4/33)] █ 15.7 Wh (1.91 Wh × 33 / 4)
-[Resolved Bug - Cloud Frontier] ████████ 80 Wh (4x - 6x reduction)
-```
-
-### Solving the 262k Vocabulary Gradient Explosion: `ChunkedLossTrainer`
-Fine-tuning Gemma 4 on consumer GPUs (e.g. 15GB Tesla T4 or 12GB RTX 3060) encounters a fatal hardware limitation: Gemma 4 features an ultra-expressive vocabulary of **262,144 tokens**. Standard PyTorch cross-entropy requires materializing the full logit tensor:
-$$\text{Logit Tensor} \in \mathbb{R}^{\text{Batch} \times \text{SeqLen} \times \text{Vocab}} = [1 \times 2048 \times 262144] \times 4\text{ bytes} \approx \mathbf{2.15\text{ GB per sequence}}$$
-During backward backpropagation, intermediate gradient activations easily exceed 28 GB, triggering immediate Out-Of-Memory (OOM) crashes.
-
-To overcome this, we developed **`ChunkedLossTrainer`**:
 ```python
-# training/train_lora.py & training/train_dolibarr.py
-class ChunkedLossTrainer(Trainer):
-    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
-        labels = inputs.pop("labels")
-        outputs = model(**inputs)
-        hidden_states = outputs[0]  # [B, L, H]
-        
-        # Micro-chunking across sequence dimension (chunk_size = 256)
-        total_loss = 0.0
-        for i in range(0, hidden_states.shape[1], 256):
-            chunk_hidden = hidden_states[:, i:i+256, :]
-            chunk_logits = model.lm_head(chunk_hidden)  # Materialize logits for only 256 tokens
-            chunk_labels = labels[:, i:i+256]
-            loss = F.cross_entropy(chunk_logits.view(-1, 262144), chunk_labels.view(-1))
-            total_loss += loss * (chunk_labels != -100).sum()
-            
-        return total_loss / (labels != -100).sum()
-```
-By projecting hidden states to logits in 256-token micro-chunks, the peak loss-computation tensor shrinks by **~99.9%** (vocabulary 262,144 → 256 tokens per chunk). Total training VRAM drops from **28.4 GB to 13.8 GB (−51%)**, enabling complete, stable QLoRA training on standard 16GB T4 instances at zero financial cost.
-
----
-
-## 7. Case-Based Jurisprudence RAG: Smarter than Unconstrained ReAct Loops
-
-Many modern agent architectures deploy unconstrained ReAct tool loops, granting models unrestricted command-line or bash execution. In our preliminary experiments, unconstrained loops on smaller models (4B to 31B) produced catastrophic failure modes:
-1. **Infinite Non-Terminating Loops**: Models repeatedly grep for generic strings, inflating context windows and blowing through token limits.
-2. **Loss of Frugality**: Multi-step tool churn consumes 25-40 Wh per bug, destroying our 1.91 Wh frugality objective.
-3. **Container State Poisoning**: Unchecked bash commands alter container configurations, breaking subsequent test reproducibility.
-
-### The Constrained Flow + RAG Jurisprudence Architecture
-To combine architectural predictability with the vast knowledge contained in 34,000 historical fixes, we implemented `CaseRetriever` (`agent/rag_retriever.py`):
-
-```
-Historical Bug Mining (34,000 commits) ──► BM25 Corpus Indexing
-                                                  │
-Incoming Bug Ticket (Title + Body) ───────────────┤
-                                                  ▼
-                                     Top-1 Relevant Jurisprudence Precedent
-                                                  │
-                                                  ▼
-Tour 3 Prompt Injection:
-"=== JURISPRUDENCE HISTORIQUE SIMILAIRE (RAG DE PRÉCÉDENTS) ===
-• Incident Passé (2024): FIX: proposal created from REST API loses its lines
-• Modèle de résolution appliqué à l'époque:
-<<<<<<< SEARCH
-    if (!is_object($this->lines[$i])) {
-=======
-    if (!($this->lines[$i] instanceof PropaleLigne)) {
->>>>>>> REPLACE
-============================================================="
+for i in range(0, active_h.size(0), chunk_size):
+    logits_chunk = head(active_h[i:i+chunk_size]).float()
+    total_loss += F.cross_entropy(logits_chunk, active_l[i:i+chunk_size], reduction="sum")
 ```
 
-During Tour 3, the retriever calculates BM25 scores across indexed historical fixes in $<0.05$ seconds. The maintainer-approved solution pattern is injected as an in-context few-shot guide. This provides the exact domain intuition needed to resolve complex architectural bugs without granting arbitrary execution privileges or bloating context windows.
+The peak logits tensor drops to about 268 MB, 94% less than 4.29 GB (87.5% per sequence) **for that tensor**. Total VRAM was not measured.
 
----
+**Result.** The complete system E (E4B + LoRA + business rules + glossary + replay feedback on 10 bugs + 2 retries) solves **4/33** (#40971, #41007, #41130, #41193), with one smoke regression (#41299). The nearest reference is Gemma 4 26B A4B with the ticket only (5/33). **This compares two systems, not the LoRA alone**: the models, prompts and feedback all differ, and we have no run of the base E4B model. E applies more patches (18 vs 12) but finds the right file less often (42.4% vs 63.6%). With 89 short examples, the adapter did not give a small model the 31B model's localisation.
 
-## 8. Failure Taxonomy & Critical Insights
+## 7. Failure taxonomy
 
-An exhaustive audit of remaining failure cases across the benchmark reveals the distribution of failure modes:
+Of the 132 A attempts, 81 fail (`eval/results.csv`, `docs/ECHECS.md`):
+- **56.8%** (46) never read the fixed file: localisation is the main bottleneck (34.8% of all attempts).
+- **23.5%** (19) read it but produced no applicable edit, because of an inexact SEARCH copy or read-loops.
+- **19.8%** (16) applied a wrong fix.
 
-```
-Failure Mode Distribution (Condition A, 20 unresolved bugs out of 33):
-┌───────────────────────────────────────┬──────────┐
-│ Failure Mode                          │  Count   │
-├───────────────────────────────────────┼──────────┤
-│ 1. Localisation Failure (Wrong File)  │ 57.5%    │
-│ 2. Syntactic Search/Replace Mismatch  │ 22.5%    │
-│ 3. Incorrect Logic / Partial Patch    │ 20.0%    │
-│ 4. Platform Regressions (Smoke Fail)  │  0.0%    │
-└───────────────────────────────────────┴──────────┘
-```
+A made no regressions. Over the 8 A+R attempts per bug, 15 bugs are never solved and 3 are always solved. The difficulty is bimodal. The glossary, page index and fine-tuning all failed to add the architecture knowledge localisation needs.
 
-1. **Localisation is the True Bottleneck**: In 35% of failed runs, the agent never opens the file that was modified in the upstream fix. The challenge in monolithic codebases is not code generation—it is finding the needle in the 20,000-file haystack.
-2. **Near-Zero Regressions**: Across all 31B conditions (A, R, C, B), our agent caused **zero regressions** on front-office or back-office smoke suites. Condition E (4B LoRA) produced 1 regression out of 33 runs (3.0%), and Condition O (oracle upper bound) produced 2 (6.1%). The combination of targeted windowing and atomic SEARCH/REPLACE operations effectively prevents collateral damage.
-3. **Passive Context (R) Has Zero Impact**: Injecting similar examples without execution feedback (Condition R) produced exactly $\Delta = +0.0\%$ over baseline. Static examples do not help the model localize or verify dynamic interactions; **active execution feedback (Condition B) is what actually moves the needle**.
+## 8. Limitations
 
----
+- **Small n.** 33 bugs, one project. B and O are single runs. B's p ≈ 0.11 is not significant, its feedback reaches only 10 bugs, and on 9 of them the test never passed.
+- **Weak E.** E is a system-versus-system comparison trained on 89 examples. An isolated LoRA ablation on E4B (`bench/matrix_e4b.py`) is prepared but not run.
+- **Pre-training exposure.** Five TEST issue texts pre-date the model cutoff.
+- **TEST oracles** were written with Claude's help (see disclosure). Validated by execution and hidden from the agent, they are not independent of our tooling.
+- **Evaluation setup.** The 31B model is evaluated through an API, not the local quantized build. Energy was not measured.
+- **Loop data hygiene.** #32563 and #31571 touch functions also fixed after the split (TEST bug #41412; post-split #39788). Neither was in the trained snapshot; the exporter now filters them.
+- **Perspective.** A Dolibarr ERP port was started; with no trained weights or validated benchmark, we claim nothing about it.
 
-## 9. Reproducibility & Open Source Deliverables
+## 9. Reproducibility
 
-All code, datasets, evaluation oracles, model adapters, and raw inference traces are fully open-sourced:
+- **Benchmark:** `bench/select.py`, `data/bugs_test.csv`, `data/ETANCHEITE.md`, `bench/env/docker-compose.yml`, `bench/checkout.sh`, `bench/replay/run.sh`, `bench/eval.py`, `bench/reeval.py`.
+- **Agent:** `agent/run.py`, `agent/flow.py`.
+- **Verdicts:** `bench/reprotest.py`, `eval/results.csv`, with traces and patches under `runs/`.
+- **Tables:** `bench/results.py` generates `docs/RESULTATS.md` and `eval/results.csv`; all CIs are recomputable from that CSV.
+- **Loop:** `bench/gentest.py`, `trajectories/self_paths.py`, `bench/loop_stats.py`, `docs/BOUCLE.md`.
+- **Training:** `trajectories/reconstruct.py`, `trajectories/train.jsonl`, `training/chunked_loss.py`, `training/kaggle_kernel/train_kaggle.py`.
 
-- **Source Code Repository**: [github.com/ba-rem26007/gemma4-legacy-replay](https://github.com/ba-rem26007/gemma4-legacy-replay)
-  - `bench/`: Test runners, checkout scripts, Playwright oracles, and smoke test suites.
-  - `agent/`: 4-turn fixed flow, `flow.py`, `run.py`, and `rag_retriever.py`.
-  - `training/`: `train_lora.py` and `ChunkedLossTrainer` implementation.
-  - `mining/`: 10-year Git commit mining pipelines for both PrestaShop and Dolibarr.
-- **Model Weights (Hugging Face)**:
-  - Adapter: `lora_gemma4-4b-prestashop-v1` (134 MB `adapter_model.safetensors`).
-  - Native 4-bit integration compatible with Hugging Face `transformers` and `peft`.
-- **Raw Evaluation Traces**: All step-by-step agent transcripts and diffs are archived under `runs/` for full independent verification.
+Internal docs under `docs/` are in French; the numbers come from the CSV/JSONL files and scripts.
 
----
+Example: `bench/checkout.sh 41923 pre && bench/replay/run.sh 41923` must fail, and `bench/checkout.sh 41923 post && bench/replay/run.sh 41923` must pass.
 
-## 10. Conclusion
+## AI assistance disclosure
 
-By pairing Google DeepMind's open **Gemma 4** models with dynamic replay execution sandboxes, we have shown that autonomous software repair is not limited to clean, modern Python toy problems. 
+Claude Code (Anthropic) helped build the tooling: scripts, Docker harness, evaluator, and drafts of this text, which the author checked against the repository. The 33 TEST oracles were written with Claude's help, validated by execution, and hidden from the evaluated agent. **No output of a proprietary model is in any training data.** Training examples are reconstructed deterministically from official fixes or produced by Gemma 4 and validated by execution. All reported agent behaviour is Gemma 4's.
 
-Our framework successfully tames 20-year-old enterprise PHP monoliths, lifting bug resolution from **39.0% to 45.5%** via replay feedback, proving cross-ecosystem generalizability across **PrestaShop and Dolibarr (34,000 bugs)**, and uncovering critical **Zero-Day vulnerabilities** on live systems. Operating with complete data sovereignty at **1.91 Wh per attempted bug** (≈ 15.7 Wh per resolved bug) and **0.00 € API cost**, this work establishes a verifiable, frugal, and production-ready blueprint for the future of enterprise software maintenance.
+## Related works and citations
+
+- [SWE-bench] Jimenez et al., 2023. *SWE-bench: Can Language Models Resolve Real-World GitHub Issues?* https://arxiv.org/abs/2310.06770. Python only; judged by the repository's tests, including tests added with the reference fix.
+- [Multi-SWE] Zan et al., 2025. *Multi-SWE-bench: A Multilingual Benchmark for Issue Resolving.* https://arxiv.org/abs/2504.02605. Seven languages, no PHP.
+- [SWE-agent] Yang et al., 2024. *SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering.* https://arxiv.org/abs/2405.15793
+- [Agentless] Xia et al., 2024. *Agentless: Demystifying LLM-based Software Engineering Agents.* https://arxiv.org/abs/2407.01489. Closest to our fixed flow.
+- [SWE-Gym] Pan et al., 2024. *Training Software Engineering Agents and Verifiers with SWE-Gym.* https://arxiv.org/abs/2412.21139. Trajectories from proprietary models.
+- [SWE-smith] Yang et al., 2025. *SWE-smith: Scaling Data for Software Engineering Agents.* https://arxiv.org/abs/2504.21798. Synthetic Python bugs.
+- [Feathers] Feathers, 2004. *Working Effectively with Legacy Code.* Prentice Hall, ISBN 0-13-117705-2. https://openlibrary.org/isbn/0131177052
+- [WATERFALL] Hammoudi, Rothermel & Stocco, 2016. *WATERFALL: An Incremental Approach for Repairing Record-Replay Tests of Web Applications.* FSE 2016. https://doi.org/10.1145/2950290.2950294
+- [WebTesting] Li et al., 2024. *A Survey on Web Application Testing: Over a Decade of Evolution.* https://arxiv.org/abs/2412.10476
+- [Gemma4] Gemma Team, 2026. *Gemma 4 Technical Report.* https://arxiv.org/abs/2607.02770
+- [Gemma4-card] Gemma 4 model card (training cutoff January 2025). https://ai.google.dev/gemma/docs/core/model_card_4
+- [W3Techs] Usage statistics of PHP for websites (69.8%, accessed 30 September 2026). https://w3techs.com/technologies/details/pl-php
+- PrestaShop source and the fixes used as ground truth: https://github.com/PrestaShop/PrestaShop

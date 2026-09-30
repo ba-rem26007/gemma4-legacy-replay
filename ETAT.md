@@ -13,14 +13,15 @@
 Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Fine-Tuning : `docs/FINETUNING_KAGGLE.md` · Condition D : `docs/CONDITION_D.md` · Site : https://kaggle.d1dev.fr
 
 ## Recheck pré-soumission (30 sept.) — NO-GO en l'état, corrections en cours
+- **Writeup réécrit** (`docs/KAGGLE_FINAL_WRITEUP.md`, 2 7xx mots) : plus aucun contenu sécurité, chiffres recalculés et contre-vérifiés (29 constats corrigés), sous-titre, Related works, AI disclosure. Restent : logs d'entraînement/gentest à committer, notebooks (chiffres non sourcés), `SOBRIETE.md`.
 Rapport complet : 6 revues contre-vérifiées. Bloquants : (1) secrets suivis ; (2) contenu « zero-day / bounty » (writeup §5, `docs/BOUNTY_REPORTS.md`) contraire à la règle « jamais de sécurité » ; (3) rien de public (dépôt, HF, LICENSE) ; (4-5) chiffres LoRA et #41005 faux dans `docs/KAGGLE_FINAL_WRITEUP.md` ; (6) citations fausses ; (7) format Kaggle (sous-titre, Related works, ≤ 3 000 mots).
 - **Fait 30 sept.** : `RELATED.md` revérifié (WATERFALL = Hammoudi et al. FSE 2016 ; Li et al. 2024 ; Gemma 4 Technical Report, **coupure officielle janvier 2025** → notre split 2025-06-01 est prudent ; Feathers via Open Library) ; secrets retirés des fichiers (ngrok → variable d'env., mots de passe du site) ; `LICENSE` Apache-2.0 ; runs B et E, scripts `run_test_*`, `train_kaggle.py` committés.
 - **Rémi** : révoquer le token ngrok (https://dashboard.ngrok.com) et le token HF (https://huggingface.co/settings/tokens), changer le mot de passe du site ; feu vert pour supprimer `docs/BOUNTY_REPORTS.md` et la §5. Publication = **nouveau dépôt public sans historique** (le token ngrok reste dans l'historique actuel).
 
 ## Boucle d'auto-apprentissage — bilan final (30 sept., 7 h 55)
 - **Terminée** (lot 4 : 220 bugs traités). Oracles PHP écrits par Gemma : **99 validés / 254 (39 %)** ; navigateur 0/22.
-- Agent Gemma, condition O sur TRAIN : **41 résolus / 99 (41 %)** → garde-fous : **25 chemins acceptés**, 16 rejetés (7 hors fichiers officiels, 6 hors fonctions officielles, 3 fichier absent de la recherche) = **39 % de contournements** sur les « résolus ».
-- Similarité au correctif officiel : 7 identiques (1,0) ; **17 chemins ≥ 0,4** (seuil proposé). `trajectories/self.jsonl`, `docs/BOUCLE.md`.
+- Agent Gemma, condition O sur TRAIN : **41 résolus / 99 (41 %)** → garde-fous : **13/41 (32 %) contournements** (7 hors fichiers officiels, 6 hors fonctions officielles), 3 fichier absent de la recherche ; après filtre d'étanchéité par fonction (10 bugs exclus, dont #32563 et #31571) : **23 chemins acceptés**. (Corrigé le 30 sept. : « 39 % » était faux.)
+- Similarité au correctif officiel : **16 chemins ≥ 0,4** (seuil proposé). `trajectories/self.jsonl`, `docs/BOUCLE.md`.
 
 ## Jalons
 | Date | Jalon | État |
