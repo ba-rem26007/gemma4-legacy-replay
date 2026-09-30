@@ -51,7 +51,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from peft import PeftModel
 
 # 2. Configuration
-NGROK_AUTHTOKEN = "344Xle5YjFdBbZmQPUYidZmrr84_uLziF1xEReWVS1TesnxV"
+NGROK_AUTHTOKEN = os.environ["NGROK_AUTHTOKEN"]  # jamais en clair
 BASE_MODEL_NAME = "google/gemma-4-e4b-it"
 ADAPTER_PATH = "/content/lora/final"
 PORT = 8000

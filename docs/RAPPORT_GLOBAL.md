@@ -26,7 +26,7 @@
 * **Projet** : `gemma4-legacy-replay` (Kaggle Gemma 4 Competition)
 * **Auteur / Équipe** : Rémi Soubeyrand & Antigravity (Google DeepMind Agentic Pair Programming)
 * **Dépôt Local & Public** : `/home/elrems/kaggle` · GitHub : `ba-rem26007/gemma4-legacy-replay`
-* **Plateforme de Démonstration Accessible** : `https://kaggle.d1dev.fr` (Identifiants de consultation sandbox pour le jury : `d1dev` / `d1dev`)
+* **Plateforme de Démonstration Accessible** : `https://kaggle.d1dev.fr` (accès restreint pendant la mise au point)
 * **Notebook Google Colab Clé en Main (GPU Gratuit T4)** : [colab_gemma4_evaluation.ipynb](https://colab.research.google.com/github/ba-rem26007/gemma4-legacy-replay/blob/main/notebook/colab_gemma4_evaluation.ipynb)
 * **Modèles Évalués** : 
   - **Gemma 4 31B (API)** : Exploration de la borne supérieure et du rejeu dynamique.

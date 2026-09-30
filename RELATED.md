@@ -1,6 +1,6 @@
 # Travaux connexes (kit phase 1)
 
-Règle : **chaque référence a un lien vérifié** (API arXiv ou page arXiv consultée le 2026-09-26). Rien n'entre sans vérification.
+Règle : **chaque référence a un lien vérifié** (arXiv, Crossref, Open Library ou model card ; revérifié le 2026-09-30). Rien n'entre sans vérification.
 
 ## Benchmarks d'agents de correction
 | Référence | Résumé | Différence avec nous |
@@ -23,18 +23,18 @@ Règle : **chaque référence a un lien vérifié** (API arXiv ou page arXiv con
 ## Tests de caractérisation & Code Legacy
 | Référence | Résumé | Différence avec nous |
 |---|---|---|
-| Feathers, 2004 — *Working Effectively with Legacy Code* — Pearson / Prentice Hall, ISBN 0-13-117705-2 — https://dl.acm.org/doi/book/10.5555/1044873 | Définition fondamentale : « le code legacy est du code sans tests ». Introduction des tests de caractérisation pour figer le comportement avant modification. | Suppose l'écriture manuelle de harnais et de « points de rupture » (seams) dans le code ; nous : chaîne d'oracles de bout en bout (navigateur + base) et vérificateurs PHP externes sans modifier l'architecture legacy. |
+| Feathers, 2004 — *Working Effectively with Legacy Code* — Pearson / Prentice Hall, ISBN 0-13-117705-2 — https://openlibrary.org/isbn/0131177052 | Définition fondamentale : « le code legacy est du code sans tests ». Introduction des tests de caractérisation pour figer le comportement avant modification. | Suppose l'écriture manuelle de harnais et de « points de rupture » (seams) dans le code ; nous : chaîne d'oracles de bout en bout (navigateur + base) et vérificateurs PHP externes sans modifier l'architecture legacy. |
 
 ## Record and Replay Web & Robustesse des Tests
 | Référence | Résumé | Différence avec nous |
 |---|---|---|
-| Choudhary et al., 2011 — *WATERFALL: An Incremental Approach for Repairing Record-and-Replay Tests of Web Applications* — FSE 2011 / https://doi.org/10.1145/2025113.2025167 | Capture et rejeu d'interactions utilisateur sur applications web avec réparation incrémentale des tests cassés. | Conçu pour la non-régression humaine sur l'interface ; nous : réutilisation du rejeu comme signal de guidage et de récompense dynamique pour un agent LLM autonome en mode débogage. |
-| Zhao et al., 2024 — *A Survey on Web Application Testing: A Decade of Evolution* — https://arxiv.org/abs/2412.10476 | Revue décennale des techniques de test web, de la fragilité des enregistrements DOM à l'émergence des agents IA. | Synthèse de l'état de l'art soulignant le manque d'environnements exécutables avec persistance d'état complet (BDD/backend) ; exactement ce que fournit notre banc PrestaShop. |
+| Hammoudi, Rothermel & Stocco, 2016 — *WATERFALL: An Incremental Approach for Repairing Record-Replay Tests of Web Applications* — FSE 2016 — https://doi.org/10.1145/2950290.2950294 | Capture et rejeu d'interactions utilisateur sur applications web avec réparation incrémentale des tests cassés. | Conçu pour la non-régression humaine sur l'interface ; nous : réutilisation du rejeu comme signal de guidage et de récompense dynamique pour un agent LLM autonome en mode débogage. |
+| Li et al., 2024 — *A Survey on Web Application Testing: Over a Decade of Evolution* — https://arxiv.org/abs/2412.10476 | Revue décennale des techniques de test web, de la fragilité des enregistrements DOM à l'émergence des agents IA. | Synthèse de l'état de l'art soulignant le manque d'environnements exécutables avec persistance d'état complet (BDD/backend) ; exactement ce que fournit notre banc PrestaShop. |
 
 ## Modèle & Coupure des connaissances
 | Référence | Résumé | Différence avec nous |
 |---|---|---|
-| Google DeepMind, 2026 — *Gemma 4: Open Models for Autonomous Agents* — Model Card & Documentation — https://ai.google.dev/gemma | Famille de modèles ouverts Gemma 4 (E2B, E4B, 12B, 26B A4B, 31B). Coupure des connaissances déclarée : 2025-06-01. | Base de notre étude ; nous évaluons le modèle sur des bugs corrigés strictement **après** sa coupure (2025-06 à 2026) pour garantir l'absence de contamination. |
+| Gemma Team, 2026 — *Gemma 4 Technical Report* — https://arxiv.org/abs/2607.02770 ; model card https://ai.google.dev/gemma/docs/core/model_card_4 | Modèles ouverts Gemma 4 (E2B, E4B, 12B, 26B A4B MoE, 31B dense). Coupure des données d'entraînement déclarée : **janvier 2025**. | Base de notre étude ; notre séparation TEST/TRAIN est fixée au 2025-06-01, soit 5 mois **après** la coupure officielle (marge de prudence) : aucun bug TEST n'a pu être vu à l'entraînement. |
 
 
 ## Notre nouveauté en 3 phrases

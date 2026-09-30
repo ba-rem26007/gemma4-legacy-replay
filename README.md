@@ -50,7 +50,7 @@ Projet pour le hackathon officiel **Kaggle Gemma 4**.
 * **[PLAN_DE_TESTS.md](docs/PLAN_DE_TESTS.md)** : Cahier de recette intégral des 42 bugs du Cœur et des 42 modules tiers, pyramide en 5 niveaux, grille d'audit Kaggle.
 * **[MODULES_TIERS.md](docs/MODULES_TIERS.md)** : Répertoire d'architecture et benchmark d'extensibilité des 42 modules communautaires.
 * **[colab_gemma4_evaluation.ipynb](notebook/colab_gemma4_evaluation.ipynb)** : Notebook Google Colab interactif (GPU T4 gratuit, rejeu #40971, graphiques Pareto et tests statistiques).
-* **Plateforme Web Démonstrateur** : `https://kaggle.d1dev.fr/rapport` (Basic Auth : `d1dev` / `d1dev`, bouton 1-clic pour copie intégrale).
+* **Plateforme Web Démonstrateur** : `https://kaggle.d1dev.fr/rapport` (accès restreint pendant la mise au point).
 
 ---
 

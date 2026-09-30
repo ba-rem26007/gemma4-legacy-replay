@@ -28,5 +28,7 @@ runs/_symbols/
 *.safetensors
 *.bin
 training/kaggle_dataset/
-training/kaggle_kernel/
+training/kaggle_kernel/*
+!training/kaggle_kernel/train_kaggle.py
+!training/kaggle_kernel/kernel-metadata.json
 upload_to_hf.py
