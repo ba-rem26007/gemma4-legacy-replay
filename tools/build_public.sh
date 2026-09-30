@@ -17,10 +17,10 @@ cp docs/README_PUBLIC.md "$OUT/README.md"   # README public (anglais), distinct 
 echo "fichiers : $(find "$OUT" -type f | wc -l)  taille : $(du -sh "$OUT" | cut -f1)"
 fail=0
 # 1) secrets
-if grep -rIlE 'AIza[0-9A-Za-z_-]{30}|hf_[A-Za-z0-9]{30}|ghp_[A-Za-z0-9]{30}|KGAT_|sk-ant-|ngrok_?authtoken[^\n]{0,5}["=:] *"?[0-9A-Za-z_]{20}|d1dev`? */ *`?d1dev' "$OUT"; then
+if grep -rIlE 'AIza[0-9A-Za-z_-]{30}|hf_[A-Za-z0-9]{30}|ghp_[A-Za-z0-9]{30}|KGAT_|sk-ant-|ngrok_?authtoken[^\n]{0,5}["=:] *"?[0-9A-Za-z_]{20}|d1dev`? */ *`?d1dev' "$OUT" --exclude=build_public.sh; then
   echo "ÉCHEC : secret possible (fichiers ci-dessus)"; fail=1; fi
 # 2) aucun contenu sécurité (règle du projet) — hors listes de filtrage de select.py
-if grep -rIliE 'zero-day|0-day|bounty|security advisor|vulnerabilit' "$OUT" --exclude=select.py --exclude='*.jsonl' --exclude='*.diff'; then
+if grep -rIliE 'zero-day|0-day|bounty|security advisor|vulnerabilit' "$OUT" --exclude=select.py --exclude=build_public.sh --exclude='*.jsonl' --exclude='*.diff'; then
   echo "ÉCHEC : contenu sécurité (fichiers ci-dessus)"; fail=1; fi
 # 3) chemins cités par le writeup
 for p in $(cat "$OUT/docs/KAGGLE_FINAL_WRITEUP.md" "$OUT/README.md" | grep -oE '`(agent|bench|data|docs|eval|runs|training|trajectories)/[A-Za-z0-9_./-]+`' | tr -d '`' | sort -u); do
