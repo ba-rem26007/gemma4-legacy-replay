@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
-# Lance (ou reprend) une session tmux avec Claude Code sur ce projet.
-# Usage : ./tmux.sh
-set -euo pipefail
+# Lance ou rattache une IA sur ce projet dans tmux (survit aux coupures SSH).
+#
+#   ./tmux.sh [claude|agy|codex] [-n nouvelle | -c derniere | <id> | -k ferme | -h]
+#
+# Sans IA : rattache la session du projet si une seule tourne, sinon demande.
+# Raccourcis : ./cl.sh, ./agy.sh, ./codex.sh (= ./tmux.sh <ia> ...).
+# Sessions : claude-kaggle / agy-kaggle / codex-kaggle (les memes que `cl`, `ag`, `cx`).
+# Moteur commun : ~/bin/ia-tmux — doc : ~/dotfiles/IA.md
+# Detacher sans rien couper : Ctrl-b puis d.
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SESSION="$(basename "$DIR")"
+# Conversations reprises par defaut (vide = la derniere de ce dossier) :
+export IA_PIN_CLAUDE=""
+export IA_PIN_AGY="40d48b50-e1cf-4827-bbf1-1deb52d1fb69"
+export IA_PIN_CODEX=""
 
-if ! tmux has-session -t "$SESSION" 2>/dev/null; then
-  # Nouvelle session : reprend la dernière conversation Claude du projet, sinon en démarre une
-  tmux new-session -d -s "$SESSION" -c "$DIR" -n claude
-  tmux send-keys -t "$SESSION:claude" "claude --continue || claude" C-m
-fi
-
-# Attache (ou bascule si on est déjà dans tmux)
-if [ -n "${TMUX:-}" ]; then
-  tmux switch-client -t "$SESSION"
-else
-  tmux attach-session -t "$SESSION"
-fi
+export IA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$HOME/bin/ia-tmux" "$@"
