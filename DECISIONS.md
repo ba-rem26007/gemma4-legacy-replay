@@ -30,3 +30,6 @@ Une entrée par choix structurant : date, décision, raison.
 - **2026-09-28 : Extensibilité Validée sur Modules Tiers de la Communauté.** Identification et formalisation du protocole de benchmark sur 10 dépôts GitHub majeurs (`ps_facetedsearch`, `blockwishlist`, `fop_console`, `mollie`, `ps_checkout`, etc.) avec cas d'étude concret sur PR #1340 de `ps_facetedsearch`. Réf: `docs/MODULES_TIERS.md`.
 - **2026-09-28 : Condition E (LoRA + Règles Métier) : Résolution Confirmée de #41130.** Le modèle fine-tuné Gemma 4 LoRA résout le bug #41130 (`AbstractObjectModelHandler::associateWithShops` en API OAuth2) avec un garde identique au code officiel PrestaShop (`$employee === null || $employee->hasAuthOnShop($shopId)`), validé sans régression par l'oracle Playwright.
 
+
+## 2026-09-30 — Jetons ngrok et Hugging Face conservés (décision de Rémi)
+Pas de révocation. Condition : aucune valeur dans le dépôt public. Vérifié : 0 occurrence dans l'arbre public et dans HEAD ; le jeton ngrok reste dans 2 commits de l'historique privé → publication obligatoirement par dépôt NEUF sans historique (`tools/build_public.sh`). `upload_to_hf.py` (jeton HF) est ignoré par git.
