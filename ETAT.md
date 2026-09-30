@@ -12,6 +12,11 @@
 
 Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Fine-Tuning : `docs/FINETUNING_KAGGLE.md` · Condition D : `docs/CONDITION_D.md` · Site : https://kaggle.d1dev.fr
 
+## Boucle d'auto-apprentissage — bilan final (30 sept., 7 h 55)
+- **Terminée** (lot 4 : 220 bugs traités). Oracles PHP écrits par Gemma : **99 validés / 254 (39 %)** ; navigateur 0/22.
+- Agent Gemma, condition O sur TRAIN : **41 résolus / 99 (41 %)** → garde-fous : **25 chemins acceptés**, 16 rejetés (7 hors fichiers officiels, 6 hors fonctions officielles, 3 fichier absent de la recherche) = **39 % de contournements** sur les « résolus ».
+- Similarité au correctif officiel : 7 identiques (1,0) ; **17 chemins ≥ 0,4** (seuil proposé). `trajectories/self.jsonl`, `docs/BOUCLE.md`.
+
 ## Jalons
 | Date | Jalon | État |
 |---|---|---|
