@@ -12,12 +12,13 @@
 
 Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Fine-Tuning : `docs/FINETUNING_KAGGLE.md` · Condition D : `docs/CONDITION_D.md` · Site : https://kaggle.d1dev.fr
 
-## Fine-tuning v16 (1er oct.) — EN ATTENTE DU TEST COLAB
-**Procédure (décision Rémi, 1er oct.) : tout changement d'entraînement se teste d'abord sur Google Colab T4 en `SMOKE=1`** (`notebook/colab_smoke_training.ipynb`, `docs/FINETUNING_KAGGLE.md` §0) ; Kaggle = run complet uniquement.
-- v16 = MAX_LEN 2048 → 4096 : **453 exemples** exploitables (89 en v15), 2 époques, chemins Gemma à similarité ≥ 0,4, arrêt + sauvegarde à 10 h 30. Dataset Kaggle v16 en ligne (569 + 23, **0 fuite**).
-- Kernels 16-18 lancés directement sur Kaggle (≈ 30 min de GPU, erreur de méthode) : 16 OOM (logits de tous les morceaux gardés) ; 17 OOM (fp32 de tous les états cachés) ; 18 « illegal memory access » (modèle déplacé entre GPU). Corrigés : perte par morceaux recalculée, dernier état caché par hook, **un seul GPU** ; pré-test du kernel 18 : **pic 12,2 Go à 4 092 tokens** sur un T4.
-- **Prochaine action (Rémi)** : exécuter `notebook/colab_smoke_training.ipynb` (téléverser `training/kaggle_kernel/train_kaggle.py`) ; si « Pré-test OK » + 2 pas → `kaggle kernels push -p training/kaggle_kernel`.
-- Instantané v15 : `training/snapshots/`.
+## Fine-tuning v16 — TERMINÉ (1er oct., 17 h 10 heure de Paris) sur Google Colab A100, piloté depuis le serveur
+- **Procédure** : test `SMOKE=1` puis run complet, tout via la CLI Colab officielle (`colab4`, `docs/FINETUNING_KAGGLE.md` §0). Kernels Kaggle 16-18 (≈ 30 min de GPU) = erreur de méthode, corrigée.
+- **Données** : 453 exemples ≤ 4 096 tokens (89 en v15) : 569 reconstruits + 23 chemins Gemma (similarité ≥ 0,4), **0 fuite**.
+- **Run** : A100 40 Go, bf16, pic 12,2 Go, 2 époques, 114 pas, **21 min 23 s**, perte 1,46 → 0,22 (moyenne 0,490 ; v15 : 1,192 sur 3 époques). Coût : 3,7 unités de calcul Colab (1 049,7 restantes).
+- **Adaptateur** : `training/lora_v16/final/` (sha256 `03202ea61a68a9e6…`, non versionné), journal `training/lora_v16/train_v16_colab_a100.log`.
+- ⚠️ Deux écarts vs v15 : longueur (2 048 → 4 096) **et** matériel/précision (T4 fp16 → A100 bf16). Une perte plus basse ne prouve rien : seule l'évaluation sur les 33 bugs TEST compte.
+- **Suite** : évaluer v16 en condition E (33 bugs) + E4B **sans** adaptateur (ablation). Il faut : un serveur d'inférence E4B (Colab A100 + ngrok, cf. `docs/CONDITION_D.md`) et le banc Docker redémarré (instances arrêtées depuis le 30 sept.).
 
 ## Page de santé (1er oct.) : https://kaggle.d1dev.fr/health
 `site/health.py` (cron toutes les 5 min → `/home/elrems/kaggle.d1dev.fr/public/health.json`, log `runs/health.log`) + `site/health.html`. 18 vérifications : site/Traefik, GitHub (dépôt de travail, dépôt public), Kaggle (kernel, dataset), Hugging Face (adaptateur, fiche Dolibarr), API Gemma, 7 instances Docker, tâches en cours, disque. Aucun secret transmis. NB : le site en ligne est servi par le conteneur `kaggle-web` (`/home/elrems/kaggle.d1dev.fr/`), pas par `site/docker-compose.yml` (`kaggle-site`, arrêté).
