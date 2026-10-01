@@ -12,15 +12,18 @@ Leçon : le 1er oct., trois versions de la v16 (kernels 16-18) ont été lancée
 
 1. Modifier `training/kaggle_kernel/train_kaggle.py` (et/ou les données `training/kaggle_dataset/`) ; si les données changent :
    `kaggle datasets version -p training/kaggle_dataset -m "…"` (le dataset seul ne consomme pas de GPU).
-2. Ouvrir `notebook/colab_smoke_training.ipynb` dans Colab, GPU T4, secret `KAGGLE_API_TOKEN`.
-3. Téléverser le script modifié, lancer en **`SMOKE=1`** : pré-test mémoire sur l'exemple le plus long + 2 pas d'optimisation
-   (`DATA_DIR=/content/data WORK_DIR=/content/work`).
+2. `tools/push_colab_script.sh` : publie le script dans le dataset Kaggle **privé** `rmisoubeyrand/gemma4-training-script` (sans GPU).
+3. Colab, GPU T4, **Terminal** : coller le contenu de `training/colab_smoke.sh` (demande le jeton Kaggle en saisie masquée,
+   télécharge données + script, lance `SMOKE=1` : pré-test mémoire sur l'exemple le plus long + 2 pas d'optimisation).
+   Variante notebook : `notebook/colab_smoke_training.ipynb`.
 4. Critère : « ✅ Pré-test OK » et 2 pas sans OOM ; noter le pic mémoire par GPU et la durée d'un pas
    (durée du run ≈ nb de pas × durée d'un pas, à comparer à la limite de 12 h).
 5. Seulement alors : `kaggle kernels push -p training/kaggle_kernel` (run complet, sans `SMOKE`).
 6. Consigner dans `ETAT.md` : version du kernel, résultat du test Colab, durée estimée.
 
 Note : le script n'utilise qu'**un** GPU (`device_map={"": 0}`), comme Colab : le test Colab reproduit la configuration Kaggle.
+Écart connu : Colab est passé en Python 3.13 / Ubuntu 24.04 (sept. 2026), Kaggle est en 3.12 ; le script installe ses propres
+versions de transformers / peft / bitsandbytes, mais un échec purement lié à l'environnement Colab n'invalide pas Kaggle.
 
 ## 1. Contexte & Objectifs
 
