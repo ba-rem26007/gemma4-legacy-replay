@@ -12,13 +12,20 @@ Leçon : le 1er oct., trois versions de la v16 (kernels 16-18) ont été lancée
 
 1. Modifier `training/kaggle_kernel/train_kaggle.py` (et/ou les données `training/kaggle_dataset/`) ; si les données changent :
    `kaggle datasets version -p training/kaggle_dataset -m "…"` (le dataset seul ne consomme pas de GPU).
-2. `tools/push_colab_script.sh` : publie le script dans le dataset Kaggle **privé** `rmisoubeyrand/gemma4-training-script` (sans GPU).
-3. Colab, GPU T4, **Terminal** : coller le contenu de `training/colab_smoke.sh` (demande le jeton Kaggle en saisie masquée,
-   télécharge données + script, lance `SMOKE=1` : pré-test mémoire sur l'exemple le plus long + 2 pas d'optimisation).
-   Variante notebook : `notebook/colab_smoke_training.ipynb`.
+2. **Depuis le serveur, avec la CLI Colab officielle** (https://github.com/googlecolab/google-colab-cli, `uv tool install google-colab-cli`,
+   autorisée une fois par copier-coller d'un code OAuth ; enveloppe `colab4` = IPv4 forcé, l'IPv6 sortant du serveur ne répond pas) :
+   ```
+   colab4 new -s v16 --gpu A100            # ou T4 pour reproduire Kaggle
+   colab4 upload -s v16 trajectories/train.jsonl /content/data/train.jsonl   # idem self.jsonl, script, ~/.kaggle/access_token
+   # SMOKE=1 DATA_DIR=/content/data WORK_DIR=/content/work python3 train_kaggle.py   (lancé en nohup via colab4 exec)
+   tools/colab_tail.sh v16 /content/smoke.log  # suivi du journal (3 essais si la connexion websocket se coupe)
+   colab4 download -s v16 /content/work_v16/gemma4_lora_final.zip training/lora_v16.zip ; colab4 stop -s v16
+   ```
+3. Sans la CLI : Terminal Colab + `training/colab_smoke.sh` (script via `tools/push_colab_script.sh`), ou `notebook/colab_smoke_training.ipynb`.
 4. Critère : « ✅ Pré-test OK » et 2 pas sans OOM ; noter le pic mémoire par GPU et la durée d'un pas
    (durée du run ≈ nb de pas × durée d'un pas, à comparer à la limite de 12 h).
-5. Seulement alors : `kaggle kernels push -p training/kaggle_kernel` (run complet, sans `SMOKE`).
+5. Seulement alors, le run complet : sur Colab (A100 : v16 ≈ 25 min, 1 053 unités de calcul disponibles le 1er oct.) ou sur Kaggle
+   (`kaggle kernels push -p training/kaggle_kernel`, T4 ≈ 10 h).
 6. Consigner dans `ETAT.md` : version du kernel, résultat du test Colab, durée estimée.
 
 Note : le script n'utilise qu'**un** GPU (`device_map={"": 0}`), comme Colab : le test Colab reproduit la configuration Kaggle.
