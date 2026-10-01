@@ -12,11 +12,12 @@
 
 Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Fine-Tuning : `docs/FINETUNING_KAGGLE.md` · Condition D : `docs/CONDITION_D.md` · Site : https://kaggle.d1dev.fr
 
-## Fine-tuning v16 (lancé le 1er oct., 14 h 25 heure de Paris)
-Kernel Kaggle version 16 : https://www.kaggle.com/code/rmisoubeyrand/gemma-4-qlora-training-prestashop
-- Changement unique vs v15 : **MAX_LEN 2048 → 4096** (≈ 350 exemples au lieu de 89), 2 époques, chemins Gemma filtrés à similarité ≥ 0,4, arrêt + sauvegarde à 10 h 30 (limite de session 12 h). Données : 569 reconstruits + 23 chemins Gemma, **0 fuite** (contrôle TEST + fonctions post-coupure).
-- Instantané v15 conservé : `training/snapshots/` (données + script), cité par le writeup et la fiche HF.
-- Durée estimée ≈ 10 h (débit v15 ≈ 27 s/exemple à ≤ 2048 tokens). Ensuite : évaluer v16 en condition E sur les 33 bugs + E4B **sans** adaptateur (vraie ablation).
+## Fine-tuning v16 (1er oct.) — EN ATTENTE DU TEST COLAB
+**Procédure (décision Rémi, 1er oct.) : tout changement d'entraînement se teste d'abord sur Google Colab T4 en `SMOKE=1`** (`notebook/colab_smoke_training.ipynb`, `docs/FINETUNING_KAGGLE.md` §0) ; Kaggle = run complet uniquement.
+- v16 = MAX_LEN 2048 → 4096 : **453 exemples** exploitables (89 en v15), 2 époques, chemins Gemma à similarité ≥ 0,4, arrêt + sauvegarde à 10 h 30. Dataset Kaggle v16 en ligne (569 + 23, **0 fuite**).
+- Kernels 16-18 lancés directement sur Kaggle (≈ 30 min de GPU, erreur de méthode) : 16 OOM (logits de tous les morceaux gardés) ; 17 OOM (fp32 de tous les états cachés) ; 18 « illegal memory access » (modèle déplacé entre GPU). Corrigés : perte par morceaux recalculée, dernier état caché par hook, **un seul GPU** ; pré-test du kernel 18 : **pic 12,2 Go à 4 092 tokens** sur un T4.
+- **Prochaine action (Rémi)** : exécuter `notebook/colab_smoke_training.ipynb` (téléverser `training/kaggle_kernel/train_kaggle.py`) ; si « Pré-test OK » + 2 pas → `kaggle kernels push -p training/kaggle_kernel`.
+- Instantané v15 : `training/snapshots/`.
 
 ## Page de santé (1er oct.) : https://kaggle.d1dev.fr/health
 `site/health.py` (cron toutes les 5 min → `/home/elrems/kaggle.d1dev.fr/public/health.json`, log `runs/health.log`) + `site/health.html`. 18 vérifications : site/Traefik, GitHub (dépôt de travail, dépôt public), Kaggle (kernel, dataset), Hugging Face (adaptateur, fiche Dolibarr), API Gemma, 7 instances Docker, tâches en cours, disque. Aucun secret transmis. NB : le site en ligne est servi par le conteneur `kaggle-web` (`/home/elrems/kaggle.d1dev.fr/`), pas par `site/docker-compose.yml` (`kaggle-site`, arrêté).

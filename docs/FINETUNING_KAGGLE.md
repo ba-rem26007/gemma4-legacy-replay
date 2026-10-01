@@ -4,6 +4,24 @@ Ce document consigne la réalisation, les paramètres, le défi mémoire résolu
 
 ---
 
+## 0. Procédure obligatoire : tester sur Google Colab AVANT Kaggle (décision du 1er oct. 2026)
+
+Le quota GPU Kaggle (≈ 30 h/semaine, sessions de 12 h) sert **uniquement au run complet**. Toute modification du script
+d'entraînement ou des données est d'abord testée sur **Google Colab (T4 16 Go, même GPU que Kaggle)**.
+Leçon : le 1er oct., trois versions de la v16 (kernels 16-18) ont été lancées directement sur Kaggle pour déboguer des OOM.
+
+1. Modifier `training/kaggle_kernel/train_kaggle.py` (et/ou les données `training/kaggle_dataset/`) ; si les données changent :
+   `kaggle datasets version -p training/kaggle_dataset -m "…"` (le dataset seul ne consomme pas de GPU).
+2. Ouvrir `notebook/colab_smoke_training.ipynb` dans Colab, GPU T4, secret `KAGGLE_API_TOKEN`.
+3. Téléverser le script modifié, lancer en **`SMOKE=1`** : pré-test mémoire sur l'exemple le plus long + 2 pas d'optimisation
+   (`DATA_DIR=/content/data WORK_DIR=/content/work`).
+4. Critère : « ✅ Pré-test OK » et 2 pas sans OOM ; noter le pic mémoire par GPU et la durée d'un pas
+   (durée du run ≈ nb de pas × durée d'un pas, à comparer à la limite de 12 h).
+5. Seulement alors : `kaggle kernels push -p training/kaggle_kernel` (run complet, sans `SMOKE`).
+6. Consigner dans `ETAT.md` : version du kernel, résultat du test Colab, durée estimée.
+
+Note : le script n'utilise qu'**un** GPU (`device_map={"": 0}`), comme Colab : le test Colab reproduit la configuration Kaggle.
+
 ## 1. Contexte & Objectifs
 
 L'objectif du fine-tuning est d'adapter le modèle Gemma 4 à l'architecture PrestaShop 9.x à partir des trajectoires de résolution vérifiées issues de la boucle d'auto-apprentissage (chemins purs sans hallucinations, sans sorties propriétaires).

@@ -94,3 +94,7 @@ python training/train_qlora.py --model google/gemma-4-e4b-it      # QLoRA (PC ou
 
 ## 9. Site
 `site/` (nginx + Traefik) sert `README.md`, `ETAT.md`, `DECISIONS.md`, `REGLES.md`, `KIT.md` et `docs/*.md` : https://kaggle.d1dev.fr (auth).
+
+## Fine-tuning : toujours tester sur Google Colab avant Kaggle
+Voir `docs/FINETUNING_KAGGLE.md` §0 : `notebook/colab_smoke_training.ipynb` en `SMOKE=1` (pré-test mémoire + 2 pas),
+puis seulement `kaggle kernels push -p training/kaggle_kernel`. Le quota GPU Kaggle est réservé aux runs complets.

@@ -16,6 +16,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Même script sur Kaggle (run complet) et sur Google Colab (test préalable, cf. docs/FINETUNING_KAGGLE.md §0) :
+#   DATA_DIR  dossier contenant train.jsonl + self.jsonl (défaut /kaggle/input)
+#   WORK_DIR  sorties (défaut /kaggle/working)
+#   SMOKE=1   test court : pré-test mémoire + 2 pas d'optimisation, puis arrêt (aucun adaptateur à garder)
+DATA_DIR = Path(os.environ.get("DATA_DIR", "/kaggle/input"))
+WORK_DIR = Path(os.environ.get("WORK_DIR", "/kaggle/working"))
+SMOKE = os.environ.get("SMOKE") == "1"
+
 # 1. Installation & Mise à jour des modules requis (transformers>=5.17 pour gemma4)
 print("=== INSTALLATION DES MODULES COMPLÉMENTAIRES ===")
 subprocess.check_call([
@@ -42,7 +50,7 @@ print(f"Support bfloat16 : {torch.cuda.is_bf16_supported()}")
 # 2. Chargement des trajectoires condensées
 print("=== CHARGEMENT DU DATASET DE TRAJECTOIRES ===")
 data_files = []
-for p in Path("/kaggle/input").rglob("*.jsonl"):
+for p in DATA_DIR.rglob("*.jsonl"):
     data_files.append(p)
 
 print(f"Fichiers trouvés : {[str(f) for f in data_files]}")
@@ -173,10 +181,11 @@ bnb_config = BitsAndBytesConfig(
 )
 
 # Répartition équilibrée (balanced) sur tous les GPU disponibles
-d_map = "auto"
-# v16 : « balanced » laissait tout sur le GPU0 (pic GPU1 = 0,0 Go au pré-test) → on plafonne le GPU0 pour pousser
-# les couches sur le GPU1 et garder le GPU0 libre pour les activations et la perte.
-max_mem = {0: "5GiB", 1: "14GiB"} if num_gpus > 1 else None
+# v16 : UN seul GPU. Le modèle 4 bits + activations à 4096 tokens tient sur un T4 (pic 12,2 Go au pré-test du kernel 18).
+# « balanced » laissait tout sur le GPU0 ; un plafond max_memory l'envoyait sur le GPU1, puis le Trainer le déplaçait
+# vers le GPU0 → « CUDA illegal memory access » (bitsandbytes). Un seul GPU = même configuration que le test Colab.
+d_map = {"": 0}
+max_mem = None
 print(f"Stratégie de placement sur GPU : {d_map}")
 
 model = AutoModelForCausalLM.from_pretrained(
@@ -242,10 +251,11 @@ print(f"État caché final capturé sur : {_norms[-1][0]}")
 model.print_trainable_parameters()
 
 # 6. Configuration et Entraînement
-OUT_DIR = Path("/kaggle/working/lora_gemma4")
+OUT_DIR = WORK_DIR / "lora_gemma4"
 training_args = TrainingArguments(
     output_dir=str(OUT_DIR),
     num_train_epochs=EPOCHS,
+    max_steps=2 if SMOKE else -1,
     learning_rate=5e-5,
     lr_scheduler_type="cosine",
     warmup_steps=10,
@@ -374,6 +384,8 @@ for cap in (MAX_LEN, 3584, 3072, 2560, 2048):
         print(f"❌ OOM au pré-test à {cap} tokens")
 
 trainer.add_callback(TimeLimit(TIME_LIMIT_S))
+if SMOKE:
+    print("=== MODE SMOKE : 2 pas seulement (test préalable hors Kaggle) ===")
 lens = sorted(len(x) for x in ds["input_ids"])
 print(f"Longueurs (tokens) : min {lens[0]}, médiane {lens[len(lens) // 2]}, max {lens[-1]}, total {sum(lens)}")
 print(f"=== LANCEMENT DU FINE-TUNING QLoRA ({EPOCHS} ÉPOQUES, MAX_LEN {MAX_LEN}, CHUNKED LOSS) ===")
@@ -385,6 +397,6 @@ final_dir.mkdir(parents=True, exist_ok=True)
 model.save_pretrained(str(final_dir))
 tok.save_pretrained(str(final_dir))
 
-zip_base = Path("/kaggle/working/gemma4_lora_final")
+zip_base = WORK_DIR / "gemma4_lora_final"
 shutil.make_archive(str(zip_base), "zip", str(final_dir))
 print(f"🎉 SUCCÈS TOTAL : Adaptateur LoRA archivé dans {zip_base}.zip prêt pour téléchargement !")
