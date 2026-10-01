@@ -19,7 +19,14 @@ Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 - **Adaptateur** : `training/lora_v16/final/` (sha256 `03202ea61a68a9e6…`, non versionné), journal `training/lora_v16/train_v16_colab_a100.log`.
 - ⚠️ Deux écarts vs v15 : longueur (2 048 → 4 096) **et** matériel/précision (T4 fp16 → A100 bf16). Une perte plus basse ne prouve rien : seule l'évaluation sur les 33 bugs TEST compte.
 - **Évaluation lancée (1er oct., 17 h 39 heure de Paris)** : condition E sur les 33 bugs TEST, 3 modèles en parallèle sur la MÊME infrastructure → E4B base (psbench2) / E4B + v15 (psbench3) / E4B + v16 (psbench4). Inférence : `tools/colab_llm_server.py` ×3 sur 1 A100 Colab (4 bits NF4 comme à l'entraînement, système fusionné au 1er tour comme à l'entraînement), tunnel SSH privé `tools/colab_tunnel.sh` (pas de ngrok), maintien en vie `tools/colab_keepalive.sh`. Journaux `runs/eval_e4b_{base,v15,v16}.log`. Durée estimée ≈ 8-10 h (≈ 15 min/bug). Test court #41007 : chaîne OK (0/1 partout ; base : 1 régression).
-- (ancienne note) évaluer v16 en condition E (33 bugs) + E4B **sans** adaptateur (ablation). Il faut : un serveur d'inférence E4B (Colab A100 + ngrok, cf. `docs/CONDITION_D.md`) et le banc Docker redémarré (instances arrêtées depuis le 30 sept.).
+- **Run 1 terminé (1er oct., 20 h 47)** — condition E, 33 bugs, même infrastructure :
+  | Modèle | Résolus | Patch appliqué | Bon fichier | Régressions |
+  |---|---|---|---|---|
+  | E4B base (sans adaptateur) | **3** (#40651, #41130, #41193) | 18 | 16 | 1 |
+  | E4B + v15 (89 ex.) | 1 (#41193) | 18 | 12 | 2 |
+  | E4B + v16 (453 ex.) | 0 | 17 | 11 | 3 |
+  | rappel : v15 le 28 sept. (ancien serveur ngrok) | 4 | 18 | 14 | 1 |
+  Lecture provisoire : **aucun adaptateur ne bat la base** ; plus de données (v16) n'aide pas ; la localisation baisse avec le LoRA (16 → 12 → 11). Run unique : v15 passe de 4 à 1 entre deux serveurs → bruit de ± 3 bugs. Runs 2 et 3 lancés à 20 h 50 (protocole : 3 runs/bug/condition), journaux `runs/eval_e4b_*_r{2,3}.log`. Il faut : un serveur d'inférence E4B (Colab A100 + ngrok, cf. `docs/CONDITION_D.md`) et le banc Docker redémarré (instances arrêtées depuis le 30 sept.).
 
 ## Page de santé (1er oct.) : https://kaggle.d1dev.fr/health
 `site/health.py` (cron toutes les 5 min → `/home/elrems/kaggle.d1dev.fr/public/health.json`, log `runs/health.log`) + `site/health.html`. 18 vérifications : site/Traefik, GitHub (dépôt de travail, dépôt public), Kaggle (kernel, dataset), Hugging Face (adaptateur, fiche Dolibarr), API Gemma, 7 instances Docker, tâches en cours, disque. Aucun secret transmis. NB : le site en ligne est servi par le conteneur `kaggle-web` (`/home/elrems/kaggle.d1dev.fr/`), pas par `site/docker-compose.yml` (`kaggle-site`, arrêté).
