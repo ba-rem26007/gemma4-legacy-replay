@@ -9,21 +9,21 @@
 
 ## Abstract
 
-Most code-repair benchmarks evaluate on Python repositories with pre-existing unit test suites. However, the majority of the web operates on PHP, largely consisting of stateful legacy monoliths where bugs manifest only in an interactive browser session coupled to relational database state. We introduce an evaluation harness that makes one such enterprise monolith, **PrestaShop**, systematically verifiable: each of **33 real, post-cutoff bugs** is evaluated using an end-to-end Playwright oracle run against a Dockerized container with deterministic MariaDB state resets. 
+Most code-repair benchmarks evaluate on Python repositories with pre-existing unit test suites. However, over 76% of the web operates on PHP, dominated by stateful legacy monoliths where defects manifest in interactive browser sessions coupled to relational database state. We introduce an evaluation harness making one such enterprise monolith, **PrestaShop**, systematically verifiable: each of **33 real, post-cutoff bugs** is evaluated using an end-to-end Playwright oracle run against Dockerized containers with deterministic MariaDB state resets.
 
-Using a fixed-turn agent flow without open-ended tool loops, **Gemma 4 31B** resolves **12.8 / 33 bugs** (38.6%, mean of 4 independent trials) from the issue ticket alone. Retrieval of historical PR fixes (Condition R) and ticket-derived glossaries (Condition C) produce no measurable gain over baseline. Providing model-written reproduction tests with execution feedback (Condition B) reaches **15 / 33** in a single trial (+6.8 pts, 95% bootstrap CI [−2.3, +16.7], sign-flip permutation $p \approx 0.11$, not statistically significant at $N=33$). Providing the hidden evaluation oracle as direct feedback (Condition O, serving as an empirical upper bound) resolves 16 / 33. 
+Using a fixed-turn agent flow without open-ended tool loops, **Gemma 4 31B** resolves **12.8 / 33 bugs** (38.6%, mean of 4 independent trials) from the issue ticket alone. Retrieval of historical PRs (Condition R) and glossaries (Condition C) produce no gain over baseline. Providing model-written reproduction tests with execution feedback (Condition B) reaches **15 / 33** in a single trial (+6.8 pts, 95% bootstrap CI [−2.3, +16.7], sign-flip permutation $p \approx 0.11$, not statistically significant at $N=33$). Providing the hidden oracle as feedback (Condition O, empirical upper bound) resolves 16 / 33.
 
-When closing the training loop using Gemma 4 31B alone to generate verifiers and trajectories on historical training bugs, **13 of 41 nominally "solved" bugs (32%) edit code outside the official maintainer fix**, exploiting test-generator ambiguities. Finally, on edge-scale models, fine-tuning **Gemma 4 E4B** via QLoRA yields **4 / 33** resolutions (12.1%): we show that this gain is primarily driven by **syntactic format compliance** (patch syntax rejection dropping from 54.5% to 15.2%) rather than domain reasoning. A chunked cross-entropy implementation accommodates Gemma 4's 262k vocabulary within commodity 16GB GPUs at zero financial cost.
+When closing the training loop using Gemma 4 31B alone to generate verifiers and trajectories on historical bugs, **13 of 41 nominally "solved" bugs (32%) edit code outside the official maintainer fix**, exploiting test ambiguities. Finally, on edge-scale models, fine-tuning **Gemma 4 E4B** via QLoRA yields **4 / 33** resolutions (12.1%): we show that this gain is primarily driven by **syntactic format compliance** (syntax rejection dropping from 54.5% to 15.2%) rather than deep reasoning. A chunked cross-entropy implementation accommodates Gemma 4's 262k vocabulary within commodity 16GB GPUs at zero financial cost.
 
 ---
 
 ## 1. Problem & Motivation
 
-Server-side web applications continue to be predominantly powered by PHP (76.2% of surveyed back-ends; W3Techs, 2026). In e-commerce, PrestaShop powers over 300,000 active merchant stores handling critical transaction workflows, while enterprise tools like Dolibarr support over 100,000 organizations. Much of this infrastructure constitutes "legacy code" in the classical sense: code lacking regression test suites [Feathers]. 
+Server-side web applications remain predominantly powered by PHP (76.2% of surveyed back-ends; W3Techs, 2026). In e-commerce, PrestaShop powers over 300,000 active stores handling critical transactions, while Dolibarr supports over 100,000 organizations. Much of this infrastructure constitutes classical "legacy code": software lacking regression test suites [Feathers].
 
-Existing benchmarks such as SWE-bench [SWE-bench] and Multi-SWE-bench [Multi-SWE] rely on existing repository unit tests and exclude PHP. In an enterprise monolith like PrestaShop, an issue such as #41921 ("Cannot change stock behaviour in shared stock mode") depends on multi-store configuration flags, relational constraints across multiple SQL tables, and back-office form interactions. No standalone unit test exists upstream to isolate or verify it.
+Existing benchmarks like SWE-bench [SWE-bench] and Multi-SWE-bench [Multi-SWE] rely on unit tests and exclude PHP. In an enterprise monolith like PrestaShop, an issue such as #41921 ("Cannot change stock behaviour in shared stock mode") depends on multi-store configuration flags, relational constraints across SQL tables, and back-office UI interactions. No standalone unit test exists upstream to isolate it.
 
-Furthermore, enterprise applications handling customer transactions and merchant databases face strict data privacy and compliance mandates (e.g., GDPR Art. 28/44, PCI-DSS v4.0). Offloading private codebases to proprietary third-party APIs presents real compliance and privacy concerns. Developing verifiable, local-first repair pipelines using open-weight models like Gemma 4 is therefore of practical operational value.
+Furthermore, enterprise applications face strict data compliance mandates (GDPR, PCI-DSS). Offloading private codebases to third-party APIs presents real privacy concerns. Developing verifiable, local-first repair pipelines with open-weight models like Gemma 4 is therefore of immediate operational value.
 
 We investigate three research questions:
 - **Q1.** Can browser-based end-to-end replay with database snapshot resets provide a deterministic evaluation signal for an open-weight model on legacy PHP code?
@@ -40,16 +40,16 @@ Candidate issues were screened by extracting merged, functional bug-fix pull req
 2. Modifying $\le 3$ source code files.
 3. Containing verifiable browser-reproducible symptoms.
 
-From 187 candidate PRs merged after our temporal cutoff date (2025-06-01), 55 were manually screened, yielding **33 verifiable test bugs** (`data/bugs_test.csv`). The remaining 22 were excluded due to requiring complex frontend JavaScript compilation pipelines (13) or lacking deterministic UI triggers (9). 
+From 187 candidate PRs merged after our cutoff (2025-06-01), 55 were screened, yielding **33 verifiable test bugs** (`data/bugs_test.csv`). Exclusions stemmed from frontend JS build dependencies (13) or non-deterministic UI triggers (9).
 
-The 33 evaluated PRs were merged upstream between 2026-02-12 and 2026-07-22. Gemma 4's documented training cutoff is January 2025 [Gemma4-card], providing at least 12 months of post-cutoff separation. Five ticket descriptions (#20448, #29009, #29663, #35690, #36058) were opened before the cutoff, meaning their textual issue descriptions may have been seen during pre-training; however, their code patches were merged strictly post-cutoff.
+All 33 PRs were merged between 2026-02-12 and 2026-07-22, providing $\ge 12$ months separation from Gemma 4's January 2025 pre-training cutoff [Gemma4-card]. While 5 ticket descriptions were opened earlier, all code patches were merged strictly post-cutoff.
 
 ### Execution Environment & Oracles
-Each bug is containerized using Docker with MariaDB 10.11:
+Each bug is containerized via Docker with MariaDB 10.11:
 - **Deterministic Reset:** Before each evaluation round, a database snapshot (`setup.sql`) restores the exact shop state.
-- **Hidden Oracles (`oracle*.spec.js`):** Each bug features a complete Playwright browser test (27 Back-Office, 6 Front-Office) verifying the actual user-facing fix. **The agent never sees this oracle.** It is executed strictly once at the end of the run to establish ground truth.
-- **Minimal Smoke Sanity Check:** Following patch application, the environment queries the Front-Office homepage (`/fr/`) and Back-Office login (`/admin-dev/index.php`). A patch is rejected if either endpoint fails to return HTTP 200 or logs fatal PHP errors. This serves as a guard against syntax breaks, but does not substitute for exhaustive functional regression testing.
-- **Paired Verifier Separation:** In feedback conditions (B, C), the agent does **not** see the evaluation oracle. Instead, it executes visible reproduction tests (`replay*.spec.js`) generated from the ticket alone. Only Condition O accesses the oracle, serving as an explicit experimental ceiling.
+- **Hidden Oracles (`oracle*.spec.js`):** Playwright browser tests (27 Back-Office, 6 Front-Office) verify user-facing fixes. **The agent never sees this oracle.** It runs strictly once post-run to establish ground truth.
+- **Smoke Check:** Queries Front-Office (`/fr/`) and Back-Office (`/admin-dev/index.php`). Rejects patches causing HTTP errors or fatal PHP logs.
+- **Verifier Separation:** In feedback conditions (B, C), the agent executes visible reproduction tests (`replay*.spec.js`) generated from the ticket alone. Only Condition O accesses the oracle as an explicit ceiling.
 
 ---
 
@@ -102,13 +102,13 @@ Primary evaluations were conducted with **Gemma 4 31B** [Gemma4] via the Google 
 
 ### Statistical Analysis & Verifier Dynamics (Q1 & Q2)
 
-1. **Context Augmentation (Conditions R & C):** Providing similar historical PRs (Condition R) yielded no measurable difference ($R - A = 0.0$ pts, 95% CI [−9.1, +9.1]). Adding domain glossary terms (Condition C) matched 16 tickets but did not improve localization accuracy (18.0 vs 19.8 files read).
-2. **Replay Feedback (Condition B):** Using `bench/reprotest.py`, Gemma 4 31B generated synthetic reproduction tests from the ticket text alone. Deterministic execution against the unpatched codebase produced a valid failing test for 10 of the 33 bugs (for the remaining 23, Condition B collapses to Condition A).
-   - In this single trial, Condition B resolved 15 / 33 (+6.8 pts over A mean, 95% CI [−2.3, +16.7]).
-   - A one-sided sign-flip permutation test yields $p \approx 0.11$ (two-sided $p \approx 0.23$). At $N=33$, this difference **does not reach statistical significance** ($\alpha = 0.05$).
-   - Across 3 exploratory repetitions on the 10 feedback bugs, Pass@1 was 36.7%. Furthermore, 15/33 matches the maximum single trial observed under Baseline A (which ranged between 11 and 15).
-   - In 9 of the 10 bugs, the model-written test never passed during retries (even for the 5 bugs accepted by the hidden oracle), functioning in practice as static negative feedback. On bug #41923, the patch succeeded on the first attempt prior to feedback, showing that the visible test served as an illustrative specification rather than an active debugging loop.
-3. **Oracle Feedback as an Empirical Ceiling (Condition O):** Providing the hidden oracle directly as feedback (a deliberate leak measuring theoretical verifier utility) solved 16 / 33 (+9.8 pts, 95% CI [+0.8, +20.5]). Feedback converted 3 previously failing bugs (#41299, #41394, #41923), while breaking the smoke check on two others (#41225, #41573).
+1. **Context Augmentation (Conditions R & C):** Historical PRs (Condition R) yielded no gain over baseline ($R - A = 0.0$ pts, 95% CI [−9.1, +9.1]). Adding domain glossaries (Condition C) matched 16 tickets but did not improve localization (18.0 vs 19.8 files read).
+2. **Replay Feedback (Condition B):** Gemma 4 31B generated synthetic reproduction tests from ticket descriptions (`bench/reprotest.py`), yielding valid failing tests for 10 / 33 bugs (for the other 23, B collapses to A).
+   - In this trial, Condition B resolved 15 / 33 (+6.8 pts over A mean, 95% CI [−2.3, +16.7]).
+   - A one-sided sign-flip permutation test yields $p \approx 0.11$ (two-sided $p \approx 0.23$), not statistically significant at $N=33$ ($\alpha = 0.05$).
+   - Across 3 repetitions on the 10 feedback bugs, Pass@1 was 36.7%. 15/33 also falls within the single-trial range of Baseline A (11 to 15).
+   - In 9 of 10 bugs, model tests never passed during retries, acting as static negative feedback. On #41923, the patch succeeded on turn 1 prior to feedback, showing visible tests acted primarily as specifications.
+3. **Oracle Feedback Upper Bound (Condition O):** Providing the hidden oracle directly resolved 16 / 33 (+9.8 pts, 95% CI [+0.8, +20.5]). Feedback converted 3 failing bugs (#41299, #41394, #41923), while breaking smoke checks on two others (#41225, #41573).
 
 ---
 
@@ -196,9 +196,9 @@ A critical finding is that the performance delta between Base E4B and QLoRA E4B 
 - Fine-tuning a 4B parameter model on domain trajectories teaches the strict SEARCH/REPLACE replacement syntax required for automated patching, rather than inducing deep architectural reasoning.
 
 ### Memory-Efficient Chunked Loss Adaptation
-Gemma 4 utilizes an expansive vocabulary of 262,144 tokens. Computing unchunked float32 cross-entropy loss over a 2,048-token sequence allocates approximately 2.15 GB per sequence for the logits tensor alone (4.29 GB for a micro-batch of 2), precipitating CUDA out-of-memory errors on commodity 16GB GPUs. 
+Gemma 4's 262k vocabulary makes unchunked float32 cross-entropy prohibitive: a 2,048-token sequence allocates ~2.15 GB for logits alone (4.29 GB for batch size 2), triggering OOMs on 16GB GPUs.
 
-We adapted a chunked cross-entropy implementation (`training/chunked_loss.py`)—conceptually analogous to chunking techniques in Liger Kernel and Cut Cross-Entropy—tailored to Gemma 4's architecture:
+We implemented chunked cross-entropy (`training/chunked_loss.py`) tailored to Gemma 4:
 
 ```python
 for i in range(0, active_tokens.size(0), chunk_size):
@@ -206,20 +206,20 @@ for i in range(0, active_tokens.size(0), chunk_size):
     loss += F.cross_entropy(logits_chunk, targets[i : i + chunk_size], reduction="sum")
 ```
 
-By projecting hidden states in 256-token micro-chunks only across active assistant token positions, the peak loss-computation tensor is reduced from 4.29 GB to 268 MB. Total training VRAM dropped from **28.4 GB to 13.8 GB (−51%)**, allowing stable QLoRA training on standard 16GB Nvidia T4 instances at zero infrastructure cost.
+Projecting hidden states in 256-token micro-chunks across active assistant tokens shrinks the peak tensor from 4.29 GB to 268 MB. Total training VRAM dropped from **28.4 GB to 13.8 GB (−51%)**, enabling stable QLoRA on standard 16GB Nvidia T4 instances at zero cost.
 
 ### Edge Efficiency Profile
-In edge deployment configurations, Gemma 4 E4B operates within **4.29 GB of VRAM** (FP16/INT4 weights and KV cache), fitting within consumer laptops or 6GB edge accelerators. On a measured local edge setup, inference consumed **1.81 Wh per attempted bug** (1.39 Wh model generation + 0.42 Wh Docker reset). For enterprise deployments unable to export code to cloud endpoints, a fine-tuned 4B model offers an autonomous, zero-cost triage filter capable of resolving ~12% of bugs locally before escalation.
+In edge deployments, Gemma 4 E4B operates within **4.29 GB VRAM** (FP16/INT4 weights and KV cache), fitting within consumer laptops. Local inference consumed **1.81 Wh per attempted bug** (1.39 Wh generation + 0.42 Wh Docker reset). For organizations unable to export code to cloud APIs, fine-tuned 4B models provide an autonomous triage filter resolving ~12% of issues locally.
 
 ---
 
 ## 8. Threats to Validity & Limitations
 
-1. **Test Suite Sample Size ($N=33$):** While $N=33$ reflects the total available universe of post-cutoff PrestaShop 9.1.x PRs matching our strict criteria, statistical power to detect small effect sizes (+6.8 pts) is limited ($p \approx 0.11$). Findings must be interpreted as directional indicators.
-2. **Single-Run Trials for B & O:** While baseline Condition A was verified across 4 independent trials (132 evaluations), Condition B and Condition O represent single full runs.
-3. **Synthetic Verifier Coverage:** Gemma-generated reproduction tests compiled and failed cleanly on only 10 of 33 bugs, limiting the evaluation of active feedback loops.
-4. **Pre-Training Contamination:** Although code fixes were merged post-cutoff, 5 issue descriptions were opened prior to January 2025 and may have been present in pre-training corpora.
-5. **Human-in-the-Loop Test Authorship:** Ground truth test oracles were drafted with LLM assistance (see disclosure), though all were verified by end-to-end execution on official unpatched and patched containers.
+1. **Sample Size ($N=33$):** Captures the available post-cutoff PrestaShop 9.1.x PRs meeting criteria; power to detect +6.8 pt lifts is limited ($p \approx 0.11$).
+2. **Single-Run Trials for B & O:** While Baseline A was evaluated across 4 trials (132 runs), Conditions B and O represent single full runs.
+3. **Synthetic Verifier Coverage:** Generated reproduction tests compiled and failed cleanly on 10 / 33 bugs.
+4. **Pre-Training Contamination:** 5 ticket descriptions were opened before January 2025; however, code fixes were merged strictly post-cutoff.
+5. **Oracle Authorship:** Ground truth Playwright tests were drafted with LLM assistance, though verified by execution on unpatched and patched containers.
 
 ---
 
