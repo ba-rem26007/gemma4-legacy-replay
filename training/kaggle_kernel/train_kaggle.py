@@ -24,6 +24,7 @@ subprocess.check_call([
 ])
 
 import torch
+import torch.utils.checkpoint
 from datasets import Dataset
 from peft import LoraConfig, get_peft_model
 from transformers import (AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig,
@@ -172,18 +173,24 @@ bnb_config = BitsAndBytesConfig(
 )
 
 # Répartition équilibrée (balanced) sur tous les GPU disponibles
-d_map = "balanced" if num_gpus > 1 else "auto"
+d_map = "auto"
+# v16 : « balanced » laissait tout sur le GPU0 (pic GPU1 = 0,0 Go au pré-test) → on plafonne le GPU0 pour pousser
+# les couches sur le GPU1 et garder le GPU0 libre pour les activations et la perte.
+max_mem = {0: "5GiB", 1: "14GiB"} if num_gpus > 1 else None
 print(f"Stratégie de placement sur GPU : {d_map}")
 
 model = AutoModelForCausalLM.from_pretrained(
     model_path,
     quantization_config=bnb_config,
     device_map=d_map,
+    max_memory=max_mem,
     torch_dtype=compute_dtype,
     attn_implementation="eager"
 )
 
 # Désactivation du final_logit_softcapping pour éliminer l'allocation dupliquée de logits
+import collections
+print("Placement des modules :", dict(collections.Counter(str(v) for v in getattr(model, "hf_device_map", {}).values())))
 for obj in [model, getattr(model, "model", None), getattr(model, "config", None), getattr(getattr(model, "config", None), "text_config", None)]:
     if obj is not None and hasattr(obj, "final_logit_softcapping"):
         obj.final_logit_softcapping = None
@@ -225,6 +232,13 @@ peft_config = LoraConfig(
     task_type="CAUSAL_LM"
 )
 model = get_peft_model(model, peft_config)
+
+# Hook sur la norme finale du décodeur texte : sa sortie = hidden_states[-1] de HF, sans garder les autres couches
+_norms = [(n, m) for n, m in model.named_modules() if n.endswith("language_model.norm")] or \
+         [(n, m) for n, m in model.named_modules() if n.endswith("model.norm")]
+_last_hidden = {}
+_norms[-1][1].register_forward_hook(lambda mod, inp, out: _last_hidden.__setitem__("h", out))
+print(f"État caché final capturé sur : {_norms[-1][0]}")
 model.print_trainable_parameters()
 
 # 6. Configuration et Entraînement
@@ -266,18 +280,11 @@ class ChunkedLossTrainer(Trainer):
         labels = inputs.get("labels")
         # Exclut labels pour empêcher le calcul interne de logits float32 non chunké
         fwd_inputs = {k: v for k, v in inputs.items() if k != "labels"}
-        try:
-            outputs = model(**fwd_inputs, logits_to_keep=1, output_hidden_states=True)
-        except TypeError:
-            outputs = model(**fwd_inputs, output_hidden_states=True)
+        # v16 : plus de output_hidden_states=True (l'entraînement fp16 convertissait les 43 états cachés en fp32
+        # → OOM) ; le dernier état caché (sortie de la norme finale) est capturé par un hook.
+        outputs = model(**fwd_inputs, logits_to_keep=1)
+        hidden = _last_hidden.pop("h")
 
-        # Récupération de l'état caché final (garanti par output_hidden_states=True)
-        if hasattr(outputs, "hidden_states") and outputs.hidden_states is not None:
-            hidden = outputs.hidden_states[-1]
-        elif hasattr(outputs, "last_hidden_state") and outputs.last_hidden_state is not None:
-            hidden = outputs.last_hidden_state
-        else:
-            raise RuntimeError(f"Impossible d'extraire les états cachés : champs={dir(outputs)}")
 
         # Décalage causal standard (le token t prédit t+1)
         shift_h = hidden[:, :-1, :].contiguous()
@@ -299,14 +306,20 @@ class ChunkedLossTrainer(Trainer):
         total_loss = 0.0
         chunk_size = 256
 
+        # v16 : chaque morceau est recalculé à la rétropropagation (checkpoint) → un seul tenseur de logits
+        # (256 × 262k) vit en mémoire à la fois. En v15 (≤ 2048 tokens) tous les morceaux restaient en mémoire ;
+        # à 4096 tokens cela dépassait les 14,5 Go d'une T4 (OOM au 1er pas, kernel v16 du 1er oct.).
+        def chunk_ce(h, l):
+            return torch.nn.functional.cross_entropy(head(h).float(), l, reduction="sum")
+
         for i in range(0, active_h.size(0), chunk_size):
             h_chunk = active_h[i : i + chunk_size].to(device=head_dev, dtype=head_dtype)
             l_chunk = active_l[i : i + chunk_size].to(device=head_dev)
-            logits_chunk = head(h_chunk).float()
-            chunk_loss = torch.nn.functional.cross_entropy(logits_chunk, l_chunk, reduction="sum")
-            total_loss = total_loss + chunk_loss
+            total_loss = total_loss + torch.utils.checkpoint.checkpoint(chunk_ce, h_chunk, l_chunk, use_reentrant=False)
 
         loss = (total_loss / active_l.numel()).to(shift_h.device)
+        if not return_outputs:
+            del outputs, hidden  # libère les états cachés intermédiaires avant la rétropropagation
         return (loss, outputs) if return_outputs else loss
 
 trainer = ChunkedLossTrainer(
@@ -331,6 +344,34 @@ class TimeLimit(TrainerCallback):
             control.should_training_stop = True
         return control
 
+
+# Pré-test mémoire : un pas complet (avant + arrière) sur l'exemple le plus long ; en cas d'OOM on abaisse MAX_LEN
+# au lieu de perdre la session (v16 du 1er oct. : OOM au 1er pas).
+def preflight(max_len):
+    longest = max((x for x in ds if len(x["input_ids"]) <= max_len), key=lambda x: len(x["input_ids"]))
+    batch = {k: v.to(model.device) for k, v in collate([longest], tok.pad_token_id or 0).items()}
+    model.train()  # gradient checkpointing actif seulement en mode entraînement
+    torch.cuda.reset_peak_memory_stats()
+    with torch.autocast("cuda", dtype=compute_dtype):  # comme le Trainer en précision mixte
+        loss = trainer.compute_loss(model, batch)
+    loss.backward()
+    model.zero_grad(set_to_none=True)
+    peaks = [f"GPU{i} {torch.cuda.max_memory_allocated(i) / 2**30:.1f} Go" for i in range(num_gpus)]
+    print(f"✅ Pré-test OK à {len(longest['input_ids'])} tokens : pic {', '.join(peaks)}")
+
+for cap in (MAX_LEN, 3584, 3072, 2560, 2048):
+    try:
+        preflight(cap)
+        if cap < MAX_LEN:
+            ds = ds.filter(lambda e: len(e["input_ids"]) <= cap)
+            trainer.train_dataset = ds
+            print(f"⚠️ MAX_LEN abaissé à {cap} : {len(ds)} exemples")
+            MAX_LEN = cap
+        break
+    except torch.OutOfMemoryError:
+        model.zero_grad(set_to_none=True)
+        torch.cuda.empty_cache()
+        print(f"❌ OOM au pré-test à {cap} tokens")
 
 trainer.add_callback(TimeLimit(TIME_LIMIT_S))
 lens = sorted(len(x) for x in ds["input_ids"])
