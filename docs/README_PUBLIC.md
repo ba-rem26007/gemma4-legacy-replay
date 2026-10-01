@@ -32,7 +32,7 @@ Self-learning loop (Gemma only, TRAIN bugs): Gemma writes an oracle (99 validate
 | `agent/` | fixed-flow agent (`run.py`, `flow.py`): localise → read → edit (SEARCH/REPLACE) → test |
 | `runs/` | full traces of every run (`<run>/<pr>/trace.jsonl`, `patch.diff`, `result*.json`) |
 | `trajectories/` | training data: `reconstruct.py` (paths rebuilt from official TRAIN fixes), `self_paths.py` (guarded Gemma paths) |
-| `training/` | QLoRA on Kaggle (`kaggle_kernel/train_kaggle.py`, `chunked_loss.py`), training log, exact training snapshot (`kaggle_dataset/`) |
+| `training/` | QLoRA on Kaggle (`kaggle_kernel/train_kaggle.py`, `chunked_loss.py`), training log, exact training snapshots (`snapshots/` for the evaluated v15 adapter, `kaggle_dataset/` for the current run) |
 | `data/` | TEST list (`bugs_test.csv`), leakage check (`ETANCHEITE.md`) |
 | `docs/` | paper, results, procedures (most internal docs are in French) |
 

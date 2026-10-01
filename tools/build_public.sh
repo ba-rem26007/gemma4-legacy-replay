@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT="${1:-../gemma4-legacy-replay-public}"
 KEEP=(LICENSE RELATED.md setup.sh .env.api.example .env.local.example agent bench data eval glossaire runs trajectories tools
-      training/chunked_loss.py training/train_qlora.py training/kaggle_kernel training/kaggle_dataset
+      training/chunked_loss.py training/train_qlora.py training/kaggle_kernel training/kaggle_dataset training/snapshots
       training/lora_final/gemma-4-qlora-training-prestashop.log training/lora_final/lora_gemma4/final/README.md
       docs/KAGGLE_FINAL_WRITEUP.md docs/RESULTATS.md docs/BOUCLE.md docs/ECHECS.md docs/FINETUNING_KAGGLE.md
       docs/PROCEDURES.md docs/PROTOCOLE.md docs/GLOSSAIRE.md docs/VOCABULAIRE.md docs/DONNEES_FT.md docs/CATALOGUE.md)

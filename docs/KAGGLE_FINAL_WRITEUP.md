@@ -88,7 +88,7 @@ This is our central finding for RL or self-training on legacy code: **when the o
 
 **Data.** The 585 prepared examples are 569 paths reconstructed deterministically from official TRAIN fixes (`trajectories/reconstruct.py`) plus 16 Gemma paths from the loop, which is how many existed at training time. No proprietary model output is included (unlike [SWE-Gym]), and bugs are real (unlike [SWE-smith]). TRAIN excludes any bug that shares a PR, an issue or a modified function with a TEST bug (`data/ETANCHEITE.md`: 820 TRAIN, 58 excluded). Only **89** examples fit in 2,048 tokens, and only those were trained on.
 
-**Training.** We trained QLoRA on Gemma 4 E4B: 4-bit, r = 16, α = 32, 3 epochs, 18 steps, lr 5e-5, on 2× T4 on Kaggle. It ran for 7,209 s with a mean training loss of 1.192 (`training/kaggle_kernel/train_kaggle.py`, `docs/FINETUNING_KAGGLE.md`).
+**Training.** We trained QLoRA on Gemma 4 E4B: 4-bit, r = 16, α = 32, 3 epochs, 18 steps, lr 5e-5, on 2× T4 on Kaggle. It ran for 7,209 s with a mean training loss of 1.192 (`training/snapshots/train_kaggle_v15.py`, `docs/FINETUNING_KAGGLE.md`).
 
 **Chunked loss.** Gemma 4's vocabulary has 262,144 entries. Upcasting the full float32 logits takes 2.15 GB per 2,048-token sequence, 4.29 GB for a micro-batch of 2 (1 per device × 2 T4); `docs/FINETUNING_KAGGLE.md` reports an out-of-memory error. `training/chunked_loss.py` projects only assistant positions, 256 tokens at a time:
 
@@ -128,7 +128,7 @@ A made no regressions. Over the 8 A+R attempts per bug, 15 bugs are never solved
 - **Verdicts:** `bench/reprotest.py`, `eval/results.csv`, with traces and patches under `runs/`.
 - **Tables:** `bench/results.py` generates `docs/RESULTATS.md` and `eval/results.csv`; all CIs are recomputable from that CSV.
 - **Loop:** `bench/gentest.py`, `trajectories/self_paths.py`, `bench/loop_stats.py`, `docs/BOUCLE.md`.
-- **Training:** `trajectories/reconstruct.py`, `trajectories/train.jsonl`, `training/chunked_loss.py`, `training/kaggle_kernel/train_kaggle.py`.
+- **Training:** `trajectories/reconstruct.py`, `trajectories/train.jsonl`, `training/chunked_loss.py`, `training/snapshots/train_kaggle_v15.py`.
 
 Internal docs under `docs/` are in French; the numbers come from the CSV/JSONL files and scripts.
 

@@ -23,12 +23,12 @@ submission — paper and code: https://github.com/ba-rem26007/gemma4-legacy-repl
 - 16 paths produced by Gemma 4 31B itself and verified by execution (`trajectories/self_paths.py`).
 
 Examples touching any function also fixed after the split were excluded. No proprietary-model output is included.
-With `MAX_LEN = 2048`, **89 examples** were actually used. Exact snapshot: `training/kaggle_dataset/trajectories.tar.gz`.
+With `MAX_LEN = 2048`, **89 examples** were actually used. Exact snapshot: `training/snapshots/trajectories_v15.tar.gz`.
 
 ## Training
 
 4-bit QLoRA, r = 16, α = 32, 3 epochs (18 steps), lr 5e-5, 2× T4 on Kaggle, 7,209 s, mean training loss 1.192
-(`training/kaggle_kernel/train_kaggle.py`, log `training/lora_final/gemma-4-qlora-training-prestashop.log`).
+(`training/snapshots/train_kaggle_v15.py`, log `training/lora_final/gemma-4-qlora-training-prestashop.log`).
 A chunked cross-entropy (`training/chunked_loss.py`) avoids materialising the full logits tensor over the 262k vocabulary.
 `adapter_model.safetensors` sha256 starts with `fac3f1af8b0fb855`.
 

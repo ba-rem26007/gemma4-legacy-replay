@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Fine-Tuning Gemma 4 QLoRA autonome sur Kaggle GPU (Tesla T4 15 Go).
-
-v16 (1er oct. 2026) : MAX_LEN 2048 → 4096 (89 → ~350 exemples), 2 époques, chemins Gemma filtrés à similarité ≥ 0,4,
-garde-fou de durée (arrêt + sauvegarde à 10 h 30, sessions Kaggle limitées à 12 h). v15 : 2048, 3 époques, 89 exemples.
-"""
+"""Fine-Tuning Gemma 4 QLoRA autonome sur Kaggle GPU (Tesla T4 15 Go)."""
 
 import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
@@ -55,12 +51,6 @@ for fpath in data_files:
             if line:
                 rows.append(json.loads(line))
 
-# Chemins Gemma (boucle d'auto-apprentissage) : seuil de qualité = similarité au correctif officiel ≥ 0,4
-MIN_SIM = 0.4
-n0 = len(rows)
-rows = [r for r in rows if r.get("source") != "gemma_self" or (r.get("similarite") or 0) >= MIN_SIM]
-print(f"Chemins Gemma sous le seuil de similarité {MIN_SIM} écartés : {n0 - len(rows)}")
-
 # Dédoublonnage et équilibrage par bug (max 2 par bug)
 per_bug = {}
 random.seed(42)
@@ -111,10 +101,8 @@ tok = AutoTokenizer.from_pretrained(model_path, padding_side="right")
 if tok.pad_token_id is None:
     tok.pad_token_id = tok.eos_token_id
 
-# v16 : 4096 tokens (médiane des chemins ≈ 3 900 tokens ; à 2048 seuls 89/585 passaient)
-MAX_LEN = 4096
-EPOCHS = 2
-TIME_LIMIT_S = 10.5 * 3600  # marge sous la limite de 12 h d'une session Kaggle
+# Longueur de contexte calibrée à 2048 tokens pour garantir une marge de VRAM totale
+MAX_LEN = 2048
 
 def tokenize(ex, tokenizer, max_len=MAX_LEN):
     msgs = ex["messages"]
@@ -231,7 +219,7 @@ model.print_trainable_parameters()
 OUT_DIR = Path("/kaggle/working/lora_gemma4")
 training_args = TrainingArguments(
     output_dir=str(OUT_DIR),
-    num_train_epochs=EPOCHS,
+    num_train_epochs=3,
     learning_rate=5e-5,
     lr_scheduler_type="cosine",
     warmup_steps=10,
@@ -316,26 +304,7 @@ trainer = ChunkedLossTrainer(
     data_collator=lambda b: collate(b, tok.pad_token_id or 0)
 )
 
-import time
-from transformers import TrainerCallback
-
-
-class TimeLimit(TrainerCallback):
-    """Arrête proprement l'entraînement avant la limite de session ; l'adaptateur est sauvegardé ensuite."""
-    def __init__(self, limit):
-        self.limit, self.t0 = limit, time.time()
-
-    def on_step_end(self, args, state, control, **kw):
-        if time.time() - self.t0 > self.limit:
-            print(f"⏱️ Limite de {self.limit / 3600:.1f} h atteinte à l'étape {state.global_step}/{state.max_steps} : arrêt et sauvegarde.")
-            control.should_training_stop = True
-        return control
-
-
-trainer.add_callback(TimeLimit(TIME_LIMIT_S))
-lens = sorted(len(x) for x in ds["input_ids"])
-print(f"Longueurs (tokens) : min {lens[0]}, médiane {lens[len(lens) // 2]}, max {lens[-1]}, total {sum(lens)}")
-print(f"=== LANCEMENT DU FINE-TUNING QLoRA ({EPOCHS} ÉPOQUES, MAX_LEN {MAX_LEN}, CHUNKED LOSS) ===")
+print("=== LANCEMENT DU FINE-TUNING QLoRA (3 ÉPOQUES AVEC CHUNKED LOSS) ===")
 trainer.train()
 
 # 7. Sauvegarde de l'adaptateur LoRA et création du ZIP
