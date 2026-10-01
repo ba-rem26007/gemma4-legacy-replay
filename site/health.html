@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Santé des services</title>
+<style>
+:root { --bg:#fbfaf7; --fg:#1d1c1a; --muted:#6b675f; --line:#e4e0d8; --accent:#b4441c; --code:#f1eee7;
+        --ok:#2f7d4f; --warn:#a86b00; --ko:#b3261e; --info:#5b6b80; }
+@media (prefers-color-scheme: dark) { :root { --bg:#161513; --fg:#ebe7df; --muted:#9a958b; --line:#2e2c28; --accent:#f08a5d; --code:#22201c;
+        --ok:#6cc58f; --warn:#e2a93b; --ko:#f2786d; --info:#9fb0c6; } }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { border-bottom:1px solid var(--line); padding:14px 16px; display:flex; flex-wrap:wrap; gap:6px 18px; align-items:baseline; }
+header b { font-size:17px; margin-right:auto; }
+header a { color:var(--muted); text-decoration:none; font-size:14px; }
+header a:hover { color:var(--accent); }
+main { max-width:860px; margin:0 auto; padding:24px 16px 80px; }
+h1 { font-size:28px; line-height:1.2; margin:.2em 0 .3em; }
+.meta { color:var(--muted); font-size:14px; margin-bottom:18px; }
+.summary { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+.pill { border:1px solid var(--line); border-radius:999px; padding:3px 12px; font-size:14px; }
+h2 { font-size:18px; margin:26px 0 8px; color:var(--muted); font-weight:600; }
+.row { display:grid; grid-template-columns:14px minmax(0,1fr); gap:10px; padding:9px 0; border-bottom:1px solid var(--line); align-items:start; }
+.dot { width:12px; height:12px; border-radius:50%; margin-top:6px; }
+.name { font-weight:600; }
+.name a { color:inherit; text-decoration:none; border-bottom:1px dotted var(--muted); }
+.name a:hover { color:var(--accent); }
+.detail { color:var(--muted); font-size:14px; overflow-wrap:anywhere; }
+.ok { background:var(--ok); } .warn { background:var(--warn); } .ko { background:var(--ko); } .info { background:var(--info); }
+.legend { margin-top:28px; font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:14px; }
+.legend span { display:inline-flex; align-items:center; gap:6px; }
+.legend i { width:10px; height:10px; border-radius:50%; display:inline-block; }
+#err { color:var(--ko); }
+</style>
+</head>
+<body>
+<header>
+  <b>Gemma 4 × PrestaShop</b>
+  <a href="/">Accueil</a>
+  <a href="/health">Santé</a>
+</header>
+<main>
+  <h1>Santé des services</h1>
+  <div class="meta" id="meta">Chargement…</div>
+  <div class="summary" id="summary"></div>
+  <div id="list"></div>
+  <div class="legend">
+    <span><i class="ok"></i>OK</span><span><i class="warn"></i>À surveiller</span>
+    <span><i class="ko"></i>En panne</span><span><i class="info"></i>Information / volontaire</span>
+  </div>
+  <p class="meta" style="margin-top:18px">Vérifications faites côté serveur toutes les 5 min par <code>site/health.py</code> (aucune clé n'est transmise au navigateur). La page se recharge chaque minute.</p>
+</main>
+<script>
+const LABEL = { ok: "OK", warn: "À surveiller", ko: "En panne", info: "Info" };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function ago(iso) {
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  return m < 1 ? "à l'instant" : m < 60 ? `il y a ${m} min` : `il y a ${Math.floor(m / 60)} h ${m % 60} min`;
+}
+async function load() {
+  try {
+    const r = await fetch("/health.json", { cache: "no-store" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    const when = new Date(d.generated).toLocaleString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" });
+    const stale = (Date.now() - new Date(d.generated)) > 15 * 60000;
+    document.getElementById("meta").innerHTML =
+      `Dernière vérification : ${when} (heure de Paris), ${ago(d.generated)} · ${d.seconds} s` +
+      (stale ? ` · <span id="err">données anciennes : le cron ne tourne plus ?</span>` : "");
+    const count = {};
+    d.checks.forEach(c => count[c.status] = (count[c.status] || 0) + 1);
+    document.getElementById("summary").innerHTML = ["ok", "warn", "ko", "info"].filter(s => count[s])
+      .map(s => `<span class="pill"><span class="dot ${s}" style="display:inline-block;width:9px;height:9px;margin:0 6px 0 0"></span>${count[s]} ${LABEL[s]}</span>`).join("");
+    const groups = {};
+    d.checks.forEach(c => (groups[c.group] = groups[c.group] || []).push(c));
+    document.getElementById("list").innerHTML = Object.entries(groups).map(([g, cs]) =>
+      `<h2>${esc(g)}</h2>` + cs.map(c => `<div class="row"><span class="dot ${esc(c.status)}" title="${LABEL[c.status] || ""}"></span><div>
+        <div class="name">${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a>` : esc(c.name)}</div>
+        <div class="detail">${esc(c.detail)}</div></div></div>`).join("")).join("");
+  } catch (e) {
+    document.getElementById("meta").innerHTML = `<span id="err">Impossible de lire /health.json (${esc(e.message)})</span>`;
+  }
+}
+load(); setInterval(load, 60000);
+</script>
+</body>
+</html>

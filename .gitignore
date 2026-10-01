@@ -32,3 +32,5 @@ training/kaggle_kernel/*
 !training/kaggle_kernel/train_kaggle.py
 !training/kaggle_kernel/kernel-metadata.json
 upload_to_hf.py
+# page de santé (régénérée par cron)
+site/health.json
