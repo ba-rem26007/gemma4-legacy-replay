@@ -48,9 +48,11 @@ def setup_workspace(workspace_dir: Path, base_commit: str) -> None:
 def apply_patch(workspace_dir: Path, patch_text: str) -> bool:
     if not patch_text.strip():
         return True
+    if not patch_text.endswith("\n"):
+        patch_text += "\n"
     try:
         p = subprocess.run(
-            ["git", "apply", "-v"],
+            ["git", "apply", "--recount", "-v"],
             input=patch_text,
             text=True,
             cwd=str(workspace_dir),
