@@ -1,0 +1,16 @@
+{
+  "id": "rmisoubeyrand/gemma-4-legacy-monolith-paper",
+  "title": "Making Legacy Monoliths Verifiable with Gemma 4",
+  "code_file": "gemma_4_legacy_paper.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "false",
+  "enable_gpu": "false",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": [],
+  "competition_sources": [
+    "gemma-4-developer-agent-paper"
+  ],
+  "kernel_sources": []
+}
