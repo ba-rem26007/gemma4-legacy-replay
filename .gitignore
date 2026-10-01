@@ -34,3 +34,8 @@ training/kaggle_kernel/*
 upload_to_hf.py
 # page de santé (régénérée par cron)
 site/health.json
+# Données de concours officielles (interdites de redistribution)
+tasks.jsonl
+*.npz
+data/graphs/
+data/embeddings/
