@@ -1,0 +1,1 @@
+{"ref": 56757960, "date": "2026-10-01T19:39:10Z", "kernel": "rmisoubeyrand/gemma-4-replay-agent-baseline", "version": 1, "condition": "A0_baseline_replay", "model": "gemma-4-31b-it-qat-w4a16-ct", "description": "Baseline Replay Agent (Gemma 4 31B QAT + Replay cycle + Code Analyzer)", "status": "PENDING", "seed": 42, "cost_eur": 0.0}
