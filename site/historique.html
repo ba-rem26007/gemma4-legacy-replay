@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Évolution du classement</title>
+<style>
+:root { --bg:#fbfaf7; --fg:#1d1c1a; --muted:#6b675f; --line:#e4e0d8; --accent:#b4441c; --code:#f1eee7;
+        --s1:#b4441c; --s2:#2f6f9f; --s3:#7a8f3a; --s4:#8a6bb0; --ours:#d4a017; }
+@media (prefers-color-scheme: dark) { :root { --bg:#161513; --fg:#ebe7df; --muted:#9a958b; --line:#2e2c28; --accent:#f08a5d; --code:#22201c;
+        --s1:#f08a5d; --s2:#6fb3e0; --s3:#b5c96a; --s4:#c3a6ea; --ours:#f5cd4f; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { border-bottom:1px solid var(--line); padding:14px 16px; display:flex; flex-wrap:wrap; gap:6px 18px; align-items:baseline; }
+header b { font-size:17px; margin-right:auto; }
+header a { color:var(--muted); text-decoration:none; font-size:14px; }
+header a:hover { color:var(--accent); }
+main { max-width:960px; margin:0 auto; padding:24px 16px 80px; }
+h1 { font-size:28px; margin:.2em 0 .3em; }
+h2 { font-size:19px; margin:30px 0 8px; }
+.meta { color:var(--muted); font-size:14px; }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:18px 0; }
+.kpi { border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+.kpi .v { font-size:24px; font-weight:650; }
+.kpi .l { color:var(--muted); font-size:13px; }
+.kpi .d { font-size:13px; }
+svg { width:100%; height:auto; display:block; }
+.axis { stroke:var(--line); } .lbl { fill:var(--muted); font-size:11px; }
+.legend { display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--muted); margin:6px 0; }
+.legend i { display:inline-block; width:14px; height:3px; margin-right:6px; vertical-align:middle; }
+table { border-collapse:collapse; width:100%; font-size:14px; display:block; overflow-x:auto; }
+th, td { border-bottom:1px solid var(--line); padding:6px 8px; text-align:left; white-space:nowrap; }
+th { color:var(--muted); font-weight:600; }
+tr.ours td { background:var(--code); font-weight:650; }
+.up { color:#2f7d4f; } .down { color:#b3261e; }
+.note { background:var(--code); border-radius:8px; padding:10px 14px; font-size:14px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <b>Gemma 4 × PrestaShop</b>
+  <a href="/">Accueil</a>
+  <a href="/participants">Participants</a>
+  <a href="/historique">Évolution</a>
+  <a href="/health">Santé</a>
+</header>
+<main>
+  <h1>Évolution du classement</h1>
+  <div class="meta" id="meta">Chargement…</div>
+  <div class="kpis" id="kpis"></div>
+  <h2>Scores : n° 1, top 10, top 100, médiane et nous</h2>
+  <div class="legend"><span><i style="background:var(--s1)"></i>n° 1</span><span><i style="background:var(--s2)"></i>10e</span>
+    <span><i style="background:var(--s3)"></i>100e</span><span><i style="background:var(--s4)"></i>médiane</span><span><i style="background:var(--ours)"></i>nous</span></div>
+  <div id="chartScores"></div>
+  <h2>Notre rang (plus bas = mieux)</h2>
+  <div id="chartRank"></div>
+  <h2>Trajectoire des 15 premiers (et la nôtre)</h2>
+  <div id="table"></div>
+  <p class="note" id="note"></p>
+</main>
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const fr = d => new Date(d + "T12:00:00Z").toLocaleDateString("fr-FR", { day:"numeric", month:"short" });
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function chart(el, days, series, { invert = false, fmt = v => v } = {}) {
+  const W = 900, H = 260, L = 48, R = 16, T = 12, B = 30;
+  const vals = series.flatMap(s => s.values.filter(v => v != null));
+  if (!vals.length) { el.innerHTML = '<p class="meta">Pas encore de donnée.</p>'; return; }
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (lo === hi) { lo = invert ? lo - 10 : Math.max(0, lo - 0.02); hi = invert ? hi + 10 : hi + 0.02; }
+  const pad = (hi - lo) * 0.08; lo -= pad; hi += pad; if (!invert) lo = Math.max(0, lo);
+  const x = i => days.length === 1 ? (L + W - R) / 2 : L + i * (W - L - R) / (days.length - 1);
+  const y = v => invert ? T + (v - lo) / (hi - lo) * (H - T - B) : H - B - (v - lo) / (hi - lo) * (H - T - B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  for (let k = 0; k <= 4; k++) {
+    const v = lo + (hi - lo) * k / 4, yy = y(v);
+    s += `<line class="axis" x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}"/><text class="lbl" x="${L - 6}" y="${yy + 4}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  const step = Math.max(1, Math.ceil(days.length / 10));
+  days.forEach((d, i) => { if (i % step === 0 || i === days.length - 1) s += `<text class="lbl" x="${x(i)}" y="${H - 8}" text-anchor="middle">${fr(d)}</text>`; });
+  for (const se of series) {
+    const pts = se.values.map((v, i) => v == null ? null : [x(i), y(v)]).filter(Boolean);
+    if (pts.length > 1) s += `<polyline fill="none" stroke="${se.color}" stroke-width="${se.width || 2}" points="${pts.map(p => p.join(",")).join(" ")}"/>`;
+    for (const [px, py] of pts) s += `<circle cx="${px}" cy="${py}" r="3.5" fill="${se.color}"/>`;
+  }
+  el.innerHTML = s + "</svg>";
+}
+
+function delta(a, b, lowerIsBetter = false) {
+  if (a == null || b == null || a === b) return "";
+  const better = lowerIsBetter ? b < a : b > a;
+  const d = lowerIsBetter ? a - b : b - a;
+  return `<span class="${better ? "up" : "down"}">${better ? "▲" : "▼"} ${Math.abs(typeof d === "number" && d % 1 ? +d.toFixed(2) : d)}</span>`;
+}
+
+fetch("/leaderboard_history.json", { cache: "no-store" }).then(r => r.json()).then(h => {
+  const D = h.days, days = D.map(d => d.date), last = D[D.length - 1], prev = D[D.length - 2];
+  document.getElementById("meta").textContent =
+    `${D.length} jour(s) d'historique (depuis le ${fr(days[0])}) · instantané quotidien du classement public complet · mis à jour le ` +
+    new Date(h.generated).toLocaleString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" }) + " (Paris)";
+  const o = last.ours || {}, po = (prev && prev.ours) || {};
+  const k = [["Notre rang", o.rank ? `${o.rank} / ${last.teams}` : "—", prev ? delta(po.rank, o.rank, true) : ""],
+             ["Notre score", o.score ?? "—", prev ? delta(po.score, o.score) : ""],
+             ["Score du n° 1", last.top1, prev ? delta(prev.top1, last.top1) : ""],
+             ["Seuil du top 10", last.top10, prev ? delta(prev.top10, last.top10) : ""],
+             ["Seuil du top 100", last.top100, prev ? delta(prev.top100, last.top100) : ""],
+             ["Équipes classées", last.teams, prev ? delta(prev.teams, last.teams) : ""]];
+  document.getElementById("kpis").innerHTML = k.map(([l, v, d]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${esc(v)}</div><div class="d">${d}</div></div>`).join("");
+  chart(document.getElementById("chartScores"), days, [
+    { values: D.map(d => d.top1), color: css("--s1") }, { values: D.map(d => d.top10), color: css("--s2") },
+    { values: D.map(d => d.top100), color: css("--s3") }, { values: D.map(d => d.median), color: css("--s4") },
+    { values: D.map(d => d.ours && d.ours.score), color: css("--ours"), width: 3 }], { fmt: v => v.toFixed(2) });
+  chart(document.getElementById("chartRank"), days, [{ values: D.map(d => d.ours && d.ours.rank), color: css("--ours"), width: 3 }],
+        { invert: true, fmt: v => Math.round(v) });
+  const show = days.slice(-7);
+  const head = `<tr><th>Équipe</th>${show.map(d => `<th>${fr(d)}</th>`).join("")}<th>Évolution</th></tr>`;
+  const body = h.teams.map(t => {
+    const by = Object.fromEntries(t.points.map(p => [p.date, p]));
+    const cells = show.map(d => by[d] ? `${by[d].score.toFixed(2)} <span class="meta">#${by[d].rank}</span>` : "—").join("</td><td>");
+    const f = t.points[0], l = t.points[t.points.length - 1];
+    return `<tr class="${t.ours ? "ours" : ""}"><td>${esc(t.name)}${t.ours ? " (nous)" : ""}</td><td>${cells}</td><td>${f && l && f !== l ? delta(f.rank, l.rank, true) + " rangs" : ""}</td></tr>`;
+  }).join("");
+  document.getElementById("table").innerHTML = `<table>${head}${body}</table>`;
+  document.getElementById("note").textContent = D.length < 2
+    ? "L'historique commence aujourd'hui : Kaggle ne fournit pas le classement des jours passés. Les courbes apparaîtront dès demain matin."
+    : "Archives brutes (CSV officiel Kaggle, un par jour) : runs/leaderboard/ du dépôt de travail.";
+}).catch(e => { document.getElementById("meta").textContent = "Impossible de lire l'historique : " + e; });
+</script>
+</body>
+</html>

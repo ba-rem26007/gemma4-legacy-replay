@@ -10,7 +10,7 @@ KEEP=(LICENSE RELATED.md setup.sh .env.api.example .env.local.example agent benc
       training/lora_final/gemma-4-qlora-training-prestashop.log training/lora_final/lora_gemma4/final/README.md training/lora_v16/train_v16_colab_a100.log
       docs/KAGGLE_FINAL_WRITEUP.md docs/RESULTATS.md docs/BOUCLE.md docs/ECHECS.md docs/FINETUNING_KAGGLE.md
       docs/PROCEDURES.md docs/PROTOCOLE.md docs/RESULTATS_E4B.md notebook/verification.ipynb docs/GLOSSAIRE.md docs/VOCABULAIRE.md docs/DONNEES_FT.md docs/CATALOGUE.md)
-DROP='^(bench/test_context_leak_language\.php|bench/split_and_extract_catalogs\.py|trajectories/train_compact\.jsonl|trajectories/train_recovery\.jsonl)$'
+DROP='^(bench/test_context_leak_language\.php|bench/split_and_extract_catalogs\.py|trajectories/train_compact\.jsonl|trajectories/train_recovery\.jsonl|runs/leaderboard/.*)$'
 rm -rf "$OUT"; mkdir -p "$OUT"
 git ls-files -- "${KEEP[@]}" | grep -Ev "$DROP" | tar -cf - -T - | tar -xf - -C "$OUT"
 cp docs/README_PUBLIC.md "$OUT/README.md"   # README public (anglais), distinct du README de travail

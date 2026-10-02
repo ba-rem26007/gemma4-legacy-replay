@@ -34,6 +34,9 @@ Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
 ## Dépôt public préparé — PRIVÉ jusqu'à la soumission (2 oct., 9 h 40)
 https://github.com/ba-rem26007/gemma4-legacy-replay-public : historique neuf (1 commit), construit par `tools/build_public.sh` (liste blanche, 9 599 fichiers, 296 Mo) ; 0 occurrence des 6 secrets (valeurs exactes cherchées) ; `notebook/verification.ipynb` passe dans un clone neuf. Mises à jour : `tools/sync_public.sh "message"`. **Passage en public à la soumission** (règle : privé d'abord) : `gh repo edit ba-rem26007/gemma4-legacy-replay-public --visibility public --accept-visibility-change-consequences`. Le papier, la fiche HF et le notebook pointent déjà vers ce dépôt.
 
+## Évolution du classement Kaggle (2 oct.) : https://kaggle.d1dev.fr/historique
+`tools/leaderboard_snapshot.py` (cron 7 h Paris) : télécharge le classement public complet, archive `runs/leaderboard/AAAA-MM-JJ.csv`, régénère `/participants` (`leaderboard.json`) et `leaderboard_history.json` (n° 1, seuils top 10 / top 100, médiane, notre rang, trajectoires du top 15). 2 oct. : 1 279 équipes, n° 1 à 0,24, top 10 à 0,15, **nous 864e à 0,06** (1 soumission notée, v2 en évaluation). Kaggle ne donne pas d'historique : il commence le 2 oct.
+
 ## Page de santé (1er oct.) : https://kaggle.d1dev.fr/health
 `site/health.py` (cron toutes les 5 min → `/home/elrems/kaggle.d1dev.fr/public/health.json`, log `runs/health.log`) + `site/health.html`. 18 vérifications : site/Traefik, GitHub (dépôt de travail, dépôt public), Kaggle (kernel, dataset), Hugging Face (adaptateur, fiche Dolibarr), API Gemma, 7 instances Docker, tâches en cours, disque. Aucun secret transmis. NB : le site en ligne est servi par le conteneur `kaggle-web` (`/home/elrems/kaggle.d1dev.fr/`), pas par `site/docker-compose.yml` (`kaggle-site`, arrêté).
 
