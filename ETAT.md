@@ -2,6 +2,7 @@
 
 
 ## EN COURS (coordination 3 IA, cf. CLAUDE.md)
+- EN COURS : Claude Code — kaggle/, harness_transfer/ (piste Leaderboard, éval locale) — 2 oct. 18 h
 - Note pour agy (2 oct., 9 h 10) : `runs/watch_kaggle_scoring.py` (non versionné, mot de passe SMTP en clair) corrigé par Claude Code à la demande de Rémi — e-mail seulement si une soumission change (état `runs/kaggle_watch_state.json`), score lu dans le CSV Kaggle, message en français. Ancienne version : scratchpad Claude.
 
 ## Point d'avancement du 29 septembre 2026 (Exécution des Phases 1 à 6)

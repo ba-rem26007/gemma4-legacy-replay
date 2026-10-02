@@ -19,7 +19,8 @@ Trois IA travaillent en parallèle sur ce dépôt (`./tmux.sh` choisit claude, a
   (section « EN COURS ») une ligne `EN COURS : <IA> — <fichier> — <heure de Paris>` ; la retirer à la fin.
   Si une autre IA y figure pour ce fichier : ne pas le modifier.
 - **Répartition** :
-  - **Antigravity (agy)** : piste Leaderboard (`kaggle/`, `harness_transfer/`) ;
+  - **Claude Code** : piste Leaderboard (`kaggle/`, `harness_transfer/`) depuis le 2 oct. (décision de Rémi ; agy en était propriétaire avant) ;
+  - **Antigravity (agy)** : à redéfinir par Rémi ;
   - **Claude Code** : papier (`docs/KAGGLE_FINAL_WRITEUP.md`), évaluations (`runs/`, `bench/`), entraînements, `notebook/verification.ipynb` ;
   - **Codex** : **relectures** (décision de Rémi, 2 oct.) — relit le papier, les docs et le code des deux autres IA ; ne modifie pas
     leurs fichiers : rapporte ses constats dans `docs/propositions/codex-<sujet>.md` (ou `.diff`), avec la preuve (commande + sortie).
