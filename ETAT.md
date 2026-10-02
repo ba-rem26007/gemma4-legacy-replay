@@ -31,6 +31,10 @@ Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
   | E4B + v16 (453 ex.) | 0, 0, 0 | 0 | 0 | **−11,1 [−23,2 ; −2,0]** |
   **Le LoRA dégrade E4B** (localisation en baisse, format de patch inchangé). L'ancien « E = 4/33 » est dans le bruit de la base. A100 libérée à 8 h 10 (≈ 100 unités de calcul consommées, dont ≈ 50 à vide la nuit : maintien en vie non coupé à la fin — à automatiser).
 
+## v17 entraînée + validation TRAIN en cours (2 oct., 12 h 38 Paris)
+- **v17** (Colab A100, 30 min) : 520 exemples ≤ 8 192 tokens (v16 : 453 ≤ 4 096) = reconstruits avec le déroulé actuel dont **42 % avec fausse piste** (lire d'abord le meilleur fichier non officiel, puis revenir) + 14 chemins Gemma condensés + 9 trajectoires Gemma complètes ; 0 fuite ; lot mis de côté exclu. Perte moyenne 0,454 (1,78 → 0,22). Adaptateur `training/lora_v17/final/` (sha256 05483bc1…), journal `training/lora_v17/train_v17_colab_a100.log`, données `training/snapshots/trajectories_v17.tar.gz`.
+- **Validation sur les 30 bugs TRAIN mis de côté** (`data/heldout_train_v17.json`) : base / v16 / v17 × 3 runs, condition E, verdict oracle Gemma ; psbench1/6/7 ; `runs/heldout_{base,v16,v17}.log`. Le superviseur `runs/heldout_supervisor.sh` **libère la session Colab à la fin**. Critère (DECISIONS.md) : v17 > base → une seule mesure TEST.
+
 ## Leviers figés + réparation L0 (2 oct., 11 h 15)
 - Leviers L0-L6 **figés dans DECISIONS.md avant toute mesure** (paramètres, protocole TRAIN, critère ≥ +3 nets sur 2 répétitions, une seule mesure TEST ensuite).
 - **L0 appliquée** (`agent/flow.py` `resolve_paths`, `agent/run.py`) : un chemin inexistant ne brûle plus les retours arrière en silence — le modèle reçoit « introuvable » + chemins proches et a la main ; `result["feedbacks"]` réenregistré. Testé hors ligne sur le scénario #41727 (faux modèle). Les répétitions B/O en cours utilisent leurs agents figés : non affectées.
