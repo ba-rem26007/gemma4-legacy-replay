@@ -1,5 +1,9 @@
 # ÉTAT — reprise : « Lis ETAT.md et reprends »
 
+
+## EN COURS (coordination 3 IA, cf. CLAUDE.md)
+- EN COURS : Claude Code — docs/KAGGLE_FINAL_WRITEUP.md — 2 oct. 8 h 30
+
 ## Point d'avancement du 29 septembre 2026 (Exécution des Phases 1 à 6)
 
 - **Plan d’amélioration intégralement exécuté** ([`docs/PLAN_AMELIORATION.md`](docs/PLAN_AMELIORATION.md), toutes cases cochées).

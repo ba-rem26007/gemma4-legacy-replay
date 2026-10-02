@@ -13,6 +13,20 @@ générés automatiquement (clics front/BO → appels enregistrés → replay).
 - `docs/PROCEDURES.md` — **toutes les commandes** (collecte, checkout, oracles, éval, agent, entraînement)
 - `docs/PROTOCOLE.md`, `docs/DONNEES_FT.md`, `docs/PILOTE.md`, `docs/VOCABULAIRE.md`, `docs/DEMO.md`
 
+## Travail à 3 IA (Claude Code, Antigravity, Codex) — règle de coordination (2 oct. 2026)
+Trois IA travaillent en parallèle sur ce dépôt (`./tmux.sh` choisit claude, agy ou codex). Pour ne pas s'écraser :
+- **Un fichier partagé = un seul propriétaire à la fois.** Avant de modifier un fichier partagé, ajouter en tête d'`ETAT.md`
+  (section « EN COURS ») une ligne `EN COURS : <IA> — <fichier> — <heure de Paris>` ; la retirer à la fin.
+  Si une autre IA y figure pour ce fichier : ne pas le modifier.
+- **Répartition** :
+  - **Antigravity (agy)** : piste Leaderboard (`kaggle/`, `harness_transfer/`) ;
+  - **Claude Code** : papier (`docs/KAGGLE_FINAL_WRITEUP.md`), évaluations (`runs/`, `bench/`), entraînements, `notebook/verification.ipynb` ;
+  - **Codex** : à définir par Rémi (proposition : relectures, tests, revue de code).
+- **Writeup : un seul rédacteur.** Les autres IA proposent leurs modifications sous forme de diff dans `docs/propositions/<IA>-<sujet>.diff`.
+- **Tout chiffre du papier doit passer `notebook/verification.ipynb`** (recalcul depuis le dépôt, `assert`). Ne jamais réintroduire un
+  chiffre retiré pour défaut de source (voir `ETAT.md`, recheck pré-soumission).
+- Avant de commencer : `git pull`, lire la section « EN COURS » d'`ETAT.md` ; committer petit et souvent.
+
 ## Règles clés (voir REGLES.md)
 - Tâche = **corriger** un bug connu. Pas de chasse aux bugs, **jamais de sécurité**.
 - **Claude construit la fabrique, pas son contenu** : aucune sortie de modèle propriétaire dans les données d'entraînement.
