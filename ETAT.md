@@ -31,6 +31,9 @@ Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
   | E4B + v16 (453 ex.) | 0, 0, 0 | 0 | 0 | **−11,1 [−23,2 ; −2,0]** |
   **Le LoRA dégrade E4B** (localisation en baisse, format de patch inchangé). L'ancien « E = 4/33 » est dans le bruit de la base. A100 libérée à 8 h 10 (≈ 100 unités de calcul consommées, dont ≈ 50 à vide la nuit : maintien en vie non coupé à la fin — à automatiser).
 
+## Répétitions B et O (lancées le 2 oct., 10 h 24 Paris) — 2 runs de plus chacune → 3 runs par condition
+Code d'agent EXACT du run 1 (B : `4f649d9`, O : `f7dcbdc`) via `/home/elrems/kaggle-rep/{B,O}` (agent/ figé, reste = dépôt principal), lanceur `runs/run_rep.sh`, journaux `runs/rep_{B,O}_{r2,r3}.log`, instances psbench2-5. Quota Gemma partagé (16 k tokens/min) → ≈ 12-15 h. Rappel : ce sont des répétitions de conditions déjà définies (pas de réglage sur TEST).
+
 ## Dépôt public préparé — PRIVÉ jusqu'à la soumission (2 oct., 9 h 40)
 https://github.com/ba-rem26007/gemma4-legacy-replay-public : historique neuf (1 commit), construit par `tools/build_public.sh` (liste blanche, 9 599 fichiers, 296 Mo) ; 0 occurrence des 6 secrets (valeurs exactes cherchées) ; `notebook/verification.ipynb` passe dans un clone neuf. Mises à jour : `tools/sync_public.sh "message"`. **Passage en public à la soumission** (règle : privé d'abord) : `gh repo edit ba-rem26007/gemma4-legacy-replay-public --visibility public --accept-visibility-change-consequences`. Le papier, la fiche HF et le notebook pointent déjà vers ce dépôt.
 
