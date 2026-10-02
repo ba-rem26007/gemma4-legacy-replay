@@ -33,3 +33,6 @@ Une entrée par choix structurant : date, décision, raison.
 
 ## 2026-09-30 — Jetons ngrok et Hugging Face conservés (décision de Rémi)
 Pas de révocation. Condition : aucune valeur dans le dépôt public. Vérifié : 0 occurrence dans l'arbre public et dans HEAD ; le jeton ngrok reste dans 2 commits de l'historique privé → publication obligatoirement par dépôt NEUF sans historique (`tools/build_public.sh`). `upload_to_hf.py` (jeton HF) est ignoré par git.
+
+## 2026-10-02 — Dépôt public gardé PRIVÉ jusqu'à la soumission (décision de Rémi)
+`ba-rem26007/gemma4-legacy-replay-public` (historique neuf, construit par `tools/build_public.sh`) reste privé ; passage en public le jour de la soumission (`gh repo edit … --visibility public`). Raison : ne pas exposer nos méthodes aux concurrents de la piste Leaderboard avant l'échéance. Mises à jour d'ici là : `tools/sync_public.sh`.
