@@ -20,6 +20,9 @@ REPOS = {
     "rich": Path("/home/elrems/kaggle/harness_transfer/repos/rich"),
     "flask": Path("/home/elrems/kaggle/harness_transfer/repos/flask"),
     "click": Path("/home/elrems/kaggle/harness_transfer/repos/click"),
+    "jinja": Path("/home/elrems/kaggle/harness_transfer/repos/jinja"),
+    "urllib3": Path("/home/elrems/kaggle/harness_transfer/repos/urllib3"),
+    "werkzeug": Path("/home/elrems/kaggle/harness_transfer/repos/werkzeug"),
 }
 
 DATA_DIR = Path("/home/elrems/kaggle/harness_transfer/data")
@@ -188,26 +191,36 @@ def extract_candidates(repo_name: str, repo_path: Path, dev_ids: Set[str], max_c
 
 
 def main():
-    print("🚀 Construction des corpus gradués 1 Mo, 2 Mo, 3 Mo, 4 Mo...")
+    print("🚀 Construction des corpus gradués 1 Mo à 8 Mo (Lois d'échelle & Overfitting)...")
     dev_ids = load_dev_ids(DEV30_FILE)
     print(f"🛡️  Embargo anti-contamination : {len(dev_ids)} identifiants protégés.")
 
     all_candidates = []
-    # Quotas équilibrés pour atteindre ~850 exemples (4 Mo)
-    quotas = {"fastapi": 100, "requests": 180, "rich": 220, "flask": 180, "click": 170}
+    quotas = {
+        "fastapi": 120,
+        "requests": 380,
+        "rich": 450,
+        "flask": 450,
+        "click": 250,
+        "jinja": 200,
+        "urllib3": 350,
+        "werkzeug": 350,
+    }
 
     for name, path in REPOS.items():
-        exs = extract_candidates(name, path, dev_ids, max_count=quotas.get(name, 150))
+        exs = extract_candidates(name, path, dev_ids, max_count=quotas.get(name, 200))
         all_candidates.extend(exs)
 
     print(f"\nTotal global extrait : {len(all_candidates)} exemples.")
 
-    # Découpage progressif imbriqué (train_1mb ⊂ train_2mb ⊂ train_3mb ⊂ train_4mb)
+    # Découpage progressif imbriqué (train_1mb ⊂ ... ⊂ train_8mb)
     targets = [
         ("train_1mb.jsonl", 190),   # ~1.0 Mo
         ("train_2mb.jsonl", 380),   # ~2.0 Mo
         ("train_3mb.jsonl", 570),   # ~3.0 Mo
-        ("train_4mb.jsonl", min(760, len(all_candidates))),  # ~4.0 Mo
+        ("train_4mb.jsonl", 742),   # ~4.0 Mo
+        ("train_6mb.jsonl", min(1150, len(all_candidates))),  # ~6.0 Mo
+        ("train_8mb.jsonl", min(1550, len(all_candidates))),  # ~8.0 Mo
     ]
 
     for filename, count in targets:
@@ -217,8 +230,9 @@ def main():
             for ex in subset:
                 f.write(json.dumps(ex, ensure_ascii=False) + "\n")
         size_kb = out_path.stat().st_size / 1024
-        print(f"✅ {filename:16} : {len(subset):3} exemples | {size_kb:.1f} Ko ({size_kb/1024:.2f} Mo)")
+        print(f"✅ {filename:16} : {len(subset):4} exemples | {size_kb:.1f} Ko ({size_kb/1024:.2f} Mo)")
 
 
 if __name__ == "__main__":
     main()
+
