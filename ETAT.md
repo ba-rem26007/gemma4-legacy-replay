@@ -31,6 +31,11 @@ Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
   | E4B + v16 (453 ex.) | 0, 0, 0 | 0 | 0 | **−11,1 [−23,2 ; −2,0]** |
   **Le LoRA dégrade E4B** (localisation en baisse, format de patch inchangé). L'ancien « E = 4/33 » est dans le bruit de la base. A100 libérée à 8 h 10 (≈ 100 unités de calcul consommées, dont ≈ 50 à vide la nuit : maintien en vie non coupé à la fin — à automatiser).
 
+## Leviers figés + réparation L0 (2 oct., 11 h 15)
+- Leviers L0-L6 **figés dans DECISIONS.md avant toute mesure** (paramètres, protocole TRAIN, critère ≥ +3 nets sur 2 répétitions, une seule mesure TEST ensuite).
+- **L0 appliquée** (`agent/flow.py` `resolve_paths`, `agent/run.py`) : un chemin inexistant ne brûle plus les retours arrière en silence — le modèle reçoit « introuvable » + chemins proches et a la main ; `result["feedbacks"]` réenregistré. Testé hors ligne sur le scénario #41727 (faux modèle). Les répétitions B/O en cours utilisent leurs agents figés : non affectées.
+- Prochaine étape : définir le lot TRAIN de validation, puis développer L1-L3.
+
 ## Répétitions B et O (lancées le 2 oct., 10 h 24 Paris) — 2 runs de plus chacune → 3 runs par condition
 Code d'agent EXACT du run 1 (B : `4f649d9`, O : `f7dcbdc`) via `/home/elrems/kaggle-rep/{B,O}` (agent/ figé, reste = dépôt principal), lanceur `runs/run_rep.sh`, journaux `runs/rep_{B,O}_{r2,r3}.log`, instances psbench2-5. Quota Gemma partagé (16 k tokens/min) → ≈ 12-15 h. Rappel : ce sont des répétitions de conditions déjà définies (pas de réglage sur TEST).
 

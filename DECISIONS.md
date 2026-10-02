@@ -36,3 +36,19 @@ Pas de révocation. Condition : aucune valeur dans le dépôt public. Vérifié 
 
 ## 2026-10-02 — Dépôt public gardé PRIVÉ jusqu'à la soumission (décision de Rémi)
 `ba-rem26007/gemma4-legacy-replay-public` (historique neuf, construit par `tools/build_public.sh`) reste privé ; passage en public le jour de la soumission (`gh repo edit … --visibility public`). Raison : ne pas exposer nos méthodes aux concurrents de la piste Leaderboard avant l'échéance. Mises à jour d'ici là : `tools/sync_public.sh`.
+
+## 2026-10-02 — Leviers d'amélioration de l'agent FIGÉS avant toute mesure (diagnostic des 14 bugs TEST jamais résolus)
+Source : `docs/DIAGNOSTIC_NON_RESOLUS.md` (traces TEST). Règle : **jamais d'ajustement sur le TEST** (REGLES.md) → validation sur TRAIN, puis **une seule** mesure TEST. Paramètres fixés ICI, sans les avoir vus agir.
+
+**L0 — Réparations (pas des réglages ; appliquées tout de suite, 2 oct.)**
+- `backtrack()` : un chemin demandé inexistant ne consomme plus les retours sans tour modèle ; l'agent reçoit « introuvable » + chemins existants proches (même nom de fichier, puis `difflib`, 5 max), et a la main. Idem pour les chemins inexistants de l'étape LIRE initiale.
+- `result["feedbacks"]` réenregistré (retours de test vus en cours de run ; supprimé le 29 sept. par le commit 1e75370).
+
+**L1 — Lecture v3** (à développer, puis valider sur TRAIN) : une relecture d'un fichier déjà montré sert les plages non encore montrées et le dit ; chaque fichier lu est précédé de son plan (`l.N function nom`, nombre total de lignes) ; `"fichier::methode"` accepté dans `files` (montre la méthode entière) ; fichier entier si ≤ 150 lignes.
+**L2 — Budget** : 4 retours arrière (au lieu de 2), une demande identique n'en consomme pas ; budget épuisé sans édition → un tour « produis maintenant tes blocs SEARCH/REPLACE ».
+**L3 — Taille de lecture** : `MAX_LINES_PER_FILE` ∈ {120 (actuel, depuis le 28 sept.), 260 (runs 31B du 25-28 sept.)} ; `WINDOW` inchangé (20).
+**L5 — Recherche v2** : poids d'un mot-clé ∝ log(nb fichiers / nb fichiers touchés) ; mot-clé présent dans > 20 % des fichiers ignoré et signalé ; mots-clés à 0 résultat signalés.
+**L6 — Aller à la définition (1 saut)** : `"symbole"` dans `files` → fichier + méthode qui le définit.
+
+**Protocole de validation (TRAIN uniquement)** : lot TRAIN rejouable fixé avant la mesure (bugs antérieurs au 2025-06-01, oracle validé ; priorité aux oracles Playwright, sinon les 99 oracles PHP de `docs/BOUCLE.md` — limite : non représentatif des oracles TEST, à écrire dans le papier). Condition A, Gemma 4 31B, ancien vs nouvel agent figés par commit, **2 répétitions**, appariement par bug. **Critère de succès fixé ici** : ≥ +3 bugs résolus nets (moyenne des 2 répétitions) ET aucune perte nette au-delà de l'écart observé entre les 2 répétitions de l'ancien agent. Un levier retenu → **une seule** mesure TEST (A × 4 + O), sans itération ; le papier dit que les leviers viennent de traces TEST et ont été validés sur TRAIN.
+**Oracles TEST discutables** (#41327, #41225, #41573, #41735) : non modifiés ; scores publiés avec et sans eux. #40070 : non-déterminisme du banc à corriger comme défaut d'infrastructure.
