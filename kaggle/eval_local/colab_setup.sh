@@ -3,13 +3,13 @@
 # Reproduit l'évaluateur Kaggle : Python 3.12, vLLM 0.19.1, harnais officiel swegemma (dataset metric/gemma-4-developer-agent-wheelhouse),
 # modèle gemma-4-31B-it-qat-w4a16-ct, sandbox subprocess (pas de Docker sur Colab), + kit public gemma4-swe-kit.
 # Entrées sur la VM : /root/.kaggle/access_token, /content/lb/lot.json, $HF_TOKEN. Journal : /content/lb/setup.log
-set -euxo pipefail
+set -euo pipefail   # pas de -x : la trace afficherait le jeton Kaggle (incident du 2 oct.)
 cd /content/lb
 export KAGGLE_API_TOKEN=$(cat /root/.kaggle/access_token)
 pip -q install -U uv kaggle
 uv python install 3.12
-uv venv -p 3.12 /content/lb/env
-. /content/lb/env/bin/activate
+# NB : Colab impose UV_SYSTEM_PYTHON → les paquets vont dans le Python système (3.13), pas dans un venv 3.12.
+# Écart assumé avec l'évaluateur (3.12) ; vLLM 0.19.1 (abi3) et swegemma (py3) s'installent quand même.
 # 1. harnais officiel + pile de l'évaluateur
 kaggle datasets download metric/gemma-4-developer-agent-wheelhouse -p wheelhouse --unzip -q
 uv pip install "vllm==0.19.1"                       # tire torch compatible
