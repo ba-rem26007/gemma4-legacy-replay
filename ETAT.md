@@ -31,8 +31,11 @@ Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
   | E4B + v16 (453 ex.) | 0, 0, 0 | 0 | 0 | **−11,1 [−23,2 ; −2,0]** |
   **Le LoRA dégrade E4B** (localisation en baisse, format de patch inchangé). L'ancien « E = 4/33 » est dans le bruit de la base. A100 libérée à 8 h 10 (≈ 100 unités de calcul consommées, dont ≈ 50 à vide la nuit : maintien en vie non coupé à la fin — à automatiser).
 
-## Incident 2 oct., 13 h 50 Paris : tous les processus de fond tués (cause probable : redémarrage du processus Claude Code)
-Répétitions B/O et validation TRAIN interrompues ; O run 3 était de toute façon **invalide** (conteneur psbench5-ps resté « Created » → toutes les évaluations en échec, renommé `runs/_invalide_20261002-082415-O_…`). **Reprise** (bugs sans résultat seulement, nouveaux dossiers fusionnés par essai) dans des **unités `systemd --user`** indépendantes du terminal : `kag-rep-{B,O}-r{2,3}`, `kag-heldout-{base,v16,v17}`, `kag-colab-tunnel`, `kag-colab-keepalive`, `kag-heldout-teardown` (libère Colab à la fin). Suivi : `systemctl --user list-units 'kag-*'`.
+## Incident 2 oct. (corrigé à 15 h 20 Paris) — FAUX diagnostic, doublons, puis 3 instances max
+- À 13 h 50 j'ai cru tous les processus de fond morts : **faux** — `ps` passait par le filtre `rtk` qui masquait la sortie (utiliser `rtk proxy ps`). Ma « reprise » a créé des doublons, rangés dans `runs/_doublons_20261002/` (non effacés).
+- O run 3 d'origine était bien **invalide** (conteneur psbench5 jamais démarré) : `runs/_invalide_20261002-082415-O_…`.
+- Consigne serveur partagé : **3 instances psbench au maximum** (docs/PROCEDURES.md). Instances 4-7 arrêtées. Répartition : PSB1 = validation TRAIN (base : processus d'origine ; v16, v17 : unités `kag-heldout-v16/v17`, reprise du run 2 puis run 3) ; PSB2 = B r2 (origine) + O r2 (unité, reprise) ; PSB3 = B r3 (origine) + O r3 (unité, complet). Libération Colab : `kag-heldout-teardown`.
+- Run 1 de la validation : **complet pour les 3 modèles** (`runs/20261002-1037{52,55,58}-E`).
 
 ## v17 entraînée + validation TRAIN en cours (2 oct., 12 h 38 Paris)
 - **v17** (Colab A100, 30 min) : 520 exemples ≤ 8 192 tokens (v16 : 453 ≤ 4 096) = reconstruits avec le déroulé actuel dont **42 % avec fausse piste** (lire d'abord le meilleur fichier non officiel, puis revenir) + 14 chemins Gemma condensés + 9 trajectoires Gemma complètes ; 0 fuite ; lot mis de côté exclu. Perte moyenne 0,454 (1,78 → 0,22). Adaptateur `training/lora_v17/final/` (sha256 05483bc1…), journal `training/lora_v17/train_v17_colab_a100.log`, données `training/snapshots/trajectories_v17.tar.gz`.
