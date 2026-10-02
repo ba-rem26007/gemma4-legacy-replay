@@ -32,6 +32,7 @@ Trois IA travaillent en parallèle sur ce dépôt (`./tmux.sh` choisit claude, a
 - Tâche = **corriger** un bug connu. Pas de chasse aux bugs, **jamais de sécurité**.
 - **Claude construit la fabrique, pas son contenu** : aucune sortie de modèle propriétaire dans les données d'entraînement.
 - **Étanchéité** TEST / TRAIN (split temporel sur la date de coupure de Gemma 4).
+- **Jamais d'ajustement sur le TEST** : tout levier (prompt, outil, paramètre, données) se valide d'abord sur des bugs TRAIN, puis se mesure une seule fois sur TEST (voir REGLES.md).
 - Aucun code privé, aucune citation sans lien vérifié, demander avant toute action destructive ou tout téléchargement > 5 Go.
 
 ## Architecture

@@ -36,6 +36,7 @@ _à remplir après lecture du texte officiel_
 - **Aucune citation inventée.** Chaque référence a un lien vérifié, sinon elle n'entre pas.
 - **Pas de recherche de failles de sécurité.** On corrige des bugs connus et publiés ; tout ce qui touche la sécurité, l'authentification ou le contrôle d'accès est exclu.
 - **Aucun modèle propriétaire pour générer des données d'entraînement** (Claude, GPT…), y compris via des datasets publics d'instruction de provenance douteuse. Claude Code écrit le code de la fabrique, jamais son contenu.
+- **JAMAIS d'ajustement sur le TEST** (décision du 2 oct. 2026) : aucun réglage de l'agent, du prompt, des outils, des hyperparamètres ni des données d'entraînement ne se décide en regardant les bugs TEST. Un levier trouvé en analysant des échecs TEST (ex. `docs/ECHECS.md`, diagnostic des bugs non résolus) est d'abord **validé sur des bugs TRAIN** (ex. les 99 bugs TRAIN à oracle Gemma, `docs/BOUCLE.md`) ; seul un levier qui aide sur TRAIN est ensuite mesuré **une fois** sur TEST, et le papier dit d'où vient le levier. Pas d'itérations successives « régler → mesurer sur TEST ».
 - **ÉTANCHÉITÉ** : aucun bug TEST, ni aucun correctif touchant les mêmes lignes ou fichiers, dans les données d'entraînement. Contrôle à chaque étape.
 - `ETAT.md` à jour à la fin de chaque étape ; `DECISIONS.md` pour chaque choix structurant.
 - Demander avant toute commande destructive ou tout téléchargement > 5 Go.
