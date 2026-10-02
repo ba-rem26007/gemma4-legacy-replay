@@ -17,9 +17,9 @@ that fails before the official fix and passes after it, on a Docker PrestaShop r
 | B · + Gemma-written repro test as feedback (1 run) | 15 (45.5%) | +6.8 pts vs A, CI [−2.3, +16.7], not significant |
 | O · + hidden oracle as feedback (1 run) | 16 (48.5%) | approximate ceiling of this flow; 2 regressions |
 | A · Gemma 4 26B A4B | 5 | |
-| E · Gemma 4 E4B + QLoRA + rules | 4 | full system, not an isolated LoRA ablation |
+| E · Gemma 4 E4B, rules (3 runs) | 3.67 (base) | + QLoRA v15: 1.33, + QLoRA v16: 0 — fine-tuning hurts (`docs/RESULTATS_E4B.md`) |
 
-Regenerate: `python3 bench/results.py` → `docs/RESULTATS.md`, `eval/results.csv` (offline, no model call).
+Verify every number: `notebook/verification.ipynb` (CPU, ~2 s). Regenerate: `python3 bench/results.py` → `docs/RESULTATS.md`, `eval/results.csv` (offline, no model call).
 
 Self-learning loop (Gemma only, TRAIN bugs): Gemma writes an oracle (99 validated), fixes the bug with it (41 "solved"), and
 13 of 41 (32%) edit code outside the official fix — "tests pass" is not a sufficient reward. See `docs/BOUCLE.md`.

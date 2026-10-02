@@ -14,7 +14,7 @@ tags:
 
 QLoRA adapter for **Gemma 4 E4B** (`google/gemma-4-E4B-it`) trained to follow a fixed bug-fixing flow on PrestaShop (PHP):
 localise (keywords) → read (files) → edit (SEARCH/REPLACE blocks). Part of the Kaggle *Gemma 4 Developer Agent* Paper Track
-submission — paper and code: https://github.com/ba-rem26007/gemma4-legacy-replay (`docs/KAGGLE_FINAL_WRITEUP.md`).
+submission — paper and code: https://github.com/ba-rem26007/gemma4-legacy-replay-public (`docs/KAGGLE_FINAL_WRITEUP.md`).
 
 ## Training data
 

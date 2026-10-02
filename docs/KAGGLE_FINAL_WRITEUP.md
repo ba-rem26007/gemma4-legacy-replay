@@ -3,7 +3,7 @@
 ### Hidden replay oracles on 33 post-cutoff PHP bugs, a Gemma-only self-learning loop that can game its own tests, and a negative fine-tuning result
 
 **Author:** Rémi Soubeyrand · Kaggle "Google – The Gemma 4 Developer Agent", Paper Track  
-**Code, data and traces:** https://github.com/ba-rem26007/gemma4-legacy-replay (Apache-2.0)  
+**Code, data and traces:** https://github.com/ba-rem26007/gemma4-legacy-replay-public (Apache-2.0)  
 
 ---
 
@@ -240,4 +240,4 @@ Claude Code (Anthropic) and Google Antigravity were used as developer tools for 
 
 ---
 
-**Verify every number in this paper:** [`notebook/verification.ipynb`](https://github.com/ba-rem26007/gemma4-legacy-replay/blob/main/notebook/verification.ipynb) recomputes all tables, confidence intervals, the leakage check and the training logs from the committed files (CPU only, about 2 seconds; each section ends with `assert`).
+**Verify every number in this paper:** [`notebook/verification.ipynb`](https://github.com/ba-rem26007/gemma4-legacy-replay-public/blob/main/notebook/verification.ipynb) recomputes all tables, confidence intervals, the leakage check and the training logs from the committed files (CPU only, about 2 seconds; each section ends with `assert`).
