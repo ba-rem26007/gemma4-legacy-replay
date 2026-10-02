@@ -89,7 +89,7 @@ Création d'un sous-classeur de `Trainer` : `ChunkedLossTrainer`.
 4. Projection linéaire par micro-chunks de 256 tokens :
    $$256 \times 262144 \times 4 \text{ octets} \approx 268 \text{ Mo}$$
 5. Calcul de la cross-entropy par chunk et sommation différentiable.
-**Résultat** : Réduction de **51%** de la VRAM totale d'entraînement (28.4 → 13.8 Go), exécution fluide sans aucun OOM.
+**Résultat** : le tenseur de logits passe de 4,29 Go à 268 Mo (≈ −94 %). La VRAM totale avant/après n'a pas été mesurée (le chiffre « 28,4 → 13,8 Go » cité auparavant n'avait pas de source et a été retiré le 2 oct.).
 
 ---
 

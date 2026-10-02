@@ -2,7 +2,6 @@
 
 
 ## EN COURS (coordination 3 IA, cf. CLAUDE.md)
-- EN COURS : Claude Code — docs/KAGGLE_FINAL_WRITEUP.md — 2 oct. 8 h 30
 
 ## Point d'avancement du 29 septembre 2026 (Exécution des Phases 1 à 6)
 
@@ -27,7 +26,7 @@ Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` 
   | Modèle | Résolus/run | Moyenne | pass@3 | Δ vs base (IC 95 %) |
   |---|---|---|---|---|
   | E4B base | 3, 4, 4 | **3,67 (11,1 %)** | 4 | — |
-  | E4B + v15 (89 ex.) | 1, 1, 2 | 1,33 (4,0 %) | 2 | −7,1 [−15,2 ; 0,0] |
+  | E4B + v15 (89 ex.) | 1, 1, 2 | 1,33 (4,0 %) | 2 | −7,1 [−16,2 ; 0,0] |
   | E4B + v16 (453 ex.) | 0, 0, 0 | 0 | 0 | **−11,1 [−23,2 ; −2,0]** |
   **Le LoRA dégrade E4B** (localisation en baisse, format de patch inchangé). L'ancien « E = 4/33 » est dans le bruit de la base. A100 libérée à 8 h 10 (≈ 100 unités de calcul consommées, dont ≈ 50 à vide la nuit : maintien en vie non coupé à la fin — à automatiser).
 
