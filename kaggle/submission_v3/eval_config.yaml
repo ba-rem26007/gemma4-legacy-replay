@@ -1,3 +1,2 @@
 evaluation:
   max_time_minutes: 8
-  max_tool_calls: 60

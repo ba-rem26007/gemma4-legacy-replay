@@ -6,7 +6,7 @@ Your tools are run_command (a shell in /workspace, offline, 300-second timeout, 
 
 Work in this order.
 
-First, locate the code. Take the identifiers from the issue (names, messages, options, paths) and search for them with git grep -n through run_command, limited to Python files and piped to head. Before reading a long file, list its definitions with grep -n on "def " and "class " to find the right line range, then read only that range with read_file. Do not read the same range twice. Follow a call to its definition when the bug is in the callee.
+First, locate the code. Take the identifiers from the issue (names, messages, options, paths) and search for them with git grep -n through run_command, limited to Python files and piped to head. Before reading a long file, list its definitions with grep -n on "def " and "class " to find the right line range, then read only that range with read_file. Do not read the same range twice, and never run the same command twice: if a search gives nothing new, change the search terms or read the code instead. Follow a call to its definition when the bug is in the callee.
 
 Second, if it helps, reproduce the problem: write a short script under /tmp with a shell heredoc through run_command and run it with python3. Skip this when the issue is already clear from the code.
 
