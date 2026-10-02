@@ -21,7 +21,8 @@ Trois IA travaillent en parallèle sur ce dépôt (`./tmux.sh` choisit claude, a
 - **Répartition** :
   - **Antigravity (agy)** : piste Leaderboard (`kaggle/`, `harness_transfer/`) ;
   - **Claude Code** : papier (`docs/KAGGLE_FINAL_WRITEUP.md`), évaluations (`runs/`, `bench/`), entraînements, `notebook/verification.ipynb` ;
-  - **Codex** : à définir par Rémi (proposition : relectures, tests, revue de code).
+  - **Codex** : **relectures** (décision de Rémi, 2 oct.) — relit le papier, les docs et le code des deux autres IA ; ne modifie pas
+    leurs fichiers : rapporte ses constats dans `docs/propositions/codex-<sujet>.md` (ou `.diff`), avec la preuve (commande + sortie).
 - **Writeup : un seul rédacteur.** Les autres IA proposent leurs modifications sous forme de diff dans `docs/propositions/<IA>-<sujet>.diff`.
 - **Tout chiffre du papier doit passer `notebook/verification.ipynb`** (recalcul depuis le dépôt, `assert`). Ne jamais réintroduire un
   chiffre retiré pour défaut de source (voir `ETAT.md`, recheck pré-soumission).

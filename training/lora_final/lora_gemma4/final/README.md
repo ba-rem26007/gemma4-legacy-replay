@@ -34,14 +34,18 @@ A chunked cross-entropy (`training/chunked_loss.py`) avoids materialising the fu
 
 ## Evaluation (33 hidden-oracle TEST bugs, PrestaShop 9.1.x, merged after the split)
 
-| System | Solved | Right file read | Regressions |
-|---|---|---|---|
-| E · Gemma 4 E4B + this adapter + rules/glossary/replay spec, 2 retries | 4/33 (12.1%) | 42.4% | 1 |
-| A · Gemma 4 26B A4B, ticket only (for reference) | 5/33 | 63.6% | 0 |
-| A · Gemma 4 31B, ticket only (mean of 4 runs) | 12.8/33 (38.6%) | — | 0 |
+Condition E (rules + glossary + replay spec, 2 retries), **3 runs per model on the same infrastructure**
+(base loaded in 4-bit NF4 as in training; `docs/RESULTATS_E4B.md`, recomputed by `notebook/verification.ipynb`):
 
-This is a **system-vs-system** comparison, not an isolated LoRA ablation (no base-E4B run with the same setup exists).
-The adapter mainly teaches the output format; it does not make E4B competitive with 31B on this benchmark.
+| Model | Solved per run | Mean | Right file read | Δ vs base (95% CI) |
+|---|---|---|---|---|
+| Gemma 4 E4B base (no adapter) | 3, 4, 4 | 3.67 / 33 | 13–16 | — |
+| **E4B + this adapter (v15, 89 examples)** | 1, 1, 2 | 1.33 / 33 | 11–13 | −7.1 pts [−16.2, 0.0] |
+| E4B + v16 adapter (453 examples, ≤ 4096 tokens) | 0, 0, 0 | 0 / 33 | 11 | −11.1 pts [−23.2, −2.0] |
+
+**This adapter does not improve Gemma 4 E4B on this benchmark; the larger v16 adapter degrades it.** Patch application
+rates are unchanged; localisation drops. An earlier single-run figure (4/33, 28 Sept.) is within the base model's noise.
+We publish the adapter for reproducibility of this negative result.
 
 ## Limitations
 
