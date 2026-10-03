@@ -17,6 +17,22 @@
 
 Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Fine-Tuning : `docs/FINETUNING_KAGGLE.md` · Condition D : `docs/CONDITION_D.md` · Site : https://kaggle.d1dev.fr
 
+## Leaderboard — éval locale fidèle + V3b prête (3 oct., 4 h 30 Paris)
+Éval locale = évaluateur reproduit sur Colab A100 : vLLM 0.19.1, modèle `gemma-4-31b-it-qat-w4a16-ct`, harnais officiel `swegemma` 0.2.7
+(dataset `metric/gemma-4-developer-agent-wheelhouse`), via `g4kit-harness` (https://github.com/damsolanke/gemma4-swe-kit), sandbox subprocess.
+Scripts `kaggle/eval_local/` ; lot de 36 tâches publiques (`lot36.json`, graine 1002 : 16 fastapi, 14 rich, 6 requests).
+Passage nuit1 (même lot, même serveur) :
+| Bras | Résolues /36 | Patchs vides | Projection évaluateur (120 tâches) |
+|---|---|---|---|
+| soumission actuelle (v2) | 4 | 21 | ~11,6 h (risque de dépasser 12 h) |
+| V3 (prose, agent unique, 6 outils, T 1,0, 8 min) | 6 | 18 | ~10 h |
+| **V3b** (V3 + 6 min/tâche + 4 096 tokens de sortie) | **7** | 12 | ~10 h (plafond dur 14 h) |
+Réserves : écarts petits (1 passage) ; tâches requests contaminées pour tous les bras (sandboxes sans pip → dépôt installé dans le
+Python système, corrigé `colab_fixpip.sh`). Passage nuit2 (V3 et V3b, répétition) en cours ; l'A100 se libère seule à la fin
+(unité `kag-lb-teardown`, résultats dans `runs/leaderboard_local/nuit2/`).
+Soumission prête : `kaggle/submission_v3b/` → notebook `kaggle/notebooks/gemma4_replay_submission.ipynb` (`SUBMISSION=submission_v3b
+python3 kaggle/scripts/build_notebook.py`, vérifié : zip de 4 fichiers). **Soumission Kaggle à 8 h sur feu vert de Rémi.**
+
 ## Fine-tuning v16 — TERMINÉ (1er oct., 17 h 10 heure de Paris) sur Google Colab A100, piloté depuis le serveur
 - **Procédure** : test `SMOKE=1` puis run complet, tout via la CLI Colab officielle (`colab4`, `docs/FINETUNING_KAGGLE.md` §0). Kernels Kaggle 16-18 (≈ 30 min de GPU) = erreur de méthode, corrigée.
 - **Données** : 453 exemples ≤ 4 096 tokens (89 en v15) : 569 reconstruits + 23 chemins Gemma (similarité ≥ 0,4), **0 fuite**.

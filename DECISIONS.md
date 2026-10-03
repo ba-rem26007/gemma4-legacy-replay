@@ -59,3 +59,10 @@ v17 = (1) chemins reconstruits sans plafond 4 096 (MAX_LEN 8 192 sur A100 : gard
 
 ## 2026-10-02 — Test du levier L3 (taille de lecture) sur TRAIN, FIGÉ avant lancement
 `data/train_l3_lecture.json` : 40 bugs TRAIN (graine 2610) parmi les 69 à oracle Gemma validé hors lot v17. Gemma 4 31B, condition A, agent HEAD (`419f5c4`, réparation L0 incluse), `MAX_LINES_PER_FILE` = 120 vs 260, rien d'autre ne change ; 2 répétitions par réglage ; verdict oracle Gemma (`ORACLE_PREFIX=g`). Critère : 260 retenu si ≥ +3 bugs résolus nets (moyenne des 2 répétitions) et aucun bug perdu au-delà de l'écart entre répétitions. Si retenu : une seule mesure TEST (A, 31B) ensuite.
+
+## 3 oct. 2026 — Leaderboard : V3b candidate à la soumission
+Contexte : notre score 0,06 ; diagnostic (`docs/propositions/claude-kaggle-leaderboard.md`) : pseudo-appels d'outils dans les invites,
+sous-agent + outils de graphe qui gonflent le contexte, boucles (T 0,2), jamais d'éval locale.
+Décision : V3b = un seul agent, 6 outils de base, invites en prose, échantillonnage par défaut de l'évaluateur (T 1,0, top_p 0,95,
+top_k 64), 6 min/tâche, 4 096 tokens de sortie. Mesure locale fidèle (36 tâches publiques) : 7/36 contre 4/36 pour la soumission actuelle.
+Critère : soumettre si ≥ référence locale et projection de temps < 12 h. Tâches publiques uniquement (pas de TEST du papier en jeu).
