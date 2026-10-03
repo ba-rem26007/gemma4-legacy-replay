@@ -38,6 +38,8 @@ while True:
     if not tok: break
 PY
 find comp -name "*.zip" -exec sh -c 'cd "$(dirname "$1")" && python3 -m zipfile -e "$(basename "$1")" . && rm "$(basename "$1")"' _ {} \;
+# venvs des sandboxes avec pip (sinon `pip install -e` vise le Python système, cf. colab_fixpip.sh)
+apt-get -qq install -y python3.13-venv >/dev/null 2>&1 || apt-get -qq install -y python3-venv >/dev/null 2>&1
 # 3. modèle de l'évaluateur
 hf download google/gemma-4-31B-it-qat-w4a16-ct --local-dir models/gemma-4-31b-it-qat-w4a16-ct
 hf download google/gemma-4-31B-it-qat-w4a16-ct chat_template.jinja --revision e3dacad5f03b852209f5ce18e44094fc80120037 --local-dir kit/assets
