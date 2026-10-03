@@ -5,7 +5,8 @@ import json
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SUBMISSION_DIR = REPO_ROOT / "submission"
+import os
+SUBMISSION_DIR = REPO_ROOT / os.environ.get("SUBMISSION", "submission")   # ex. SUBMISSION=submission_v3b
 NOTEBOOKS_DIR = REPO_ROOT / "notebooks"
 NOTEBOOKS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -27,7 +28,7 @@ cells = [
             "# Gemma 4 Developer Agent: Replay Architecture Submission\n",
             "\n",
             "Autonomous developer agent built on **Google Gemma 4 31B QAT** (`gemma-4-31b-it-qat-w4a16-ct`), featuring:\n",
-            "- **Multi-agent isolation**: Dedicated read-only `code_analyzer` sub-agent (`skip_summarization: true`) preserving the 32k context window.\n",
+            "- **Single agent, core tools only** (V3): prose instructions, targeted reads, per-task budget in `eval_config.yaml`.\n",
             "- **Disciplined Replay Cycle**: `/tmp/repro.py` failure reproduction -> atomic `edit_file` patch -> targeted pytest feedback with output tailing (`tail -n 40`) to mitigate the 5,000-character truncation limit.\n",
             "- **No premature timeouts**: Unrestricted per-task execution by dropping the restrictive 1-minute `eval_config.yaml`.\n",
             "- **Optimized Sampling**: 4,096 thinking budget with `include_thoughts: false` to keep thought overhead outside conversation context."
