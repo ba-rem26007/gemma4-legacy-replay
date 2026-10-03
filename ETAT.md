@@ -28,8 +28,8 @@ Passage nuit1 (même lot, même serveur) :
 | V3 (prose, agent unique, 6 outils, T 1,0, 8 min) | 6 | 18 | ~10 h |
 | **V3b** (V3 + 6 min/tâche + 4 096 tokens de sortie) | **7** | 12 | ~10 h (plafond dur 14 h) |
 Réserves : écarts petits (1 passage) ; tâches requests contaminées pour tous les bras (sandboxes sans pip → dépôt installé dans le
-Python système, corrigé `colab_fixpip.sh`). Passage nuit2 (V3 et V3b, répétition) en cours ; l'A100 se libère seule à la fin
-(unité `kag-lb-teardown`, résultats dans `runs/leaderboard_local/nuit2/`).
+Python système, corrigé `colab_fixpip.sh`). Passage nuit2 (sandboxes corrigées, 6 h 02 Paris) : **V3 9/36, V3b 10/36** (dont 1 requests chacune). Sur 2 passages : V3b 7 et 10,
+V3 6 et 9, soumission actuelle 4 (1 passage). A100 libérée à 4 h 02 ; résultats `runs/leaderboard_local/nuit2/`.
 Soumission prête : `kaggle/submission_v3b/` → notebook `kaggle/notebooks/gemma4_replay_submission.ipynb` (`SUBMISSION=submission_v3b
 python3 kaggle/scripts/build_notebook.py`, vérifié : zip de 4 fichiers). **Soumission Kaggle à 8 h sur feu vert de Rémi.**
 
