@@ -14,6 +14,8 @@ uv python install 3.12
 kaggle datasets download metric/gemma-4-developer-agent-wheelhouse -p wheelhouse --unzip -q
 uv pip install "vllm==0.19.1"                       # tire torch compatible
 uv pip install --find-links wheelhouse swegemma==0.2.7 adk-submission==0.2.12 adk-eval-core==0.1.0 google-adk==1.36.1
+# versions de l'évaluateur (vLLM 0.19.1 plante avec transformers 5.17 : AmbiguousGlobalPerLayerAttributeError head_dim)
+pip -q install --no-deps wheelhouse/transformers-5.13.1-py3-none-any.whl wheelhouse/tokenizers-0.22.2-*.whl
 git clone -q https://github.com/damsolanke/gemma4-swe-kit.git kit && uv pip install -e "kit[tokenizer]"
 # 2. données du concours : tâches, wheels des dépôts, bootstrap du sandbox, exemple de soumission, snapshots du lot
 mkdir -p comp && cd comp
