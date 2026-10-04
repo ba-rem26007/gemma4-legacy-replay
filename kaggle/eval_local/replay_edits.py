@@ -27,16 +27,31 @@ def add_to_system(req, text):
         m["content"].append({"type": "text", "text": text})
 
 
+SCRIPT = ("\n\nNever call edit_file: its arguments are often lost. To change a file, use run_command with a short Python "
+          "script in a heredoc that reads the file, checks that the old text occurs exactly once, replaces it and writes the "
+          "file back: python3 - <<'EOF', then import pathlib; p = pathlib.Path(path); s = p.read_text(); old = (the exact "
+          "lines, in a triple-quoted string); new = (the replacement); assert s.count(old) == 1; p.write_text(s.replace(old, new)); "
+          "then EOF. Keep old short and unique.")
+
 VARIANTS = {
     "origine": lambda r: r,
     "T0.2": lambda r: {**r, "temperature": 0.2, "top_k": 40},
     "court": lambda r: (add_to_system(r, SHORT), r)[1],
     "court+T0.2": lambda r: (add_to_system(r, SHORT), {**r, "temperature": 0.2, "top_k": 40})[1],
+    "script": lambda r: (add_to_system(r, SCRIPT), r)[1],
 }
 
 
 def classify(msg):
     for c in msg.get("tool_calls") or []:
+        if c["function"]["name"] == "run_command":
+            try:
+                cmd = json.loads(c["function"]["arguments"] or "{}").get("command", "")
+            except Exception:
+                return "perdu"
+            if "replace(" in cmd or "write_text" in cmd or "sed -i" in cmd:
+                return "ok-script"
+            continue
         if c["function"]["name"] != "edit_file":
             continue
         try:
@@ -61,13 +76,18 @@ def main():
     p.add_argument("--n", type=int, default=4)
     p.add_argument("--out", default="replay_edits.jsonl")
     p.add_argument("--workers", type=int, default=16)
+    p.add_argument("--variants", default="", help="liste séparée par des virgules (défaut : toutes)")
+    p.add_argument("--max-ctx", type=int, default=0)
     a = p.parse_args()
     ctx = [json.loads(l) for l in open(a.dump)]
     ctx = [c for c in ctx if any(t["function"]["name"] == "edit_file" for t in c["response"].get("tool_calls") or [])]
+    if a.max_ctx:
+        ctx = ctx[::max(1, len(ctx) // a.max_ctx)][:a.max_ctx]
+    chosen = {k: v for k, v in VARIANTS.items() if not a.variants or k in a.variants.split(",")}
     jobs = []
     for i, c in enumerate(ctx):
         origin = classify(c["response"])
-        for v, f in VARIANTS.items():
+        for v, f in chosen.items():
             for k in range(a.n):
                 req = f(copy.deepcopy(c["request"]))
                 req.pop("seed", None)
@@ -84,10 +104,10 @@ def main():
                 res = "erreur"
             stats[(v, origin)][res] += 1
             out.write(json.dumps({"ctx": i, "origine": origin, "variante": v, "tirage": k, "resultat": res}) + "\n")
-    print(f"{'variante':12} {'origine':8} {'ok':>5} {'perdu':>6} {'autre':>6} {'taux ok parmi les edit_file':>28}")
+    print(f"{'variante':12} {'origine':8} {'ok':>5} {'script':>7} {'perdu':>6} {'autre':>6} {'modif. réussies':>16}")
     for (v, origin), c in sorted(stats.items()):
-        e = c["ok"] + c["perdu"]
-        print(f"{v:12} {origin:8} {c['ok']:5} {c['perdu']:6} {c['autre']:6} {(c['ok'] / e if e else 0):28.0%}")
+        n = sum(c.values())
+        print(f"{v:12} {origin:8} {c['ok']:5} {c['ok-script']:7} {c['perdu']:6} {c['autre']:6} {((c['ok'] + c['ok-script']) / n if n else 0):16.0%}")
 
 
 if __name__ == "__main__":
