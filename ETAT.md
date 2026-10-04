@@ -17,6 +17,19 @@
 
 Mis à jour : 2026-09-29. Référence : `KIT.md` · Décisions : `DECISIONS.md` · Procédures : `docs/PROCEDURES.md` · Fine-Tuning : `docs/FINETUNING_KAGGLE.md` · Condition D : `docs/CONDITION_D.md` · Site : https://kaggle.d1dev.fr
 
+## Leaderboard — V3b soumise : 0,05 (= v2 0,06) ; diagnostic sur banc ralenti (4 oct., 12 h Paris)
+- Soumission V3b (réf. 56790881) : **0,05**. Mon comparatif de la nuit était biaisé : la référence v2 tournait avec `--time-scale 0.2`
+  (12 min au lieu de 60). À réglages égaux (passage `lent1`, relais `slow_proxy.py` à la vitesse de l'évaluateur) : **v2 ≈ V3b**
+  (~22 % en local chacune). Le banc local surestime d'environ ×4 le score Kaggle (tâches cachées ≠ tâches publiques) : il sert à
+  comparer, pas à prédire. Règle : référence et candidate avec réglages identiques, ≥ 2 passages.
+- Vitesse écartée : réponses de 41 tokens en moyenne (max 255) ; l'A100 partagée tourne déjà à ~28 tok/s par flux.
+- **Cause principale des patchs vides trouvée** : `edit_file` échoue faute d'argument `old_string` (le parseur `gemma4` découpe une
+  chaîne de code mal délimitée en clés parasites). V3b : **149 appels sur 201 (74 %)** ; v2 : 38 sur 86 (44 %). L'agent boucle
+  ensuite jusqu'au plafond de temps. Les autres patchs vides de la v2 : dépassement de contexte (litellm ContextWindowExceeded, 18/19).
+- Résultats bruts : `runs/leaderboard_local/lent1/`. A100 libérée.
+- Piste V4 : fiabiliser l'édition (old_string court et unique, température plus basse, ordre des arguments, ou édition par script),
+  à tester d'abord par rejeu des points de décision (`g4kit-replay`), puis 2 passages contre la v2.
+
 ## Leaderboard — éval locale fidèle + V3b prête (3 oct., 4 h 30 Paris)
 Éval locale = évaluateur reproduit sur Colab A100 : vLLM 0.19.1, modèle `gemma-4-31b-it-qat-w4a16-ct`, harnais officiel `swegemma` 0.2.7
 (dataset `metric/gemma-4-developer-agent-wheelhouse`), via `g4kit-harness` (https://github.com/damsolanke/gemma4-swe-kit), sandbox subprocess.
