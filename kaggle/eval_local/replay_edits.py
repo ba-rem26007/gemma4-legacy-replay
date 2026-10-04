@@ -39,10 +39,15 @@ VARIANTS = {
     "court": lambda r: (add_to_system(r, SHORT), r)[1],
     "court+T0.2": lambda r: (add_to_system(r, SHORT), {**r, "temperature": 0.2, "top_k": 40})[1],
     "script": lambda r: (add_to_system(r, SCRIPT), r)[1],
+    # edit_file retiré de la liste d'outils : un appel à un outil non déclaré fait échouer la tâche (ADK) → à surveiller
+    "script-sans-edit": lambda r: (add_to_system(r, SCRIPT),
+                                   {**r, "tools": [t for t in r.get("tools", []) if t.get("function", {}).get("name") != "edit_file"]})[1],
 }
 
 
 def classify(msg):
+    if any(c["function"]["name"] == "edit_file" for c in msg.get("tool_calls") or []) and msg.get("_no_edit"):
+        return "non-déclaré"
     for c in msg.get("tool_calls") or []:
         if c["function"]["name"] == "run_command":
             try:
@@ -99,15 +104,18 @@ def main():
         for fu in cf.as_completed(futs):
             i, origin, v, k, _ = futs[fu]
             try:
-                res = classify(fu.result())
+                m = fu.result()
+                if v == "script-sans-edit":
+                    m["_no_edit"] = True
+                res = classify(m)
             except Exception as e:
                 res = "erreur"
             stats[(v, origin)][res] += 1
             out.write(json.dumps({"ctx": i, "origine": origin, "variante": v, "tirage": k, "resultat": res}) + "\n")
-    print(f"{'variante':12} {'origine':8} {'ok':>5} {'script':>7} {'perdu':>6} {'autre':>6} {'modif. réussies':>16}")
+    print(f"{'variante':17} {'origine':8} {'ok':>5} {'script':>7} {'perdu':>6} {'non-décl.':>9} {'autre':>6} {'modif. réussies':>16}")
     for (v, origin), c in sorted(stats.items()):
         n = sum(c.values())
-        print(f"{v:12} {origin:8} {c['ok']:5} {c['ok-script']:7} {c['perdu']:6} {c['autre']:6} {((c['ok'] + c['ok-script']) / n if n else 0):16.0%}")
+        print(f"{v:17} {origin:8} {c['ok']:5} {c['ok-script']:7} {c['perdu']:6} {c['non-déclaré']:9} {c['autre']:6} {((c['ok'] + c['ok-script']) / n if n else 0):16.0%}")
 
 
 if __name__ == "__main__":
