@@ -13,6 +13,12 @@ if ! curl -s localhost:8000/v1/models | grep -q gemma; then
   until curl -s localhost:8000/v1/models | grep -q gemma; do sleep 15; done
 fi
 echo "vLLM prêt $(date -u +%FT%T)"
+# SLOW=1 : relais à la vitesse de l'évaluateur (slow_proxy.py, port 8001) — défaut depuis le 4 oct. (0,05 sur Kaggle vs 28 % en local)
+API=http://127.0.0.1:8000/v1
+if [ "${SLOW:-1}" = 1 ]; then
+  curl -s localhost:8001/v1/models | grep -q gemma || { nohup python3 slow_proxy.py --listen 8001 --log "slow_proxy_$TAG.jsonl" > slow_proxy.log 2>&1 & sleep 3; }
+  API=http://127.0.0.1:8001/v1
+fi
 read -r A B <<< "$(python3 -c "
 import json;ids=[x['instance_id'] for x in json.load(open('lot.json'))]
 print(','.join(ids[0::2]), ','.join(ids[1::2]))")"
@@ -22,7 +28,7 @@ for arm in "$@"; do
   for half in A B; do
     ids=${!half}
     g4kit-harness run --arm "$name=$dir" --tasks comp/tasks.jsonl --snapshots comp/snapshots --ids ${ids//,/ } \
-      --api-base http://127.0.0.1:8000/v1 --out "runs/$TAG/${name}_$half" --time-scale "$scale" --sandbox subprocess \
+      --api-base "$API" --out "runs/$TAG/${name}_$half" --time-scale "$scale" --sandbox subprocess \
       --wheels-dir comp/wheels --task-env /content/lb/taskenv --graph-dir comp/graphs --embeddings-dir comp/embeddings \
       > "runs_${TAG}_${name}_$half.log" 2>&1 &
     PIDS+=($!)
