@@ -16,7 +16,7 @@ echo "vLLM prêt $(date -u +%FT%T)"
 # SLOW=1 : relais à la vitesse de l'évaluateur (slow_proxy.py, port 8001) — défaut depuis le 4 oct. (0,05 sur Kaggle vs 28 % en local)
 API=http://127.0.0.1:8000/v1
 if [ "${SLOW:-1}" = 1 ]; then
-  curl -s localhost:8001/v1/models | grep -q gemma || { nohup python3 slow_proxy.py --listen 8001 --log "slow_proxy_$TAG.jsonl" > slow_proxy.log 2>&1 & sleep 3; }
+  curl -s localhost:8001/v1/models | grep -q gemma || { nohup python3 slow_proxy.py --listen 8001 --log "slow_proxy_$TAG.jsonl" --dump "edits_$TAG.jsonl" > slow_proxy.log 2>&1 & sleep 3; }
   API=http://127.0.0.1:8001/v1
 fi
 read -r A B <<< "$(python3 -c "

@@ -6,7 +6,7 @@ Chaque réponse est retenue jusqu'à ce que son temps total atteigne le coût qu
 (https://github.com/damsolanke/gemma4-swe-kit, `g4kit-scorer-time` : 0,6 s + tokens / 25,5 tok/s).
 Le harnais voit donc le vrai temps de l'évaluateur : max_time_minutes coupe aux mêmes moments que sur Kaggle.
 Réponses en flux (SSE) : mises en tampon, comptées (usage si présent, sinon un token par fragment), puis renvoyées.
-Journal JSONL : une ligne par appel (tokens, temps A100, temps simulé).
+Journal JSONL : une ligne par appel (tokens, temps A100, temps simulé). --dump : contextes d'édition pour replay_edits.py.
 Usage : python3 slow_proxy.py --listen 8001 --upstream http://127.0.0.1:8000 --log slow_proxy.jsonl
 """
 import argparse, http.client, json, threading, time
@@ -69,6 +69,15 @@ class H(BaseHTTPRequestHandler):
             local = time.monotonic() - t0
             if target > local:
                 time.sleep(target - local)
+            if A.dump and not streamed:
+                try:
+                    msg = json.loads(body)["choices"][0]["message"]
+                    names = [c["function"]["name"] for c in msg.get("tool_calls") or []]
+                    if any(n in ("edit_file", "write_file") for n in names):
+                        with LOCK, open(A.dump, "a") as f:
+                            f.write(json.dumps({"request": json.loads(req), "response": msg}) + "\n")
+                except Exception:
+                    pass
             with LOCK, open(A.log, "a") as f:
                 f.write(json.dumps({"t": time.time(), "tokens": toks, "local_s": round(local, 2),
                                     "simulated_s": round(max(target, local), 2), "stream": streamed}) + "\n")
@@ -95,6 +104,7 @@ def main():
     p.add_argument("--per-call", type=float, default=0.6)
     p.add_argument("--tok-s", type=float, default=25.5)
     p.add_argument("--log", default="slow_proxy.jsonl")
+    p.add_argument("--dump", default="", help="JSONL des requêtes dont la réponse appelle edit_file/write_file (pour le rejeu)")
     A = p.parse_args()
     ThreadingHTTPServer(("127.0.0.1", A.listen), H).serve_forever()
 
