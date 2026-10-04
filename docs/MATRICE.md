@@ -12,20 +12,20 @@ papier (essais fusionnés) voir `docs/RESULTATS.md`, `docs/RESULTATS_E4B.md` et 
 | TEST | gemma-4-26b-a4b-it | A | aucun | `f7dcbdc` | 260 | 1 (25) | 3 | 12.0% | 60% | 0 |
 | TEST | gemma-4-31b-it | A | aucun | `e16051f` | 260 | 1 (9) | 2 | 22.2% | 44% | 0 |
 | TEST | gemma-4-31b-it | A | aucun | `e23cb3e` | 260 | 4 (24, 33, 33, 33) | 10, 13, 15, 11 | 40.0% | 61% | 0 |
-| TEST | gemma-4-31b-it | B | aucun | `4f649d9` | 260 | 3 (33, 23, 21) | 15, 7, 7 | 36.4% | 54% | 0 |
+| TEST | gemma-4-31b-it | B | aucun | `4f649d9` | 260 | 3 (33, 26, 26) | 15, 8, 8 | 35.7% | 52% | 0 |
 | TEST | gemma-4-31b-it | B | aucun | `62f3f67` | 260 | 2 (10, 10) | 4, 3 | 35.0% | 70% | 0 |
 | TEST | gemma-4-31b-it | C | aucun | `5bbc491` | 260 | 1 (33) | 13 | 39.4% | 55% | 1 |
 | TEST | gemma-4-31b-it | C | aucun | `e6cd662` | 260 | 1 (33) | 11 | 33.3% | 55% | 0 |
-| TEST | gemma-4-31b-it | O | aucun | `f7dcbdc` | 260 | 2 (29, 16) | 13, 6 | 41.1% | 49% | 2 |
+| TEST | gemma-4-31b-it | O | aucun | `f7dcbdc` | 260 | 3 (29, 16, 5) | 13, 6, 2 | 40.8% | 60% | 3 |
 | TEST | gemma-4-31b-it | R | aucun | `e16051f` | 260 | 1 (5) | 3 | 60.0% | 80% | 0 |
 | TEST | gemma-4-31b-it | R | aucun | `e23cb3e` | 260 | 4 (28, 33, 33, 33) | 11, 12, 14, 11 | 37.9% | 60% | 0 |
 | TEST | gemma-4-e4b-base | E | aucun | `1e75370` | 120 | 3 (33, 33, 33) | 3, 4, 4 | 11.1% | 44% | 3 |
 | TEST | gemma-4-e4b-lora-v15 | E | v15 | `1e75370` | 120 | 3 (33, 33, 33) | 1, 1, 2 | 4.0% | 36% | 3 |
 | TEST | gemma-4-e4b-lora-v16 | E | v16 | `1e75370` | 120 | 3 (33, 33, 33) | 0, 0, 0 | 0.0% | 33% | 3 |
 | TEST | gemma-4-ft | E | v15 | `4f649d9` | 260 | 1 (33) | 4 | 12.1% | 42% | 1 |
-| TRAIN-validation | gemma-4-e4b-base | E | aucun | `419f5c4` | 120 | 2 (30, 14) | 3, 0 | 5.0% | 55% | 2 |
+| TRAIN-validation | gemma-4-e4b-base | E | aucun | `419f5c4` | 120 | 2 (30, 28) | 3, 1 | 6.8% | 51% | 4 |
 | TRAIN-validation | gemma-4-e4b-lora-v16 | E | v16 | `419f5c4` | 120 | 2 (30, 6) | 1, 0 | 1.7% | 52% | 3 |
-| TRAIN-validation | gemma-4-e4b-lora-v17 | E | v17 | `419f5c4` | 120 | 2 (30, 9) | 1, 0 | 1.7% | 24% | 3 |
+| TRAIN-validation | gemma-4-e4b-lora-v17 | E | v17 | `419f5c4` | 120 | 2 (30, 17) | 1, 1 | 4.6% | 24% | 4 |
 
 ## Paramètres fixes (tous les runs)
 
@@ -181,14 +181,15 @@ B +test de repro écrit par Gemma comme retour · O +oracle comme retour (plafon
 | 20261001-220448-E | TEST | gemma-4-e4b-lora-v15 | E | v15 | `1e75370` | 120 | 33 | 2 | 11 | 19 | 1 |
 | 20261002-062346-A | TEST | gemma-4-31b-it | A | aucun | `1e75370` | 120 | 1 | 1 | 1 | 1 | 0 |
 | 20261002-080237-A | TEST | gemma-4-31b-it | A | aucun | `1e75370` | 120 | 1 | 1 | 1 | 1 | 0 |
-| 20261002-082406-B | TEST | gemma-4-31b-it | B | aucun | `4f649d9` | 260 | 23 | 7 | 11 | 13 | 0 |
-| 20261002-082409-B | TEST | gemma-4-31b-it | B | aucun | `4f649d9` | 260 | 21 | 7 | 13 | 14 | 0 |
+| 20261002-082406-B | TEST | gemma-4-31b-it | B | aucun | `4f649d9` | 260 | 26 | 8 | 12 | 16 | 0 |
+| 20261002-082409-B | TEST | gemma-4-31b-it | B | aucun | `4f649d9` | 260 | 26 | 8 | 15 | 16 | 0 |
 | 20261002-082412-O | TEST | gemma-4-31b-it | O | aucun | `f7dcbdc` | 260 | 16 | 6 | 7 | 9 | 0 |
 | 20261002-103752-E | TRAIN-validation | gemma-4-e4b-base | E | aucun | `419f5c4` | 120 | 30 | 3 | 18 | 15 | 0 |
 | 20261002-103755-E | TRAIN-validation | gemma-4-e4b-lora-v16 | E | v16 | `419f5c4` | 120 | 30 | 1 | 11 | 9 | 3 |
 | 20261002-103758-E | TRAIN-validation | gemma-4-e4b-lora-v17 | E | v17 | `419f5c4` | 120 | 30 | 1 | 11 | 15 | 2 |
 | 20261002-124423-E | TRAIN-validation | gemma-4-e4b-lora-v16 | E | v16 | `419f5c4` | 120 | 6 | 0 | 4 | 3 | 0 |
-| 20261002-124653-E | TRAIN-validation | gemma-4-e4b-base | E | aucun | `419f5c4` | 120 | 14 | 0 | 7 | 6 | 2 |
+| 20261002-124653-E | TRAIN-validation | gemma-4-e4b-base | E | aucun | `419f5c4` | 120 | 28 | 1 | 12 | 11 | 4 |
 | 20261002-130616-E | TRAIN-validation | gemma-4-e4b-lora-v17 | E | v17 | `419f5c4` | 120 | 4 | 0 | 2 | 1 | 0 |
-| 20261002-132120-E | TRAIN-validation | gemma-4-e4b-lora-v17 | E | v17 | `419f5c4` | 120 | 9 | 0 | 1 | 2 | 1 |
-| 20261002-132120-O | TEST | gemma-4-31b-it | O | aucun | `f7dcbdc` | 260 | 2 | 1 | 2 | 2 | 1 |
+| 20261002-132120-E | TRAIN-validation | gemma-4-e4b-lora-v17 | E | v17 | `419f5c4` | 120 | 17 | 1 | 2 | 7 | 2 |
+| 20261002-132120-O | TEST | gemma-4-31b-it | O | aucun | `f7dcbdc` | 260 | 5 | 2 | 4 | 5 | 1 |
+| 20261002-144755-A | TRAIN-boucle | gemma-4-31b-it | A | aucun | `419f5c4` | 120 | 4 | 0 | 4 | 2 | 0 |
