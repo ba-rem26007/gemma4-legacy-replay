@@ -5,7 +5,16 @@
 - EN COURS : Claude Code — kaggle/, harness_transfer/ (piste Leaderboard, éval locale) — 2 oct. 18 h
 - Note pour agy (2 oct., 9 h 10) : `runs/watch_kaggle_scoring.py` (non versionné, mot de passe SMTP en clair) corrigé par Claude Code à la demande de Rémi — e-mail seulement si une soumission change (état `runs/kaggle_watch_state.json`), score lu dans le CSV Kaggle, message en français. Ancienne version : scratchpad Claude.
 
-## Point d'avancement du 29 septembre 2026 (Exécution des Phases 1 à 6)
+## Leaderboard — V4 terminée : 0,06 ; V5 soumise : budget déverrouillé sans eval_config + T0.2 (5 oct., 7 h Paris)
+- Soumission V4 (réf. 56824935) : **0,06** (terminée le 4 oct. à 21h57 UTC). Les modifications par script Python dans `run_command` ont réglé le problème des arguments perdus d'edit_file (rejeu : 82 % / 27 % de succès). Mais la V4 a souffert du plafond rigide de 6 min dans `eval_config.yaml` : sur le passage local `v4r2`, plusieurs tâches avaient un correctif complet (1 501 à 15 744 caractères) mais ont été tuées à 365 s avec `Agent exceeded session timeout (6.0 min)`.
+- **V5 conçue et soumise à Kaggle** (5 oct. à 04:57 UTC, réf. 56842827) :
+  1. `eval_config.yaml` **supprimé** : fin des timeouts prématurés à 6 min, l'agent dispose de l'intégralité du temps alloué par Kaggle (~12 min/tâche sur les 58 tâches).
+  2. `sampling.yaml` : passage à `temperature: 0.2`, `top_k: 40`, `top_p: 0.95` pour éliminer les hallucinations syntaxiques dans les scripts d'édition.
+  3. `agent.yaml` : alignement strict des outils déclarés.
+  4. `system.md` : règle de soumission précoce dès qu'un correctif compile et passe le test ciblé.
+  Validation `validate.py` 100% conforme, notebook régénéré, soumission `56842827` en cours d'évaluation (`PENDING`).
+
+## Leaderboard — V3b soumise : 0,05 (= v2 0,06) ; diagnostic sur banc ralenti (4 oct., 12 h Paris)
 
 - **Plan d’amélioration intégralement exécuté** ([`docs/PLAN_AMELIORATION.md`](docs/PLAN_AMELIORATION.md), toutes cases cochées).
 - **Phase 1 (Audit & Traçabilité)** : Rapport officiel [`docs/AUDIT_PHASE1.md`](docs/AUDIT_PHASE1.md), manifeste [`data/manifeste_run_v15.json`](data/manifeste_run_v15.json) et inventaire [`data/inventaire_exclusions_corpus.csv`](data/inventaire_exclusions_corpus.csv). Preuve SHA256 (`fac3f1af...`) et étanchéité certifiée à 100% sur les 33 bugs TEST.
