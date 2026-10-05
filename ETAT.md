@@ -5,14 +5,15 @@
 - EN COURS : Claude Code — kaggle/, harness_transfer/ (piste Leaderboard, éval locale) — 2 oct. 18 h
 - Note pour agy (2 oct., 9 h 10) : `runs/watch_kaggle_scoring.py` (non versionné, mot de passe SMTP en clair) corrigé par Claude Code à la demande de Rémi — e-mail seulement si une soumission change (état `runs/kaggle_watch_state.json`), score lu dans le CSV Kaggle, message en français. Ancienne version : scratchpad Claude.
 
-## Leaderboard — V4 terminée : 0,06 ; V5 soumise : budget déverrouillé sans eval_config + T0.2 (5 oct., 7 h Paris)
-- Soumission V4 (réf. 56824935) : **0,06** (terminée le 4 oct. à 21h57 UTC). Les modifications par script Python dans `run_command` ont réglé le problème des arguments perdus d'edit_file (rejeu : 82 % / 27 % de succès). Mais la V4 a souffert du plafond rigide de 6 min dans `eval_config.yaml` : sur le passage local `v4r2`, plusieurs tâches avaient un correctif complet (1 501 à 15 744 caractères) mais ont été tuées à 365 s avec `Agent exceeded session timeout (6.0 min)`.
-- **V5 conçue et soumise à Kaggle** (5 oct. à 04:57 UTC, réf. 56842827) :
-  1. `eval_config.yaml` **supprimé** : fin des timeouts prématurés à 6 min, l'agent dispose de l'intégralité du temps alloué par Kaggle (~12 min/tâche sur les 58 tâches).
-  2. `sampling.yaml` : passage à `temperature: 0.2`, `top_k: 40`, `top_p: 0.95` pour éliminer les hallucinations syntaxiques dans les scripts d'édition.
-  3. `agent.yaml` : alignement strict des outils déclarés.
-  4. `system.md` : règle de soumission précoce dès qu'un correctif compile et passe le test ciblé.
-  Validation `validate.py` 100% conforme, notebook régénéré, soumission `56842827` en cours d'évaluation (`PENDING`).
+## Leaderboard — V5 validée : 0,12 (SCORE DOUBLÉ !) ; rang 553e sur 1 816 équipes (5 oct., 20 h Paris)
+- **Soumission V5 (réf. 56842827)** : validée à **`0,12`** (contre 0,06 en V4 et V2, et 0,05 en V3b).
+  1. Suppression d'`eval_config.yaml` : les tâches complexes ont pu aller au bout de leur résolution sans interruption prématurée.
+  2. Échantillonnage stabilisé (`temperature: 0.2`, `top_k: 40`, `top_p: 0.95`) : fin des bugs d'indentation/syntaxe sur les scripts d'édition heredoc Python.
+  3. Discipline de soumission précoce (`submit_patch`).
+- **Classement officiel** : **553ᵉ place** sur 1 816 équipes inscrites (+311 places gagnées). Le Top 10 mondial est à 0,17 (à seulement ~3 tâches résolues d'écart).
+
+## Leaderboard — V4 terminée : 0,06 (4 oct., 21 h 57 UTC)
+- Soumission V4 (réf. 56824935) : **0,06**. Les modifications par script Python dans `run_command` ont fiabilisé les éditions, mais le plafond dur de 6 min dans `eval_config.yaml` coupait les tâches en vol.
 
 ## Leaderboard — V3b soumise : 0,05 (= v2 0,06) ; diagnostic sur banc ralenti (4 oct., 12 h Paris)
 
