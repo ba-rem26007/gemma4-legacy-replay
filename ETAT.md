@@ -12,6 +12,7 @@
   3. Discipline de soumission précoce (`submit_patch`).
 - **Classement officiel** : **553ᵉ place** sur 1 816 équipes inscrites (+311 places gagnées). Le Top 10 mondial est à 0,17 (à seulement ~3 tâches résolues d'écart).
 - **Découverte majeure (Discussion Kaggle #745977)** : Au moins 35 tâches FastAPI échouent dès la collection pytest avec `ModuleNotFoundError` (`inline-snapshot`, `dirty-equals` non fournis dans les 124 wheels). Vérifié noir sur blanc dans nos propres traces locales : `fastapi_14482` (437 car.) et `fastapi_14360` (635 car.) étaient bien corrigées mais ont reçu un Exit Code 2 au test ! Détails dans [`docs/resources/kaggle_discussion_745977_missing_test_deps.md`](docs/resources/kaggle_discussion_745977_missing_test_deps.md).
+- **Veille concurrentielle & forum Kaggle** : Crawl intégral des 126 discussions du forum archivé dans `docs/kaggle_discussions/`, synthèse stratégique des 6 pièges majeurs et des pratiques du Top 10 dans [`docs/kaggle_discussions/SYNTHESE_VEILLE_FORUM.md`](docs/kaggle_discussions/SYNTHESE_VEILLE_FORUM.md). Système de veille incrémentale opérationnel ([`tools/crawl_kaggle_discussions.py`](tools/crawl_kaggle_discussions.py) avec état persistant `docs/kaggle_discussions/state.json`).
 
 ## Leaderboard — V4 terminée : 0,06 (4 oct., 21 h 57 UTC)
 - Soumission V4 (réf. 56824935) : **0,06**. Les modifications par script Python dans `run_command` ont fiabilisé les éditions, mais le plafond dur de 6 min dans `eval_config.yaml` coupait les tâches en vol.
