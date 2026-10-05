@@ -1,0 +1,63 @@
+# Topic 745780: Repeated “Kaggle Error” on agent submissions — where can I find evaluation diagnostics?
+
+- **Lien Kaggle** : https://www.kaggle.com/competitions/gemma-4-developer-agent/discussion/745780
+- **Date** : 2026-10-04T10:56:23.648000
+- **Votes** : 1 | **Commentaires** : 1
+
+---
+
+### Message #1 — Participant (2026-10-04T10:56:23.650000) [Votes: 1]
+
+Hello everyone,
+
+
+I am participating with my tAilorCode agent. Four of my submissions have been marked “Kaggle Error”, with this message:
+
+
+“A system error. Please try resubmitting to resolve the error and contact Kaggle Support if it persists.”
+
+
+Latest affected notebook: tAilorCode - First Evaluation Optimize, Version 11
+https://www.kaggle.com/code/aracelifradejasmunoz/tailorcode-first-evaluation-optimize?scriptVersionId=353365357
+Submission time: September 27, 2026, 17:18:58 UTC.
+
+
+The notebook successfully created /kaggle/working/submission.zip during interactive execution. That archive was 1,683 bytes and contained:
+
+
+
+- agent.yaml at the archive root
+
+- eval_config.yaml
+
+- sub_agents/code_analyzer.yaml
+
+
+The notebook embeds these configurations and needs no network access to create the ZIP. The submission details listed submission.zip under Uploaded Files, but showed no score or specific diagnostic.
+
+
+Additional checks on the current local baseline:
+
+
+
+- The self-contained packaging notebook runs successfully and its generated archive matches the source configurations.
+
+- The official adk-submission 0.2.11 compiler, with google-adk 1.36.1, successfully constructed the agent and AgentTool sub-agent using inert tool bindings and no model inference.
+
+
+These checks do not establish that Version 11 ran successfully in the evaluation harness or identify the cause of the error. The current packaging uses deterministic ZIP metadata, so its size and hash may differ from the archive reported above.
+
+
+Kaggle Support replied on September 28 and recommended asking in the competition forum.
+
+
+Has anyone encountered the same error? Is there a participant-visible evaluation log or traceback? Are there any additional configuration or submission checks recommended before another attempt?
+
+
+I am continuing development separately in Colab while investigating this, and would appreciate guidance from participants or the competition team.
+
+
+Thank you,
+Araceli
+
+---

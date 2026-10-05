@@ -1,0 +1,110 @@
+# Topic 744844: Updating the Gemma 4 template to have July 15th fixes
+
+- **Lien Kaggle** : https://www.kaggle.com/competitions/gemma-4-developer-agent/discussion/744844
+- **Date** : 2026-10-01T06:52:10.496000
+- **Votes** : 1 | **Commentaires** : 3
+
+---
+
+### Message #1 — Participant (2026-10-01T06:52:10.497000) [Votes: 1]
+
+The competition model (gemma-4-31b-it-qat-w4a16-ct, version 2, files dated 2026-06-05) ships the
+original chat_template.jinja. On 2026-07-15, Google replaced it in the same HF repo (google/gemma-4-31B-it-qat-w4a16-ct, commit 88c0905) with the canonical Gemma 4 template.
+Google reports better tool-calling reliability with the refresh.
+
+
+Submissions can't change the template: the harness starts vLLM without --chat-template and the generation config has no template field. Loops and malformed tool calls are a large share of failures for every agent here, so this would help all teams equally.
+
+
+Would the organizers consider serving the updated template (or passing --chat-template) for scoring?
+
+
+Weights are unchanged; it is a single-file swap.
+
+---
+
+### Message #2 — Participant (2026-10-02T22:48:54.397000) [Votes: 0]
+
+The July canonical template still has a turn-boundary bug for OpenAI-format messages where the assistant returns visible text together with tool calls.
+
+
+I reproduced this with commit `88c090599fb794134cba57e022082043afcc7bf8`, using `add_generation_prompt=True` and `enable_thinking=False`. No model inference is needed.
+
+
+Minimal reproduction:
+
+
+
+```
+from transformers import AutoTokenizer
+
+tok = AutoTokenizer.from_pretrained(
+    "google/gemma-4-31B-it-qat-w4a16-ct",
+    revision="88c090599fb794134cba57e022082043afcc7bf8",
+)
+
+messages = [
+    {"role": "user", "content": "Read x.py."},
+    {
+        "role": "assistant",
+        "content": "NOTE_BEFORE_CALL",
+        "tool_calls": [{
+            "id": "c1",
+            "type": "function",
+            "function": {
+                "name": "read_file",
+                "arguments": {"filepath": "x.py"},
+            },
+        }],
+    },
+    {"role": "tool", "tool_call_id": "c1", "content": "RESULT"},
+]
+
+text = tok.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True,
+    enable_thinking=False,
+)
+print(repr(text[-200:]))
+
+```
+
+The prompt ends with:
+
+
+
+```
+...RESULT<|"|>}<tool_response|>NOTE_BEFORE_CALL<turn|>\n
+
+```
+
+The model turn has been closed, but no new `<|turn>model` header is added. Setting the assistant’s content to `None` instead leaves the turn open at `<tool_response|>`.
+
+
+The cause appears to be:
+
+
+
+- The template renders tool calls, then tool responses, then assistant content.
+
+- Nonempty content triggers `<turn|>`.
+
+- `ns.prev_message_type` remains `tool_response`, so the generation-prompt branch suppresses the new model header.
+
+
+The updated `continues_into_next` check fixes historical boundaries when another assistant message is already present. At the end of a generation prompt, that next assistant message does not exist yet, so this case remains broken.
+
+
+There is also a chronology issue: OpenAI assistant content accompanying tool calls can be a note emitted before execution, but the template moves it after the tool result.
+
+
+Could this case be checked alongside the proposed template update? A swap to the July canonical version alone does not resolve this final boundary. This is a reproducible formatting issue; I have not measured its effect on task scores.
+
+---
+
+### Message #3 — Participant (2026-10-03T05:57:46.450000) [Votes: 0]
+
+Some errors are still expected with a 31B model, but at least an update will resolve the bigger ones that are already readily fixed.
+
+---

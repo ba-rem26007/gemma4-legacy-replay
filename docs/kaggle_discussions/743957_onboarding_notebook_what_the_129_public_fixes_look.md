@@ -1,0 +1,25 @@
+# Topic 743957: Onboarding notebook: what the 129 public fixes look like (+ a Kaggle survival kit)
+
+- **Lien Kaggle** : https://www.kaggle.com/competitions/gemma-4-developer-agent/discussion/743957
+- **Date** : 2026-09-28T00:22:55.385000
+- **Votes** : 3 | **Commentaires** : 1
+
+---
+
+### Message #1 — Participant (2026-09-28T00:22:55.387000) [Votes: 3]
+
+I put together an onboarding notebook for anyone starting out: https://www.kaggle.com/code/osama133/gemma-4-dev-agent-task-anatomy-survival-kit
+
+
+Task anatomy: 57% of the public tasks are single-file fixes of 20 lines or fewer; in ~76% the issue names neither the file nor the function to change; about 1 in 6 fixes touch async code; and issue length does not predict fix size.
+
+
+What it means: research framing (SWE-bench, SWE-agent, Agentless, IR-based bug localisation) and design alternatives for localise / repair / validate / budget.
+
+
+Survival kit: finding where inputs are mounted, getting files out of an interactive GPU session, delivering submission.zip from a CPU notebook, and GPU queue notes.
+
+
+Runs on CPU in under a minute. Feedback welcome!
+
+---

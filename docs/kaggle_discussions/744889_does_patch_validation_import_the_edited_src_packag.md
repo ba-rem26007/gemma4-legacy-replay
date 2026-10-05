@@ -1,0 +1,19 @@
+# Topic 744889: Does patch validation import the edited src/ package for Requests tasks?
+
+- **Lien Kaggle** : https://www.kaggle.com/competitions/gemma-4-developer-agent/discussion/744889
+- **Date** : 2026-10-01T09:03:30.881000
+- **Votes** : 0 | **Commentaires** : 1
+
+---
+
+### Message #1 — Participant (2026-10-01T09:03:30.880000) [Votes: 0]
+
+I am trying to make sure local validation reflects the code that the agent actually edits. In the published swegemma 0.2.7 wheel, install_editable_package() returns early for SubprocessManager/SubprocessSandbox. The subprocess environment sets PYTHONPATH to /workspace, while Requests task snapshots place the package under /workspace/src/requests. The official getting-started notebook uses sandbox='subprocess' for its sample evaluation.
+
+
+On the public task requests_7315, I ran the unmodified verify_task test and a separate diagnostic test process in the same sandbox. Both failed the same assertion. The diagnostic process imported the system Requests package rather than /workspace/src/requests; with PYTHONPATH=src, a minimal probe imported the edited workspace code. This observation is from a local Kaggle CPU evaluation, not a claim about the hidden final scoring environment.
+
+
+Could the organizers clarify: (1) which sandbox/backend final patch validation uses; (2) how src-layout packages are made importable from the patched workspace; and (3) whether participants should take any supported action, or whether final scoring handles this? I want to avoid optimizing an agent against a local validation path that may not match final scoring.
+
+---

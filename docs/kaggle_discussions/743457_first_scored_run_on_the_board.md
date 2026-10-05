@@ -1,0 +1,28 @@
+# Topic 743457: First scored run on the board 🎉
+
+- **Lien Kaggle** : https://www.kaggle.com/competitions/gemma-4-developer-agent/discussion/743457
+- **Date** : 2026-09-26T04:46:11.605000
+- **Votes** : 0 | **Commentaires** : 2
+
+---
+
+### Message #1 — Participant (2026-09-26T07:29:30.177000) [Votes: 0]
+
+congrats! my first run failed with no score as failing the 12 hr ceiling just results in an error 😑. hope they fix it!
+
+---
+
+### Message #2 — Participant (2026-09-26T04:46:11.607000) [Votes: 0]
+
+Hi everyone,
+
+
+Just wanted to share a small milestone. After a first submission that errored out, my second attempt went through and scored 0.08 on the public leaderboard. It's great to see an agent built on a 4-bit Gemma 4 31B actually fix real bugs on its own, offline, on L4 GPUs.
+
+
+A lot of the early work went into making the run itself reliable rather than into the model: the scorer runs tasks sequentially with a 12-hour ceiling, so pacing matters as much as smarts. If your submission errored, check that your budget fits the whole run.
+
+
+Thanks to the hosts for the harness, the wheelhouse and the quick answers on the forum. Good luck to everyone, see you further up the leaderboard!
+
+---
