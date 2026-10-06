@@ -21,7 +21,7 @@ On 36 Python tasks of the main competition, run through the official evaluator, 
 
 ## 1. Introduction
 
-PHP runs on 69.8% of websites whose server-side language is known [W3Techs]. Much of that code is "legacy" in Feathers' sense: code without tests [Feathers]. SWE-bench [SWE-bench] judges a patch with the repository's own tests; Multi-SWE-bench [Multi-SWE] adds seven languages but no PHP. In PrestaShop, issue #41921 ("Not able to change stock behaviour in shared stock") depends on multistore configuration, database rows and a back-office form; no unit test fails on it. Teams that cannot send private code to APIs need open models.
+PHP runs on 69.8% of websites whose server-side language is known [W3Techs]. Much of that code is "legacy" in Feathers' sense: code without tests [Feathers]. SWE-bench [SWE-bench] judges a patch with the repository's own tests; Multi-SWE-bench [Multi-SWE] adds seven languages but no PHP. In PrestaShop, issue #41921 ("Not able to change stock behaviour in shared stock") depends on multistore configuration, database rows and a back-office form; no unit test fails on it. 
 
 We ask:
 - **Q1.** Can browser replay with database resets make such bugs verifiable for an open model?
@@ -37,7 +37,7 @@ We ask:
 ### Selection & Cutoff Integrity
 `bench/select.py` keeps merged functional bug-fix PRs linked to an issue and touching $\le 3$ files. Of 187 catalogued bugs merged after the split, 55 candidates from the 9.1.x branch were screened by hand, yielding **33 verifiable test bugs** (`data/bugs_test.csv`); most exclusions need a JavaScript build (13) or lack a UI path (5).
 
-The 33 fixes were merged between 2026-02-12 and 2026-07-22. Gemma 4's declared training cutoff is January 2025 [Gemma4-card], so the split leaves 5 months of margin. Five TEST issues (#20448, #29009, #29663, #35690, #36058) were **opened** before the cutoff; only their fixes are later.
+The 33 fixes were merged between 2026-02-12 and 2026-07-22. Gemma 4's training cutoff is January 2025 [Gemma4-card]. Five TEST issues (#20448, #29009, #29663, #35690, #36058) were **opened** before the cutoff; only their fixes are later.
 
 ### Execution Environment & Oracles
 `bench/checkout.sh <pr> pre|post|patch.diff` starts the nearest official `prestashop/prestashop` image with MySQL 8.0 and puts the touched files in the requested state.
@@ -84,11 +84,15 @@ The main model is **Gemma 4 31B** [Gemma4] through the Google AI Studio API at t
 1. **Context (R & C):** $R - A = 0.0$ pts, CI [−9.1, +9.1]. C's glossary did not improve localization.
 2. **Replay feedback (B):** `bench/reprotest.py` asks Gemma for a reproduction test from the ticket alone, kept only if it fails on the current code: 10 / 33 bugs (on the other 23, B equals A).
    - B solves 15 / 33: +6.8 pts over A's mean, CI [−2.3, +16.7], one-sided sign-flip permutation $p \approx 0.11$, **not significant**; 15 equals A's best trial, and B reads the right file less often (17 vs 19.8).
-   - Only 1 of the 10 tests passes with the official fix, so feedback was mostly a constant "fail". On #41923 (0/8 across A and R, solved in all 3 B runs) the final patch equals Gemma's first edit, written before any test output: the gain comes from seeing the test, not from execution.
+   - Only 1 of the 10 tests passes with the official fix, so feedback was mostly a constant "fail". On #41923 (0/8 across A and R, solved in all 3 B runs) the final patch equals Gemma's first edit, written before any test output: the gain comes from seeing the test, not from execution (Figure 5).
 3. **Oracle ceiling (O):** 16 / 33 (+9.8 pts, CI [+0.8, +20.5]). Feedback converted #41299, #41394 and #41923, and broke the smoke check on #41225 and #41573.
 4. **Smaller models:** Gemma 4 26B A4B solves 5 / 33 (−23.5 pts, CI [−38.6, −9.1]): it finds the right file as often (21) but applies a patch in only 12 / 33 cases.
 
 **Answer to Q1.** Replay makes the bugs *measurable* (reproducible, paired verdicts) but only partly *fixable*: the hidden oracle gains about 3 bugs, a ticket-derived verifier less, without statistical support at $N=33$.
+
+![Figure](https://raw.githubusercontent.com/ba-rem26007/gemma4-legacy-replay-public/main/docs/figures/fig5_example.png)
+
+*Figure 5. End-to-end run on #41923 (condition B, real trace).*
 
 ---
 

@@ -138,9 +138,45 @@ def fig4():
     return tc, rep
 
 
+def fig5():
+    """Exemple de bout en bout : #41923 (ticket #41921), condition B, run 20260928-092011-B (trace réelle)."""
+    run = ROOT / "runs" / "20260928-092011-B" / "41923"
+    steps = [json.loads(l) for l in open(run / "trace.jsonl")]
+    res = json.loads((run / "result.json").read_text())
+    kw0 = json.loads(steps[0]["assistant"].strip("`").replace("json", "", 1))["keywords"]
+    files1 = json.loads(steps[1]["assistant"].strip("`").replace("json", "", 1))["files"]
+    kw2 = json.loads(steps[2]["assistant"].strip("`").replace("json", "", 1))["keywords"]
+    files3 = json.loads(steps[3]["assistant"].strip("`").replace("json", "", 1))["files"]
+    tests = [s for s in steps if s["step"] == "corriger"]
+    short = lambda p: p.split("/")[-1]
+    rows = [
+        ("Ticket #41921", INK, "Multistore + shared stock: changing \"deny orders when out of stock\" updates\nthe base product only, not its combinations (issue text only is given to the agent)."),
+        ("1. LOCATE", ACC, "keywords: " + ", ".join(kw0) + "\n→ git grep ranks 25 files"),
+        ("2. READ", ACC, "reads " + ", ".join(short(f) for f in files1) + "\n(right area, wrong files)"),
+        ("backtrack", WARN, f"asks for a new keyword: {kw2[0]}\n→ re-ranks → reads {short(files3[0])}  (the file of the official fix)"),
+        ("3. EDIT", ACC, "SEARCH/REPLACE in updateCombinationOutOfStockType(): the raw UPDATE on stock_available\nis replaced by StockAvailable::setProductOutOfStock(), which handles shared-stock groups"),
+        ("4. TEST (visible)", WARN, f"Gemma's own reproduction test fails {len(tests)} times on a navigation assertion of the test itself;\nthe patch is kept (the gain comes from seeing the test, §4)"),
+        ("Hidden oracle", OK, "Playwright BO replay + SQL check on combinations (never shown to the agent): "
+         + ("PASS" if res["fixed"] in (True, "True") else "FAIL") + "\nsmoke check: PASS · solved in " + str(res["turns"]) + " model turns · official fix: same method, StockAvailable::addSqlShopParams()"),
+    ]
+    fig, ax = plt.subplots(figsize=(10, 6.2)); ax.set_xlim(0, 10); ax.set_ylim(0, len(rows)); ax.axis("off")
+    for i, (title, color, text) in enumerate(rows):
+        y = len(rows) - i - 0.9
+        ax.add_patch(FancyBboxPatch((0.05, y), 1.85, 0.75, boxstyle="round,pad=0.02,rounding_size=0.06", fc="white", ec=color, lw=1.6))
+        ax.text(0.975, y + 0.375, title, ha="center", va="center", fontsize=9.5, weight="bold", color=color)
+        ax.text(2.1, y + 0.375, text, ha="left", va="center", fontsize=8.6, color=INK, linespacing=1.4)
+        if i < len(rows) - 1:
+            ax.annotate("", (0.975, y - 0.12), (0.975, y), arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1.1))
+    fig.tight_layout(); fig.savefig(OUT / "fig5_example.png", dpi=180); plt.close(fig)
+    return kw0, files1, kw2, files3, res, len(tests)
+
+
 if __name__ == "__main__":
     fig1(); per, e = fig2(); read, miss = fig3(); tc, rep = fig4()
+    kw0, files1, kw2, files3, res, ntests = fig5()
+    assert kw2 == ["updateCombinationOutOfStockType"] and files3 == ["src/Adapter/Product/Combination/Repository/CombinationRepository.php"]
+    assert res["fixed"] in (True, "True") and ntests == 2
     assert sorted(per["A"].values()) == [11, 12, 13, 15] and e == {"base": [3, 4, 4], "v15": [1, 1, 2], "v16": [0, 0, 0]}
     assert read == (44, 79) and miss == (7, 53), (read, miss)
     assert tc[("v3b", "edit_file", "missing_argument")] == 149 and tc[("v2", "edit_file", "missing_argument")] == 38
-    print("4 figures écrites dans", OUT)
+    print("5 figures écrites dans", OUT)
