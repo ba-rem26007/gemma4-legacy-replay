@@ -19,15 +19,18 @@ if [ "${SLOW:-1}" = 1 ]; then
   curl -s localhost:8001/v1/models | grep -q gemma || { nohup python3 slow_proxy.py --listen 8001 --log "slow_proxy_$TAG.jsonl" --dump "edits_$TAG.jsonl" > slow_proxy.log 2>&1 & sleep 3; }
   API=http://127.0.0.1:8001/v1
 fi
-read -r A B <<< "$(python3 -c "
-import json;ids=[x['instance_id'] for x in json.load(open('lot.json'))]
-print(','.join(ids[0::2]), ','.join(ids[1::2]))")"
+# SHARDS (défaut 2) : nombre de harnais par bras ; le relais lent simule la vitesse de l'évaluateur par flux, donc plus de
+# harnais en parallèle = passage plus court sans fausser la mesure.
+SHARDS=${SHARDS:-2}
+mapfile -t GROUPS_IDS < <(python3 -c "
+import json;ids=[x['instance_id'] for x in json.load(open('lot.json'))];k=$SHARDS
+print('\n'.join(' '.join(ids[i::k]) for i in range(k)))")
 PIDS=()
 for arm in "$@"; do
   IFS='=' read -r name dir scale <<< "$arm"
-  for half in A B; do
-    ids=${!half}
-    g4kit-harness run --arm "$name=$dir" --tasks comp/tasks.jsonl --snapshots comp/snapshots --ids ${ids//,/ } \
+  for g in $(seq 0 $((SHARDS - 1))); do
+    half=$(echo ABCDEFGH | cut -c$((g + 1)))
+    g4kit-harness run --arm "$name=$dir" --tasks comp/tasks.jsonl --snapshots comp/snapshots --ids ${GROUPS_IDS[$g]} \
       --api-base "$API" --out "runs/$TAG/${name}_$half" --time-scale "$scale" --sandbox subprocess \
       --wheels-dir comp/wheels --task-env /content/lb/taskenv --graph-dir comp/graphs --embeddings-dir comp/embeddings \
       > "runs_${TAG}_${name}_$half.log" 2>&1 &
