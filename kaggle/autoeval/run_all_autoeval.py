@@ -12,6 +12,7 @@ SCRIPTS = [
     ("Niveau 1 : Statique & Syntaxe AST (940 décisions réelles)", DIR / "eval_level1_static.py"),
     ("Niveau 2 : Rejeu de Correction & Résilience (Recovery)", DIR / "eval_level2_recovery.py"),
     ("Niveau 3 : Bac à Sable & Dépendances Sandbox (129 tâches)", DIR / "eval_level3_sandbox_audit.py"),
+    ("Niveau 4 : Paliers Fins 0.2 Mo & Scaling Laws (5 datasets)", DIR / "eval_fine_scaling_layers.py"),
 ]
 
 
