@@ -536,11 +536,12 @@ flowchart TD
             <thead>
               <tr class="border-b border-border bg-slate-900/60 text-slate-400 font-semibold uppercase tracking-wider">
                 <th class="p-2.5">Palier de Données</th>
-                <th class="p-2.5">Taille Fichier</th>
-                <th class="p-2.5">Nb Trajectoires</th>
-                <th class="p-2.5">Perte Finale (Loss)</th>
-                <th class="p-2.5">Dynamique &amp; Comportement Appris</th>
-                <th class="p-2.5">Statut</th>
+                <th class="p-2.5">Taille</th>
+                <th class="p-2.5">Trajectoires</th>
+                <th class="p-2.5">Perte (Loss)</th>
+                <th class="p-2.5">Pass@1 dev30</th>
+                <th class="p-2.5">Type de Mesure</th>
+                <th class="p-2.5">Statut Méthodologique</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-border/60">
@@ -548,89 +549,114 @@ flowchart TD
                 <td class="p-2.5 font-mono text-white">train_0.2mb</td>
                 <td class="p-2.5">200 Ko</td>
                 <td class="p-2.5">~15</td>
-                <td class="p-2.5 text-red-400 font-semibold">1.78 &rarr; 1.45</td>
-                <td class="p-2.5 text-slate-400">Amorçage des balises JSON d'outils, format encore instable</td>
-                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-red-950 text-red-400 border border-red-800">Sous-ajusté</span></td>
+                <td class="p-2.5 text-red-400">1.78 &rarr; 1.45</td>
+                <td class="p-2.5 text-slate-400">~6.0%</td>
+                <td class="p-2.5 text-indigo-400">Interpolation Chinchilla</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800">Modélisé</span></td>
               </tr>
               <tr>
                 <td class="p-2.5 font-mono text-white">train_0.4mb</td>
                 <td class="p-2.5">400 Ko</td>
                 <td class="p-2.5">~30</td>
-                <td class="p-2.5 text-amber-400 font-semibold">1.45 &rarr; 1.15</td>
-                <td class="p-2.5 text-slate-400">Stabilisation des appels <code>run_command</code> et <code>read_file</code></td>
-                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-400 border border-amber-800">Émergence</span></td>
+                <td class="p-2.5 text-amber-400">1.45 &rarr; 1.15</td>
+                <td class="p-2.5 text-slate-400">~9.5%</td>
+                <td class="p-2.5 text-indigo-400">Interpolation Chinchilla</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800">Modélisé</span></td>
               </tr>
               <tr>
                 <td class="p-2.5 font-mono text-white">train_0.6mb</td>
                 <td class="p-2.5">600 Ko</td>
                 <td class="p-2.5">~45</td>
-                <td class="p-2.5 text-amber-400 font-semibold">1.15 &rarr; 0.95</td>
-                <td class="p-2.5 text-slate-400">Localisation correcte par <code>git grep</code>, ciblage de fichier acquis</td>
-                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-400 border border-amber-800">En progrès</span></td>
+                <td class="p-2.5 text-amber-400">1.15 &rarr; 0.95</td>
+                <td class="p-2.5 text-slate-400">~12.0%</td>
+                <td class="p-2.5 text-indigo-400">Interpolation Chinchilla</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800">Modélisé</span></td>
               </tr>
               <tr>
                 <td class="p-2.5 font-mono text-white">train_0.8mb</td>
                 <td class="p-2.5">800 Ko</td>
                 <td class="p-2.5">~60</td>
-                <td class="p-2.5 text-blue-400 font-semibold">0.95 &rarr; 0.82</td>
-                <td class="p-2.5 text-slate-400">Respect des scripts Python d'édition atomique heredoc</td>
-                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-blue-950 text-blue-400 border border-blue-800">En progrès</span></td>
+                <td class="p-2.5 text-blue-400">0.95 &rarr; 0.82</td>
+                <td class="p-2.5 text-slate-400">~14.5%</td>
+                <td class="p-2.5 text-indigo-400">Interpolation Chinchilla</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800">Modélisé</span></td>
               </tr>
-              <tr>
-                <td class="p-2.5 font-mono text-white">train_1.0mb</td>
-                <td class="p-2.5">1 000 Ko</td>
-                <td class="p-2.5">~75</td>
-                <td class="p-2.5 text-blue-400 font-semibold">0.82 &rarr; 0.68</td>
-                <td class="p-2.5 text-slate-400">Élimination des erreurs d'indentation et des crochets manquants</td>
-                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-blue-950 text-blue-400 border border-blue-800">En progrès</span></td>
+              <tr class="bg-slate-900/40 font-semibold">
+                <td class="p-2.5 font-mono text-emerald-400">train_1.0mb</td>
+                <td class="p-2.5 text-white">991 Ko</td>
+                <td class="p-2.5 text-white">~75</td>
+                <td class="p-2.5 text-blue-400">0.82 &rarr; 0.68</td>
+                <td class="p-2.5 text-emerald-400 font-bold">16.0%</td>
+                <td class="p-2.5 text-emerald-400 font-bold">🟢 Mesuré Réel Colab A100</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">Réel Certifié</span></td>
               </tr>
-              <tr>
-                <td class="p-2.5 font-mono text-white">train_1.5mb (train_python)</td>
-                <td class="p-2.5">1.5 Mo</td>
-                <td class="p-2.5">284</td>
-                <td class="p-2.5 text-blue-400 font-semibold">0.68 &rarr; 0.52</td>
-                <td class="p-2.5 text-emerald-400 font-semibold">Alignement 100% Python (FastAPI, Rich, Requests)</td>
-                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-blue-950 text-blue-400 border border-blue-800">Spécialisé</span></td>
-              </tr>
-              <tr>
-                <td class="p-2.5 font-mono text-white">train_2.0mb</td>
-                <td class="p-2.5">2.0 Mo</td>
-                <td class="p-2.5">~150</td>
-                <td class="p-2.5 text-blue-400 font-semibold">0.52 &rarr; 0.38</td>
-                <td class="p-2.5 text-emerald-400 font-semibold">+46% d'exactitude syntaxique AST sur les patchs</td>
-                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-blue-950 text-blue-400 border border-blue-800">Robuste</span></td>
+              <tr class="bg-slate-900/40 font-semibold">
+                <td class="p-2.5 font-mono text-emerald-400">train_2.0mb</td>
+                <td class="p-2.5 text-white">2.0 Mo</td>
+                <td class="p-2.5 text-white">~150</td>
+                <td class="p-2.5 text-blue-400">0.52 &rarr; 0.38</td>
+                <td class="p-2.5 text-emerald-400 font-bold">19.0%</td>
+                <td class="p-2.5 text-emerald-400 font-bold">🟢 Mesuré Réel Colab A100</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">Réel Certifié</span></td>
               </tr>
               <tr>
                 <td class="p-2.5 font-mono text-white">train_2.5mb</td>
                 <td class="p-2.5">2.5 Mo</td>
                 <td class="p-2.5">~190</td>
-                <td class="p-2.5 text-emerald-400 font-semibold">0.38 &rarr; 0.28</td>
-                <td class="p-2.5 text-emerald-400 font-semibold">Gestion des cas limites et exceptions aux tests pytest</td>
-                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800">Très élevé</span></td>
+                <td class="p-2.5 text-emerald-400">0.38 &rarr; 0.28</td>
+                <td class="p-2.5 text-slate-300">~20.5%</td>
+                <td class="p-2.5 text-indigo-400">Interpolation Chinchilla</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800">Modélisé</span></td>
               </tr>
-              <tr class="bg-emerald-950/20 border-l-2 border-emerald-500">
-                <td class="p-2.5 font-mono text-emerald-300 font-bold">train_3.0mb (Sweet Spot)</td>
-                <td class="p-2.5 font-semibold text-white">3.0 Mo</td>
-                <td class="p-2.5 font-semibold text-white">~230</td>
-                <td class="p-2.5 text-emerald-400 font-bold text-sm">0.28 &rarr; 0.22</td>
-                <td class="p-2.5 text-emerald-400 font-semibold">Convergence optimale : Pass@1 maximal sans oubli catastrophique</td>
-                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">Optimum Scientifique</span></td>
+              <tr class="bg-emerald-950/30 border-l-4 border-emerald-400 font-bold">
+                <td class="p-2.5 font-mono text-emerald-300">train_3.0mb (Sweet Spot)</td>
+                <td class="p-2.5 text-white">3.0 Mo</td>
+                <td class="p-2.5 text-white">~230</td>
+                <td class="p-2.5 text-emerald-400">0.28 &rarr; 0.22</td>
+                <td class="p-2.5 text-emerald-400 text-sm font-extrabold">22.0%</td>
+                <td class="p-2.5 text-emerald-400 font-bold">🟢 Mesuré Réel Colab A100</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-extrabold">🏆 Optimum Réel</span></td>
               </tr>
-              <tr>
-                <td class="p-2.5 font-mono text-white">train_4.0mb &agrave; 8.0mb</td>
-                <td class="p-2.5">4.0 &agrave; 5.9 Mo</td>
-                <td class="p-2.5">300 à 660</td>
-                <td class="p-2.5 text-slate-300">0.21 &rarr; 0.19</td>
-                <td class="p-2.5 text-slate-500">Gain marginal &lt; 2% : saturation asymptotique et risque de sur-spécialisation</td>
-                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 border border-slate-700">Rendement décroissant</span></td>
+              <tr class="bg-slate-900/40 font-semibold">
+                <td class="p-2.5 font-mono text-emerald-400">train_4.0mb</td>
+                <td class="p-2.5 text-white">4.0 Mo</td>
+                <td class="p-2.5 text-white">~300</td>
+                <td class="p-2.5 text-slate-300">0.21 &rarr; 0.20</td>
+                <td class="p-2.5 text-emerald-400 font-bold">25.0%</td>
+                <td class="p-2.5 text-emerald-400 font-bold">🟢 Mesuré Réel Colab A100</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">Réel Certifié</span></td>
+              </tr>
+              <tr class="bg-slate-900/40 font-semibold">
+                <td class="p-2.5 font-mono text-emerald-400">train_6.0mb</td>
+                <td class="p-2.5 text-white">5.9 Mo</td>
+                <td class="p-2.5 text-white">~450</td>
+                <td class="p-2.5 text-slate-300">0.20 &rarr; 0.19</td>
+                <td class="p-2.5 text-emerald-400 font-bold">26.7%</td>
+                <td class="p-2.5 text-emerald-400 font-bold">🟢 Mesuré Réel Colab A100</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">Réel Certifié</span></td>
+              </tr>
+              <tr class="bg-purple-950/20 font-bold border-l-4 border-purple-500">
+                <td class="p-2.5 font-mono text-purple-300">train_4.0mb (r=64 / alpha=128)</td>
+                <td class="p-2.5 text-white">4.0 Mo</td>
+                <td class="p-2.5 text-white">~300</td>
+                <td class="p-2.5 text-purple-400">0.3602</td>
+                <td class="p-2.5 text-purple-400 text-sm font-extrabold">28.7%</td>
+                <td class="p-2.5 text-purple-400 font-bold">🟢 Mesuré Réel Colab A100</td>
+                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-purple-950 text-purple-300 border border-purple-800 font-extrabold">Record Validé</span></td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div class="p-3 rounded-lg bg-blue-950/30 border border-blue-800/40 text-xs text-blue-300 space-y-1">
-          <strong>💡 Leçon Stratégique :</strong> 
-          Gemma 4 31B dispose déjà d'une immense compétence en programmation générale. Un volume concentré de <strong>200 à 300 trajectoires parfaites (~3 Mo)</strong> est le point idéal pour lui inculquer les conventions d'appel sans risquer l'oubli catastrophique ni surcharger la mémoire.
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div class="p-3 rounded-lg bg-emerald-950/20 border border-emerald-800/40 text-emerald-300 space-y-1">
+            <strong>🟢 Données 100% Réelles (Ancrages GPU) :</strong> 
+            Les paliers 1 Mo, 2 Mo, 3 Mo, 4 Mo, 6 Mo et le run à rang élevé ($r=64$) sont issus de runs d'entraînement et d'évaluations physiques réels sur GPU A100 consignés dans <code>docs/SCALING_LAWS_REPORT.json</code>.
+          </div>
+          <div class="p-3 rounded-lg bg-indigo-950/20 border border-indigo-800/40 text-indigo-300 space-y-1">
+            <strong>🔵 Données Modélisées (Pas fin de 0.2 Mo) :</strong> 
+            Les paliers intermédiaires (0.2, 0.4, 0.6, 0.8 et 2.5 Mo) sont des interpolations calculées à partir de la loi de puissance théorique calibrée sur les ancrages réels pour observer la transition continue.
+          </div>
         </div>
       </div>
     </section>
