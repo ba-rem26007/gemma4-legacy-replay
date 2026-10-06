@@ -6,7 +6,8 @@
 - Note pour agy (2 oct., 9 h 10) : `runs/watch_kaggle_scoring.py` (non versionné, mot de passe SMTP en clair) corrigé par Claude Code à la demande de Rémi — e-mail seulement si une soumission change (état `runs/kaggle_watch_state.json`), score lu dans le CSV Kaggle, message en français. Ancienne version : scratchpad Claude.
 
 ## Paper Track — note de pilotage du writeup (6 oct.) : https://kaggle.d1dev.fr/writeups (privée, non liée)
-Conformité 5/5, 2 947 mots ; risque Quality (un seul terrain) → section « Transfert hors PHP » (édition par script, Python) ; Submit visé ~9 nov. Source : `site/writeups.html`.
+Conformité 5/5 ; risque Quality (un seul terrain) → section « Transfert hors PHP » (édition par script, Python) ; Submit visé ~9 nov. Source : `site/writeups.html`.
+**Writeup mis à jour (6 oct.)** : §1 « Introduction » + contribution (5) ; nouvelle §8 « Transfer beyond PHP » (edit_file 149/201 arguments perdus, rejeu script 64→82 % et 4→27 %, scores 0,06/0,05/0,06/0,12) ; 4 figures (`tools/make_figures.py` → `docs/figures/`) ; calcul de perte par tronçons condensé ; **3 000 mots pile**. Notebook : section 8 (assert sur `eval/transfer_python/`), tout passe. Les figures pointent vers le dépôt public (raw.githubusercontent) : visibles une fois le dépôt rendu public.
 
 ## Leaderboard — V6 soumise : en cours d'évaluation (6 oct., 03 h 54 UTC / 05 h 54 Paris)
 - **Soumission V6 (réf. 56869575)** : statut **`PENDING`** (évaluation Kaggle en cours).
