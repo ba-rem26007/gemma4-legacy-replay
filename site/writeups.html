@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Writeup Paper Track</title>
+<style>
+/* Note de pilotage : verdict, conformité, grille, arbitrages, calendrier, checklist. Une colonne, tableaux défilants. */
+:root {
+  --bg: #f6f7f5; --surface: #ffffff; --fg: #1c2220; --muted: #5d6763; --line: #d8ddd9; --accent: #1f5f8b;
+  --ok: #1d7a46; --ok-bg: #e2f2e8; --todo: #a85d00; --todo-bg: #fbecd6; --risk: #a8322a; --risk-bg: #f8e0dd;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121615; --surface: #1a201e; --fg: #e5ebe8; --muted: #9aa6a1; --line: #2d3733; --accent: #7fb5dc;
+  --ok: #6fd39a; --ok-bg: #173325; --todo: #f0b25c; --todo-bg: #3a2a12; --risk: #f08a80; --risk-bg: #3b1c19; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121615; --surface: #1a201e; --fg: #e5ebe8; --muted: #9aa6a1; --line: #2d3733; --accent: #7fb5dc;
+  --ok: #6fd39a; --ok-bg: #173325; --todo: #f0b25c; --todo-bg: #3a2a12; --risk: #f08a80; --risk-bg: #3b1c19; color-scheme: dark }
+* { box-sizing: border-box }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif }
+main { max-width: 980px; margin: 0 auto; padding-inline: 18px; padding-block: 28px 64px; display: grid; gap: 30px }
+h1, h2 { line-height: 1.2; text-wrap: balance; margin: 0 }
+h1 { font-size: clamp(1.5rem, 3.5vw, 2.1rem) }
+h2 { font-size: 1.2rem; padding-bottom: 6px; border-bottom: 1px solid var(--line) }
+p { margin: 0; max-width: 72ch }
+section { display: grid; gap: 12px; min-width: 0 }
+.eyebrow { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.sub { color: var(--muted) }
+a { color: var(--accent) }
+code { font: .88em ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; word-break: break-all }
+.verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 4px; align-content: start }
+.tile b { font-size: 1.25rem }
+.tile span { color: var(--muted); font-size: .9rem }
+.tile.risk { border-color: var(--risk) }
+.wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface) }
+table { border-collapse: collapse; width: 100%; font-size: .92rem }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line) }
+th { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--bg) }
+tr:last-child td { border-bottom: 0 }
+.pill { display: inline-block; font-size: .78rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap }
+.ok { color: var(--ok); background: var(--ok-bg) }
+.todo { color: var(--todo); background: var(--todo-bg) }
+.risk-p { color: var(--risk); background: var(--risk-bg) }
+ul, ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; max-width: 78ch }
+.check li { list-style: none; margin-left: -1.3em }
+.foot { font-size: .85rem; color: var(--muted) }
+</style>
+</head>
+<body>
+<main>
+<header style="display:grid;gap:8px">
+  <div class="eyebrow">Paper Track · note de pilotage · 6 oct. 2026</div>
+  <h1>Notre writeup face aux attendus du Paper Track</h1>
+  <p class="sub">Réponse à la note « Attendus du Writeup » (pages Overview et Rules, <a href="https://www.kaggle.com/competitions/gemma-4-developer-agent-paper">https://www.kaggle.com/competitions/gemma-4-developer-agent-paper</a>). Texte évalué : <code>docs/KAGGLE_FINAL_WRITEUP.md</code> (version du 2 oct.). Clôture : 12 nov. 23 h 59 UTC, soit le <b>13 nov. à 0 h 59, heure de Paris</b>.</p>
+</header>
+
+<section>
+  <h2>Verdict</h2>
+  <div class="verdict">
+    <div class="tile"><span>Éléments obligatoires</span><b>5 / 5 présents</b><span>titre, abstract, introduction, méthode et expériences, travaux connexes</span></div>
+    <div class="tile"><span>Longueur</span><b>2 947 mots</b><span>2 544 hors références : sous les 3 000 quelle que soit la règle de comptage</span></div>
+    <div class="tile risk"><span>Risque principal</span><b>Quality</b><span>un seul terrain mesuré (PrestaShop), alors que le critère note la généralisation</span></div>
+    <div class="tile"><span>Prix visé</span><b>Best New Resource</b><span>benchmark rejouable + harnais ; Overall Best Paper reste ouvert</span></div>
+  </div>
+  <p>Sur Kaggle : 2 brouillons, <b>aucune soumission</b>. Un brouillon ne compte pas : il faudra cliquer Submit.</p>
+</section>
+
+<section>
+  <h2>Conformité aux exigences</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>Exigence</th><th>Où dans notre texte</th><th>Statut</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td>Titre et sous-titre</td><td>« Making a Legacy PHP Monolith Verifiable for a Gemma 4 Bug-Fixing Agent » + sous-titre</td><td><span class="pill ok">OK</span></td><td>Reporter le sous-titre dans le champ Kaggle dédié</td></tr>
+      <tr><td>Abstract</td><td>§ Abstract</td><td><span class="pill ok">OK</span></td><td>Vérifier qu'il cite le chiffre principal et ce qui est publié</td></tr>
+      <tr><td>Introduction</td><td>« 1. Problem &amp; Motivation », questions Q1-Q3, 4 contributions numérotées</td><td><span class="pill todo">À faire</span></td><td>Renommer la section « Introduction » (le jury cherche ce mot)</td></tr>
+      <tr><td>Méthode et expériences</td><td>§2 protocole, §3 agent, §4 résultats, §5 taxonomie, §6 boucle, §7 fine-tuning</td><td><span class="pill ok">OK</span></td><td>Ajouter un schéma du pipeline</td></tr>
+      <tr><td>Travaux connexes et citations</td><td>« Related works and citations » (fin), citations vérifiées dans <code>RELATED.md</code></td><td><span class="pill ok">OK</span></td><td>Ajouter une phrase « ce qui diffère » par famille de travaux</td></tr>
+      <tr><td>3 000 mots maximum</td><td>2 947 au total, 2 757 hors blocs de code, 2 544 hors références</td><td><span class="pill ok">OK</span></td><td>Marge faible : tout ajout se finance par une coupe</td></tr>
+      <tr><td>Recherche non publiée</td><td>Dépôt public <code>gemma4-legacy-replay-public</code> encore privé</td><td><span class="pill ok">OK</span></td><td>Le rendre public le jour de la soumission (décision de Rémi)</td></tr>
+      <tr><td>Notebook public (facultatif)</td><td><code>notebook/verification.ipynb</code>, lien en dernière ligne du texte</td><td><span class="pill todo">À faire</span></td><td>Tester le lien en navigation privée une fois le dépôt public ; le renseigner dans <i>Project Links</i></td></tr>
+      <tr><td>Licence OSI sans restriction commerciale</td><td>Dépôt public sous Apache-2.0 (vérifié via l'API GitHub)</td><td><span class="pill ok">OK</span></td><td>Vérifier les licences des données (PrestaShop est sous OSL-3.0)</td></tr>
+      <tr><td>Ressources privées attachées</td><td>Aucune pour l'instant</td><td><span class="pill ok">OK</span></td><td>N'attacher que ce qui peut devenir public</td></tr>
+      <tr><td>Statut « Submitted »</td><td>2 brouillons, 0 soumis</td><td><span class="pill risk-p">Bloquant</span></td><td>Finaliser un seul brouillon, cliquer Submit, vérifier l'onglet Writeups</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Grille du jury, auto-évaluée</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>Critère</th><th>État</th><th>Ce qu'on a déjà (preuve)</th><th>Ce qui fait monter la note</th></tr></thead>
+    <tbody>
+      <tr><td><b>Novelty</b></td><td><span class="pill ok">Bon</span></td><td>Oracles de rejeu cachés sur un legacy sans tests ; boucle 100 % Gemma où les garde-fous rejettent 13 des 41 bugs « résolus » (32 %) ; résultat négatif du fine-tuning.</td><td>Ajouter une propriété mal connue mesurée sur la piste Leaderboard : sous le parseur vLLM <code>gemma4</code>, <code>edit_file</code> perd ses arguments dans <b>74 %</b> des appels de la V3b (149 sur 201).</td></tr>
+      <tr><td><b>Quality</b></td><td><span class="pill risk-p">Point faible</span></td><td>Un seul terrain : 33 bugs PrestaShop TEST. Dolibarr : un seul bug pilote (#41005), insuffisant.</td><td>Section « Transfert hors PHP » sur des tâches Python (fastapi, rich, requests). L'édition par script via <code>run_command</code> fait passer les modifications réussies de 64 % à 82 % au rejeu. Au classement : V5 à <b>0,12</b> contre 0,06 pour la v2. Présenter Dolibarr comme pilote seulement.</td></tr>
+      <tr><td><b>Relevance</b></td><td><span class="pill ok">Bon</span></td><td>Le legacy sans tests est le cas réel dominant ; évaluation du modèle de bord E4B.</td><td>Chiffrer le matériel grand public pour E4B (VRAM, temps par tâche). Le texte dit lui-même que la VRAM totale n'a pas été mesurée sur T4 (§7).</td></tr>
+      <tr><td><b>Verifiability</b></td><td><span class="pill ok">Fort</span></td><td><code>notebook/verification.ipynb</code> recalcule tableaux, intervalles de confiance, contrôle de fuite et journaux d'entraînement (CPU, ~2 s, <code>assert</code> par section).</td><td>Y ajouter les chiffres de la section transfert, les graines et les versions exactes (vLLM 0.19.1, modèle QAT w4a16).</td></tr>
+      <tr><td><b>Clarity</b></td><td><span class="pill todo">À construire</span></td><td>Texte dense, bien structuré, peu de visuels.</td><td>Un schéma du pipeline (ticket → agent → rejeu → verdict) et un exemple de bout en bout sur un bug.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Arbitrages recommandés</h2>
+  <ol>
+    <li><b>Gemma 4 au centre.</b> La comparaison avec et sans harnais (conditions A, B, O sur 31B, 3 runs) est déjà le cœur du §4 : la garder en tête des résultats.</li>
+    <li><b>Fine-tuning : le garder court.</b> C'est un résultat négatif mesuré et vérifié par le notebook (E4B : 3,67 bugs résolus sur 33 en moyenne pour la base, 1,33 pour v15, 0 pour v16). Le condenser à environ 250 mots sans l'étendre. La v17 non plus ne bat pas la base sur la validation TRAIN : on n'en fait pas de section.</li>
+    <li><b>Financer la section transfert</b> (environ 300 mots) en resserrant les §5 et §7 et la méthode du calcul de perte par tronçons.</li>
+    <li><b>Ne pas revendiquer Best New Application</b> : nous n'utilisons ni les graphes de code ni les embeddings fournis.</li>
+  </ol>
+  <div class="wrap"><table>
+    <thead><tr><th>Section cible</th><th>Mots</th><th>Sert surtout</th></tr></thead>
+    <tbody>
+      <tr><td>Abstract</td><td>150</td><td>Clarity, Novelty</td></tr>
+      <tr><td>1. Introduction (Q1-Q3, contributions numérotées)</td><td>300</td><td>Relevance, Novelty</td></tr>
+      <tr><td>2. Benchmark et protocole</td><td>450</td><td>Verifiability</td></tr>
+      <tr><td>3. Agent</td><td>300</td><td>Verifiability</td></tr>
+      <tr><td>4. Résultats + statistiques</td><td>550</td><td>Quality, Novelty</td></tr>
+      <tr><td>5. Taxonomie des échecs</td><td>200</td><td>Novelty</td></tr>
+      <tr><td>6. Boucle d'auto-apprentissage et triche aux tests</td><td>300</td><td>Novelty</td></tr>
+      <tr><td>7. Fine-tuning, résultat négatif</td><td>250</td><td>Novelty</td></tr>
+      <tr><td>8. Transfert hors PHP (nouveau)</td><td>300</td><td>Quality</td></tr>
+      <tr><td>9. Limites + reproductibilité</td><td>200</td><td>Quality, Verifiability</td></tr>
+      <tr><td><b>Total hors références</b></td><td><b>3 000</b></td><td></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Calendrier</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>Date</th><th>Jalon</th></tr></thead>
+    <tbody>
+      <tr><td>~10 oct.</td><td>Structure figée : section « Introduction », contributions, plan de mots ci-dessus</td></tr>
+      <tr><td>~15 oct.</td><td>Section transfert rédigée, ses chiffres ajoutés au notebook de vérification</td></tr>
+      <tr><td>~20 oct.</td><td>Fin des expériences : fusion des répétitions B et O (3 runs chacune), mesure E4B sur matériel grand public</td></tr>
+      <tr><td>~3 nov.</td><td>Texte complet, schéma, notebook public testé en navigation privée</td></tr>
+      <tr><td><b>~9 nov.</b></td><td><b>Submit</b> (soumission interne). En cas d'égalité, le premier entré l'emporte : soumettre tôt a de la valeur</td></tr>
+      <tr><td>13 nov. 0 h 59 (Paris)</td><td>Clôture officielle</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Zones floues à poser sur le forum</h2>
+  <ul>
+    <li>Les catégories de prix : se déclare-t-on dans une catégorie, ou le jury nous y range-t-il ?</li>
+    <li>Le comptage des 3 000 mots : références, tableaux et légendes sont-ils comptés ? La règle vaut-elle aussi pour un PDF ?</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Checklist avant Submit</h2>
+  <ul class="check">
+    <li>☑ Titre, sous-titre, abstract, méthodes, expériences, travaux connexes, citations</li>
+    <li>☑ 3 000 mots ou moins</li>
+    <li>☑ Contributions numérotées dans l'introduction</li>
+    <li>☑ Baseline sans la méthode (condition A) et ablations (R, B, O)</li>
+    <li>☑ Section limites</li>
+    <li>☑ Licence du dépôt public compatible OSI (Apache-2.0)</li>
+    <li>☐ Section nommée « Introduction »</li>
+    <li>☐ Preuve de généralisation hors du terrain principal (section transfert)</li>
+    <li>☐ Matériel, quantification, graines et versions indiqués partout</li>
+    <li>☐ Schéma du pipeline et exemple de bout en bout</li>
+    <li>☐ Dépôt public et notebook accessibles en navigation privée</li>
+    <li>☐ Un seul brouillon finalisé, statut « Submitted » visible</li>
+  </ul>
+</section>
+
+<p class="foot">Page privée (accès protégé, non indexée, non liée depuis l'accueil). Sources des chiffres : <code>docs/KAGGLE_FINAL_WRITEUP.md</code>, <code>notebook/verification.ipynb</code>, <code>runs/leaderboard_local/lent1/</code>, <code>runs/leaderboard_local/v4/</code>, <code>kaggle/submissions.jsonl</code>.</p>
+</main>
+</body>
+</html>

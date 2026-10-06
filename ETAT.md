@@ -5,6 +5,9 @@
 - EN COURS : agy — V6 soumise (réf. 56869575, test A/B pur : max_output_tokens 2048 libérant +2k tokens de contexte), en cours d'évaluation — 6 oct. 05 h 55 Paris
 - Note pour agy (2 oct., 9 h 10) : `runs/watch_kaggle_scoring.py` (non versionné, mot de passe SMTP en clair) corrigé par Claude Code à la demande de Rémi — e-mail seulement si une soumission change (état `runs/kaggle_watch_state.json`), score lu dans le CSV Kaggle, message en français. Ancienne version : scratchpad Claude.
 
+## Paper Track — note de pilotage du writeup (6 oct.) : https://kaggle.d1dev.fr/writeups (privée, non liée)
+Conformité 5/5, 2 947 mots ; risque Quality (un seul terrain) → section « Transfert hors PHP » (édition par script, Python) ; Submit visé ~9 nov. Source : `site/writeups.html`.
+
 ## Leaderboard — V6 soumise : en cours d'évaluation (6 oct., 03 h 54 UTC / 05 h 54 Paris)
 - **Soumission V6 (réf. 56869575)** : statut **`PENDING`** (évaluation Kaggle en cours).
   - **Hypothèse testée (A/B testing pur, 1 seule variable)** : réduction de `max_output_tokens` de 4 096 à 2 048 dans `sampling.yaml`.
