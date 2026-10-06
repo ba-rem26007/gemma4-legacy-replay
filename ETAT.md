@@ -2,17 +2,29 @@
 
 
 ## EN COURS (coordination 3 IA, cf. CLAUDE.md)
-- EN COURS : Claude Code — kaggle/, harness_transfer/ (piste Leaderboard, éval locale) — 2 oct. 18 h
+- EN COURS : agy — V6 soumise (réf. 56869575, test A/B pur : max_output_tokens 2048 libérant +2k tokens de contexte), en cours d'évaluation — 6 oct. 05 h 55 Paris
 - Note pour agy (2 oct., 9 h 10) : `runs/watch_kaggle_scoring.py` (non versionné, mot de passe SMTP en clair) corrigé par Claude Code à la demande de Rémi — e-mail seulement si une soumission change (état `runs/kaggle_watch_state.json`), score lu dans le CSV Kaggle, message en français. Ancienne version : scratchpad Claude.
+
+## Leaderboard — V6 soumise : en cours d'évaluation (6 oct., 03 h 54 UTC / 05 h 54 Paris)
+- **Soumission V6 (réf. 56869575)** : statut **`PENDING`** (évaluation Kaggle en cours).
+  - **Hypothèse testée (A/B testing pur, 1 seule variable)** : réduction de `max_output_tokens` de 4 096 à 2 048 dans `sampling.yaml`.
+  - **Rationnel** : les réponses moyennes de l'agent font ~41 tokens (max 255). Libérer 2 048 tokens d'enveloppe de sortie alloue directement +2 048 tokens supplémentaires à l'historique de la conversation (sur la limite dure de 32 768 tokens vLLM) et élimine les exceptions `ContextWindowExceededError` sur les tâches multi-tours sans altérer le comportement décisionnel.
+  - **Code & Prompts** : 100% identiques à la V5 (qui avait déjà doublé le score à 0,12).
+  - Archive : `kaggle/submission_v6.zip` (SHA256: `e819ec1f929e`).
 
 ## Leaderboard — V5 validée : 0,12 (SCORE DOUBLÉ !) ; rang 553e sur 1 816 équipes (5 oct., 20 h Paris)
 - **Soumission V5 (réf. 56842827)** : validée à **`0,12`** (contre 0,06 en V4 et V2, et 0,05 en V3b).
-  1. Suppression d'`eval_config.yaml` : les tâches complexes ont pu aller au bout de leur résolution sans interruption prématurée.
+  1. Suppression d'`eval_config.yaml` : les tâches complexes ont pu aller au bout de leur résolution sans interruption prématurée (~12,4 min/tâche).
   2. Échantillonnage stabilisé (`temperature: 0.2`, `top_k: 40`, `top_p: 0.95`) : fin des bugs d'indentation/syntaxe sur les scripts d'édition heredoc Python.
   3. Discipline de soumission précoce (`submit_patch`).
 - **Classement officiel** : **553ᵉ place** sur 1 816 équipes inscrites (+311 places gagnées). Le Top 10 mondial est à 0,17 (à seulement ~3 tâches résolues d'écart).
 - **Découverte majeure (Discussion Kaggle #745977)** : Au moins 35 tâches FastAPI échouent dès la collection pytest avec `ModuleNotFoundError` (`inline-snapshot`, `dirty-equals` non fournis dans les 124 wheels). Vérifié noir sur blanc dans nos propres traces locales : `fastapi_14482` (437 car.) et `fastapi_14360` (635 car.) étaient bien corrigées mais ont reçu un Exit Code 2 au test ! Détails dans [`docs/resources/kaggle_discussion_745977_missing_test_deps.md`](docs/resources/kaggle_discussion_745977_missing_test_deps.md).
 - **Veille concurrentielle & forum Kaggle** : Crawl intégral des 126 discussions du forum archivé dans `docs/kaggle_discussions/`, synthèse stratégique des 6 pièges majeurs et des pratiques du Top 10 dans [`docs/kaggle_discussions/SYNTHESE_VEILLE_FORUM.md`](docs/kaggle_discussions/SYNTHESE_VEILLE_FORUM.md). Système de veille incrémentale opérationnel ([`tools/crawl_kaggle_discussions.py`](tools/crawl_kaggle_discussions.py) avec état persistant `docs/kaggle_discussions/state.json`).
+- **Guide exhaustif Fine-Tuning Pas à Pas** : Création et déploiement de [`site/finetuning.html`](site/finetuning.html) (accessible sur https://kaggle.d1dev.fr/finetuning.html), détaillant les 6 étapes de l'ingénierie QLoRA (Curation sans fuite, Décomposition NF4, VRAM frugale sous A100, Métriques & validation croisée, Rejeu, Piège vLLM).
+- **Préparation Soumission V6 (prochaine fenêtre quota 00:00 UTC)** :
+  1. `max_output_tokens: 2048` pour libérer 2 048 tokens d'historique (total 32k) et éviter tout `ContextWindowExceededError`.
+  2. Syntaxe check automatique (`python3 -m py_compile`) avant soumission.
+  3. Règle anti-bouclage sur pytest collection error quand causée par `ModuleNotFoundError` de dépendances de test tierces.
 
 ## Leaderboard — V4 terminée : 0,06 (4 oct., 21 h 57 UTC)
 - Soumission V4 (réf. 56824935) : **0,06**. Les modifications par script Python dans `run_command` ont fiabilisé les éditions, mais le plafond dur de 6 min dans `eval_config.yaml` coupait les tâches en vol.
