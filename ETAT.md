@@ -7,7 +7,7 @@
 
 ## Paper Track — note de pilotage du writeup (6 oct.) : https://kaggle.d1dev.fr/writeups (privée, non liée)
 Conformité 5/5 ; risque Quality (un seul terrain) → section « Transfert hors PHP » (édition par script, Python) ; Submit visé ~9 nov. Source : `site/writeups.html`.
-**Writeup mis à jour (6 oct.)** : §1 « Introduction » + contribution (5) ; nouvelle §8 « Transfer beyond PHP » (edit_file 149/201 arguments perdus, rejeu script 64→82 % et 4→27 %, scores 0,06/0,05/0,06/0,12) ; 4 figures (`tools/make_figures.py` → `docs/figures/`) ; calcul de perte par tronçons condensé ; **3 000 mots pile**. Notebook : section 8 (assert sur `eval/transfer_python/`), tout passe. Les figures pointent vers le dépôt public (raw.githubusercontent) : visibles une fois le dépôt rendu public.
+**Writeup mis à jour (6 oct.)** : §1 « Introduction » + contribution (5) ; nouvelle §8 « Transfer beyond PHP » (edit_file 149/201 arguments perdus, rejeu script 64→82 % et 4→27 %, scores 0,06/0,05/0,06/0,12) ; 4 figures (`tools/make_figures.py` → `docs/figures/`) ; calcul de perte par tronçons condensé ; **3 000 mots pile**. Ajout le 6 oct. 17 h : exemple de bout en bout #41923 (figure 5, trace réelle du run B), 2 993 mots ; copier-coller du texte + figures sur https://kaggle.d1dev.fr/writeups (`site/publish_writeup.sh`). Notebook : section 8 (assert sur `eval/transfer_python/`), tout passe. Les figures pointent vers le dépôt public (raw.githubusercontent) : visibles une fois le dépôt rendu public.
 
 ## Leaderboard — V6 soumise : en cours d'évaluation (6 oct., 03 h 54 UTC / 05 h 54 Paris)
 - **Soumission V6 (réf. 56869575)** : statut **`PENDING`** (évaluation Kaggle en cours).
